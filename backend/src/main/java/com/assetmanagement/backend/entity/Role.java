@@ -1,9 +1,18 @@
 package com.assetmanagement.backend.entity;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "roles")
+@Table(
+        name = "roles",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_roles_role_name",
+                        columnNames = "role_name"
+                )
+        }
+)
 public class Role {
 
     @Id
@@ -11,21 +20,17 @@ public class Role {
     @Column(name = "role_id")
     private Long roleId;
 
-    @Column(name = "role_name", nullable = false, unique = true)
+    @Column(name = "role_name", nullable = false, unique = true, length = 50)
     private String roleName;
 
+    @Column(name = "description", length = 255)
     private String description;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public Role() {
-    }
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    // Getters and Setters
 
     public Long getRoleId() {
         return roleId;
@@ -57,5 +62,11 @@ public class Role {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
     }
 }

@@ -36,18 +36,29 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "User not found"));
+        User user = getUserEntityById(id);
+        return toResponse(user);
+    }
 
+    @Transactional(readOnly = true)
+    public User getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserByEmployeeCode(String employeeCode) {
+        User user = userRepository.findByEmployeeCode(employeeCode)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found with employee code: " + employeeCode));
         return toResponse(user);
     }
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
 
-        if (userRepository.existsByEmployeeCode(
-                request.employeeCode())) {
+        if (userRepository.existsByEmployeeCode(request.employeeCode())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Employee code already exists");
@@ -60,25 +71,65 @@ public class UserService {
         }
 
         User user = new User();
-
         user.setEmployeeCode(request.employeeCode());
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setEmail(request.email());
         user.setPhone(request.phone());
-        user.setPasswordHash(
-                passwordEncoder.encode(request.password()));
+        
+        String rawPassword = (request.password() != null && !request.password().isBlank())
+                ? request.password()
+                : "Password@123";
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+
         user.setDesignation(request.designation());
         user.setDateOfJoining(request.dateOfJoining());
         user.setAccountStatus("ACTIVE");
         user.setMustChangePassword(true);
 
         User savedUser = userRepository.save(user);
-
         return toResponse(savedUser);
     }
 
-    private UserResponse toResponse(User user) {
+    @Transactional
+    public UserResponse updateUser(Long userId, UserRequest request) {
+        User user = getUserEntityById(userId);
+
+        if (!user.getEmployeeCode().equalsIgnoreCase(request.employeeCode())
+                && userRepository.existsByEmployeeCode(request.employeeCode())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Employee code already exists");
+        }
+
+        if (!user.getEmail().equalsIgnoreCase(request.email())
+                && userRepository.existsByEmail(request.email())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Email already exists");
+        }
+
+        user.setEmployeeCode(request.employeeCode());
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setDesignation(request.designation());
+        user.setDateOfJoining(request.dateOfJoining());
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+        }
+
+        User savedUser = userRepository.save(user);
+        return toResponse(savedUser);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = getUserEntityById(userId);
+        userRepository.delete(user);
+    }
+
+    public UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getUserId(),
                 user.getEmployeeCode(),

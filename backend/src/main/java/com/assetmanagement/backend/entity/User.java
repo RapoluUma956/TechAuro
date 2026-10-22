@@ -5,7 +5,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_users_employee_code",
+                        columnNames = "employee_code"
+                ),
+                @UniqueConstraint(
+                        name = "uk_users_email",
+                        columnNames = "email"
+                )
+        }
+)
 public class User {
 
     @Id
@@ -13,35 +25,37 @@ public class User {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "employee_code", unique = true, nullable = false)
+    @Column(name = "employee_code", nullable = false, unique = true, length = 50)
     private String employeeCode;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(name = "last_name", length = 100)
     private String lastName;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
+    @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "designation", length = 100)
     private String designation;
 
-    @Column(name = "profile_image")
+    @Column(name = "profile_image", length = 500)
     private String profileImage;
 
     @Column(name = "date_of_joining")
     private LocalDate dateOfJoining;
 
-    @Column(name = "account_status")
+    @Column(name = "account_status", nullable = false, length = 30)
     private String accountStatus = "ACTIVE";
 
-    @Column(name = "must_change_password")
+    @Column(name = "must_change_password", nullable = false)
     private Boolean mustChangePassword = false;
 
     @Column(name = "password_changed_at")
@@ -50,26 +64,14 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public User() {
-    }
 
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // Getters and Setters
 
     public Long getUserId() {
         return userId;
@@ -198,5 +200,26 @@ public class User {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-}
 
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+
+        createdAt = now;
+        updatedAt = now;
+
+        if (accountStatus == null) {
+            accountStatus = "ACTIVE";
+        }
+
+        if (mustChangePassword == null) {
+            mustChangePassword = false;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}

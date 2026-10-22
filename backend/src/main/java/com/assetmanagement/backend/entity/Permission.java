@@ -4,7 +4,15 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "permissions")
+@Table(
+        name = "permissions",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_permissions_permission_name",
+                        columnNames = "permission_name"
+                )
+        }
+)
 public class Permission {
 
     @Id
@@ -12,21 +20,17 @@ public class Permission {
     @Column(name = "permission_id")
     private Long permissionId;
 
-    @Column(name = "permission_name", nullable = false, unique = true)
+    @Column(name = "permission_name", nullable = false, unique = true, length = 100)
     private String permissionName;
 
+    @Column(name = "description", length = 255)
     private String description;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public Permission() {
-    }
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    // Getters and Setters
 
     public Long getPermissionId() {
         return permissionId;
@@ -58,5 +62,11 @@ public class Permission {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
     }
 }
