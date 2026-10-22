@@ -1,0 +1,17 @@
+# Dependencies
+**/node_modules/
+
+# Build output
+**/dist/
+**/target/
+build/
+
+# IDE & Tooling
+.idea/
+*.iml
+.vscode/
+**/.vite/
+
+# System files
+.DS_Store
+Thumbs.db
