@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cormorant Garamond", serif;
+  --font-body: "Manrope", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-code: "JetBrains Mono", monospace;
+
+  /* Primary Palette from Reference */
+  --color-evergreen: #03312E;
+  --color-mint: #60B994;
+  --color-mint-bg: #A9D4C0;
+  --color-mint-light: #EBF7F2;
+  --color-brand-blue: #1976D2;
+  --color-brand-blue-hover: #1565C0;
+  --color-brand-blue-light: #E3F2FD;
+  --color-amaranth: #750D37;
+  --color-amaranth-light: #FBEAEF;
+  --color-white-pure: #FEFFFE;
+
+  /* Spectrum Colors for Status, Charts & Metrics */
+  --color-red: #EF4444;
+  --color-orange: #F97316;
+  --color-yellow: #FBBF24;
+  --color-blue: #3B82F6;
+  --color-green: #00C896;
+  --color-status-red: #EF4444;
+  --color-status-orange: #F97316;
+  --color-status-yellow: #FBBF24;
+  --color-status-blue: #3B82F6;
+  --color-status-green: #00C896;
+
+  /* Semantic UI Tokens */
+  --color-app-bg: #A9D4C0;
+  --color-card: #FEFFFE;
+  --color-app-text: #03312E;
+  --color-muted: #5C7370;
+  --color-app-border: #DCE5E1;
+  --color-app-border-evergreen: #03312E;
+  --color-app-border-amaranth: #750D37;
+}
+
+:root {
+  --font-serif: "Playfair Display", serif;
+  --font-body: "Manrope", sans-serif;
+  --font-code: "JetBrains Mono", monospace;
+
+  /* 5 Core Palette Colors */
+  --color-evergreen: #03312E;
+  --color-mint: #60B994;
+  --color-mint-bg: #A9D4C0;
+  --color-blue: #1976D2;
+  --color-blue-hover: #1565C0;
+  --color-amaranth: #750D37;
+  --color-white: #FEFFFE;
+
+  /* Spectrum Colors Defined in Stylesheet */
+  --color-red: #EF4444;
+  --color-orange: #F97316;
+  --color-yellow: #FBBF24;
+  --color-blue: #3B82F6;
+  --color-green: #00C896;
+
+  /* Semantic Status Aliases */
+  --color-status-red: var(--color-red);
+  --color-status-orange: var(--color-orange);
+  --color-status-yellow: var(--color-yellow);
+  --color-status-blue: var(--color-blue);
+  --color-status-green: var(--color-green);
+
+  /* Supporting Harmonious Tints */
+  --color-mint-light: #EBF7F2;
+  --color-blue-light: #E3F2FD;
+  --color-amaranth-light: #FBEAEF;
+
+  /* Semantic System Tokens */
+  --color-primary: var(--color-blue);
+  --color-primary-hover: var(--color-blue-hover);
+  --color-accent: var(--color-mint);
+  --color-background: var(--color-mint-bg);
+  --color-surface: var(--color-white);
+  --color-text: var(--color-evergreen);
+  --color-text-muted: #5C7370;
+  --color-border: #DCE5E1;
+  --color-border-accent: var(--color-amaranth);
+  --color-border-dark: var(--color-evergreen);
+  --color-sidebar: var(--color-white);
+
+  /* Status Colors */
+  --color-success: var(--color-green);
+  --color-warning: var(--color-yellow);
+  --color-danger: var(--color-red);
+  --color-info: var(--color-blue);
+
+  /* Shadows */
+  --color-card-shadow: rgba(3, 49, 46, 0.25);
+  --color-grid-line: rgba(0, 0, 0, 0.09);
+}
+
+/* ==========================================================================
+   Spectrum Status Utilities
+   ========================================================================== */
+.bg-status-red { background-color: var(--color-red) !important; }
+.bg-status-orange { background-color: var(--color-orange) !important; }
+.bg-status-yellow { background-color: var(--color-yellow) !important; }
+.bg-status-blue { background-color: var(--color-blue) !important; }
+.bg-status-green { background-color: var(--color-green) !important; }
+
+.text-status-red { color: var(--color-red) !important; }
+.text-status-orange { color: var(--color-orange) !important; }
+.text-status-yellow { color: var(--color-yellow) !important; }
+.text-status-blue { color: var(--color-blue) !important; }
+.text-status-green { color: var(--color-green) !important; }
+
+.stroke-status-red { stroke: var(--color-red) !important; }
+.stroke-status-orange { stroke: var(--color-orange) !important; }
+.stroke-status-yellow { stroke: var(--color-yellow) !important; }
+.stroke-status-blue { stroke: var(--color-blue) !important; }
+.stroke-status-green { stroke: var(--color-green) !important; }
+
+html {
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+body {
+  background-color: var(--color-background);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Login Page Styles
+   ========================================================================== */
+
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--color-mint-bg);
+  background-image:
+    linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px),
+    url("/BGNoise.png");
+  background-size: 128px 128px, 128px 128px, 256px 256px;
+  background-repeat: repeat;
+  box-sizing: border-box;
+}
+
+.login-card.MuiCard-root {
+  width: 400px;
+  padding: 32px;
+  background-color: var(--color-surface);
+  box-shadow: 4px 4px 8px var(--color-card-shadow);
+  border-radius: 8px;
+}
+
+.left-panel {
+  background-color: var(--color-surface);
+  height: 100%;
+  justify-items: center;
+  align-content: center;
+}
+
+.right-panel {
+  height: 100%;
+  justify-items: center;
+  align-content: center;
+}
+
+.login-video {
+  display: block;
+  border: none;
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    grid-template-columns: 1fr;
+  }
+
+  .left-panel {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Main Application Content Background
+   ========================================================================== */
+
+.app-content-background {
+  min-height: 100%;
+  background-color: var(--color-mint-bg);
+  background-image:
+    linear-gradient(
+      to right,
+      var(--color-grid-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--color-grid-line) 1px,
+      transparent 1px
+    ),
+    url("/BGNoise.png");
+  background-size:
+    128px 128px,
+    128px 128px,
+    256px 256px;
+  background-repeat: repeat;
+}
+
+/* ==========================================================================
+   Toolkit Sidebar & Navigation Overrides
+   ========================================================================== */
+
+/* Active / Selected Sidebar Item */
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected,
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected,
+.MuiListItemButton-root.Mui-selected {
+  background-color: #1976D2 !important;
+  color: #FFFFFF !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25) !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiTypography-root,
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemText-primary,
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemText-root span,
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected .MuiTypography-root,
+.MuiListItemButton-root.Mui-selected .MuiTypography-root {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root,
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected svg,
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root,
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Hover State for Sidebar Items */
+.MuiDrawer-root .MuiListItemButton-root:hover:not(.Mui-selected),
+.MuiDrawer-paper .MuiListItemButton-root:hover:not(.Mui-selected) {
+  background-color: #E3F2FD !important;
+  border-radius: 10px !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root,
+.MuiDrawer-paper .MuiListItemButton-root {
+  border-radius: 10px;
+  margin: 4px 10px;
+  transition: all 0.2s ease;
+}
+
+/* Enable Container Query on Drawer to handle Collapsed vs Expanded rail states */
+.MuiDrawer-paper {
+  container-type: inline-size;
+}
+
+/* Collapsed Sidebar Rail Navigation Styles (< 120px width) */
+@container (max-width: 120px) {
+  .MuiDrawer-paper .MuiListItem-root {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  .MuiDrawer-paper .MuiListItemButton-root {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    padding: 0 !important;
+    margin: 4px auto !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .MuiDrawer-paper .MuiListItemButton-root.Mui-selected,
+  .MuiDrawer-paper .MuiListItemButton-root:hover {
+    border-radius: 12px !important;
+  }
+
+  .MuiDrawer-paper .MuiListItemButton-root .MuiListItemIcon-root {
+    min-width: unset !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .MuiDrawer-paper .MuiListItemButton-root .MuiListItemIcon-root svg {
+    width: 22px !important;
+    height: 22px !important;
+    margin: 0 !important;
+  }
+
+  .MuiDrawer-paper .MuiListItemButton-root .MuiListItemText-root {
+    display: none !important;
+  }
+}
+
+/* Sidebar Navigation Item Font Size */
+.MuiDrawer-root .MuiListItemButton-root .MuiTypography-root,
+.MuiDrawer-root .MuiListItemButton-root .MuiListItemText-primary,
+.MuiDrawer-paper .MuiListItemButton-root .MuiTypography-root,
+.MuiListItemButton-root .MuiTypography-root {
+  font-size: 14px !important; /* 👈 Change this to 13px, 14px, 15px, etc. */
+  font-weight: 500;
+}
+
+/* Sidebar Section Subheaders (if any) */
+.MuiDrawer-root .MuiListSubheader-root {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
