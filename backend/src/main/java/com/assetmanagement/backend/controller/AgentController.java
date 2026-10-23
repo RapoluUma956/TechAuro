@@ -1,6 +1,5 @@
 package com.assetmanagement.backend.controller;
 
-import com.assetmanagement.backend.entity.*;
 import com.assetmanagement.backend.service.*;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
