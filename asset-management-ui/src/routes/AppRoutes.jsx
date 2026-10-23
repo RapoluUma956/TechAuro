@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 
 import Login from "../pages/auth/Login.jsx";
+import ResetPassword from "../pages/auth/ResetPassword.jsx";
 import Dashboard from "../pages/dashboard/Dashboard.jsx";
 import Employees from "../pages/employees/Employees.jsx";
 import EmployeeDetail from "../pages/employees/EmployeeDetail.jsx";
@@ -40,6 +41,7 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />

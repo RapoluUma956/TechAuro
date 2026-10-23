@@ -13,26 +13,20 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const profileName = user?.username
-    ? user.username === "admin"
-      ? "Admin"
-      : user.username
+  const profileName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "User"
     : dashboardHeaderData.userProfile.name;
 
   const profileRole =
-    user?.role === "ADMIN"
-      ? "IT Administrator"
-      : user?.role || dashboardHeaderData.userProfile.role;
+    user?.designation ||
+    (user?.roles?.[0] ? (user.roles[0] === "ADMIN" ? "IT Administrator" : user.roles[0]) : (user?.role || dashboardHeaderData.userProfile.role));
 
-  const profileInitials = user?.username
-    ? user.username === "admin"
-      ? "AD"
-      : user.username.slice(0, 2).toUpperCase()
+  const profileInitials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
+      (user.username ? user.username.slice(0, 2).toUpperCase() : "AD")
     : dashboardHeaderData.userProfile.initials;
 
-  const profileEmail = user?.username
-    ? `${user.username.toLowerCase()}@techaura.io`
-    : "admin@techaura.io";
+  const profileEmail = user?.email || "admin@example.com";
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
