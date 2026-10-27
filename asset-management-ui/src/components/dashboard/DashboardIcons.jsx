@@ -54,6 +54,30 @@ export function StatIcon({ type, color }) {
       </svg>
     );
   }
+  if (type === "sliders") {
+    return (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="21" x2="4" y2="14" />
+        <line x1="4" y1="10" x2="4" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12" y2="3" />
+        <line x1="20" y1="21" x2="20" y2="16" />
+        <line x1="20" y1="12" x2="20" y2="3" />
+        <line x1="1" y1="14" x2="7" y2="14" />
+        <line x1="9" y1="8" x2="15" y2="8" />
+        <line x1="17" y1="16" x2="23" y2="16" />
+      </svg>
+    );
+  }
+  if (type === "alert-triangle") {
+    return (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    );
+  }
   // Default: key icon
   return (
     <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,9 +95,32 @@ export function ResourceMeter({ value }) {
       <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
         <div
           className="h-full rounded-full transition-all duration-300"
-          style={{ width: `${value}%`, backgroundColor: barColor }}
+          style={{ width: `${Math.min(100, Math.max(0, value))}%`, backgroundColor: barColor }}
         />
       </div>
     </div>
+  );
+}
+
+export function SortIndicator({ active, direction }) {
+  if (!active) {
+    return (
+      <svg className="ml-1 inline h-3 w-3 text-[#94A3B8] opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m7 15 5 5 5-5" />
+        <path d="m7 9 5-5 5 5" />
+      </svg>
+    );
+  }
+  if (direction === "asc") {
+    return (
+      <svg className="ml-1 inline h-3 w-3 text-[#1976D2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="m18 15-6-6-6 6" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="ml-1 inline h-3 w-3 text-[#1976D2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }
