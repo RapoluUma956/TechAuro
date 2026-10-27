@@ -1,153 +1,171 @@
 package com.assetmanagement.backend.controller;
 
-import com.assetmanagement.backend.service.*;
-
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.assetmanagement.backend.dto.AgentReportRequest;
+import com.assetmanagement.backend.entity.Device;
+import com.assetmanagement.backend.service.AgentService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.*;
+
 @RestController
 @RequestMapping("/api/agent")
+@CrossOrigin(originPatterns = "*")
 public class AgentController {
 
+    private static final Logger log = LoggerFactory.getLogger(AgentController.class);
+
     private final AgentService agentService;
+    private final ObjectMapper objectMapper;
 
     public AgentController(AgentService agentService) {
         this.agentService = agentService;
+        this.objectMapper = new ObjectMapper().findAndRegisterModules();
     }
 
+    /**
+     * Ingestion endpoint for agent telemetry.
+     * Supports BOTH single device report object: { "serialNumber": "...", ... }
+     * AND multiple device reports in an array: [ { "serialNumber": "...", ... }, ... ]
+     */
     @PostMapping("/report")
-    public ResponseEntity<String> receiveReport(
-            @RequestBody AgentReportRequest request) {
-
+    public ResponseEntity<?> receiveReport(@RequestBody String rawPayload) {
         long startTime = System.currentTimeMillis();
-
-        System.out.println(
-                "\n=============================================="
-        );
-        System.out.println("          AGENT REPORT RECEIVED");
-        System.out.println("==============================================");
-
-        System.out.println(
-                "Server Time   : "
-                        + java.time.LocalDateTime.now()
-        );
-
-        System.out.println(
-                "Serial Number : "
-                        + request.getSerialNumber()
-        );
-
-        System.out.println(
-                "Asset Tag     : "
-                        + request.getAssetTag()
-        );
+        log.info("Incoming report request received at: {}", LocalDateTime.now());
 
         try {
-            agentService.receiveReport(request);
+            if (rawPayload == null || rawPayload.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Request body cannot be empty"
+                ));
+            }
 
-            long duration =
-                    System.currentTimeMillis() - startTime;
+            JsonNode payload = objectMapper.readTree(rawPayload);
+            if (payload == null || payload.isNull() || payload.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Request body cannot be empty"
+                ));
+            }
 
-            System.out.println(
-                    "\n=============================================="
-            );
-            System.out.println("          AGENT REPORT PROCESSED");
-            System.out.println("==============================================");
+            if (payload.isArray()) {
+                // Multi-device report array
+                List<AgentReportRequest> reports = objectMapper.convertValue(
+                        payload,
+                        new TypeReference<List<AgentReportRequest>>() {}
+                );
 
-            System.out.println(
-                    "Serial Number : "
-                            + request.getSerialNumber()
-            );
+                log.info("Received batch report with {} device entries", reports.size());
+                List<Device> processed = agentService.receiveReports(reports);
+                long duration = System.currentTimeMillis() - startTime;
 
-            System.out.println(
-                    "Processing Time: "
-                            + duration + " ms"
-            );
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", String.format("Processed %d of %d device reports successfully in %d ms",
+                                processed.size(), reports.size(), duration),
+                        "total", reports.size(),
+                        "processedCount", processed.size(),
+                        "durationMs", duration
+                ));
+            } else {
+                // Single device report object
+                AgentReportRequest singleReport = objectMapper.convertValue(
+                        payload,
+                        AgentReportRequest.class
+                );
 
-            System.out.println(
-                    "Completed At  : "
-                            + java.time.LocalDateTime.now()
-            );
+                log.info("Received single device report for Serial: '{}', Asset Tag: '{}'",
+                        singleReport.getSerialNumber(), singleReport.getAssetTag());
 
-            System.out.println(
-                    "==============================================\n"
-            );
+                Device device = agentService.receiveReport(singleReport);
+                long duration = System.currentTimeMillis() - startTime;
 
-            return ResponseEntity.ok(
-                    "Agent report received and processed successfully"
-            );
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Agent report received and processed successfully",
+                        "deviceId", device.getDeviceId(),
+                        "serialNumber", device.getSerialNumber() != null ? device.getSerialNumber() : "",
+                        "assetTag", device.getAssetTag() != null ? device.getAssetTag() : "",
+                        "durationMs", duration
+                ));
+            }
 
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error processing agent report: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         } catch (Exception e) {
-            System.err.println(
-                    "\n=============================================="
-            );
-            System.err.println("       AGENT REPORT PROCESSING FAILED");
-            System.err.println("==============================================");
-
-            System.err.println(
-                    "Serial Number : "
-                            + request.getSerialNumber()
-            );
-
-            System.err.println(
-                    "Failed At     : "
-                            + java.time.LocalDateTime.now()
-            );
-
-            System.err.println(
-                    "Error         : "
-                            + e.getMessage()
-            );
-
-            e.printStackTrace();
-
-            throw e;
+            log.error("Error processing agent report: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Agent report processing error: " + (e.getMessage() != null ? e.getMessage() : "Internal error")
+            ));
         }
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(
-            Exception e) {
+    public ResponseEntity<?> receiveReport(JsonNode payload) {
+        return receiveReport(payload != null ? payload.toString() : "");
+    }
 
-        String message = e.getMessage();
-
-        if (e instanceof JsonMappingException mappingException) {
-
-            String path = mappingException
-                    .getPath()
-                    .stream()
-                    .map(reference -> {
-                        if (reference.getFieldName() != null) {
-                            return reference.getFieldName();
-                        }
-
-                        return "[" + reference.getIndex() + "]";
-                    })
-                    .reduce(
-                            (first, second) ->
-                                    first + " -> " + second
-                    )
-                    .orElse("unknown");
-
-            message =
-                    "JSON mapping error at field: "
-                            + path
-                            + "\n"
-                            + message;
+    /**
+     * Dedicated bulk endpoint for multiple system details at a time.
+     */
+    @PostMapping(path = {"/reports", "/batch"})
+    public ResponseEntity<?> receiveMultipleReports(@RequestBody List<AgentReportRequest> reports) {
+        long startTime = System.currentTimeMillis();
+        if (reports == null || reports.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Batch report list cannot be empty"
+            ));
         }
 
-        if (message == null || message.isBlank()) {
-            message =
-                    "Unknown error while processing agent report";
-        }
+        log.info("Processing {} system reports via batch endpoint", reports.size());
+        try {
+            List<Device> processed = agentService.receiveReports(reports);
+            long duration = System.currentTimeMillis() - startTime;
 
-        return ResponseEntity
-                .badRequest()
-                .body(
-                        "Agent report processing error:\n"
-                                + message
-                );
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", String.format("Processed %d of %d system reports successfully in %d ms",
+                            processed.size(), reports.size(), duration),
+                    "total", reports.size(),
+                    "processedCount", processed.size(),
+                    "durationMs", duration
+            ));
+        } catch (Exception e) {
+            log.error("Batch processing failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Batch processing error: " + e.getMessage()
+            ));
+        }
+    }
+
+    @ExceptionHandler(JsonMappingException.class)
+    public ResponseEntity<Map<String, Object>> handleJsonMappingException(JsonMappingException e) {
+        String path = e.getPath().stream()
+                .map(ref -> ref.getFieldName() != null ? ref.getFieldName() : "[" + ref.getIndex() + "]")
+                .reduce((f, s) -> f + " -> " + s)
+                .orElse("unknown");
+
+        String errorMsg = "JSON mapping error at field: " + path + " - " + e.getMessage();
+        log.warn(errorMsg);
+
+        return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", errorMsg
+        ));
     }
 }

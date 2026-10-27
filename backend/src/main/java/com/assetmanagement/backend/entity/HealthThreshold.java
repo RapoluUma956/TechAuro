@@ -1,6 +1,7 @@
 package com.assetmanagement.backend.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,14 +13,14 @@ public class HealthThreshold {
     @Column(name = "threshold_id")
     private Long thresholdId;
 
-    @Column(name = "cpu_warning_percent", nullable = false)
-    private Integer cpuWarningPercent = 90;
+    @Column(name = "cpu_warning_percent", precision = 5, scale = 2, nullable = false)
+    private BigDecimal cpuWarningPercent = new BigDecimal("90.00");
 
-    @Column(name = "ram_warning_percent", nullable = false)
-    private Integer ramWarningPercent = 90;
+    @Column(name = "ram_warning_percent", precision = 5, scale = 2, nullable = false)
+    private BigDecimal ramWarningPercent = new BigDecimal("90.00");
 
-    @Column(name = "disk_critical_percent", nullable = false)
-    private Integer diskCriticalPercent = 90;
+    @Column(name = "disk_critical_percent", precision = 5, scale = 2, nullable = false)
+    private BigDecimal diskCriticalPercent = new BigDecimal("90.00");
 
     @Column(name = "offline_timeout_minutes", nullable = false)
     private Integer offlineTimeoutMinutes = 5;
@@ -36,22 +37,13 @@ public class HealthThreshold {
     public HealthThreshold() {
     }
 
-    public HealthThreshold(Integer cpuWarningPercent, Integer ramWarningPercent, Integer diskCriticalPercent,
-                           Integer offlineTimeoutMinutes, Integer warrantyWarningDays, Integer licenseWarningDays) {
-        this.cpuWarningPercent = cpuWarningPercent;
-        this.ramWarningPercent = ramWarningPercent;
-        this.diskCriticalPercent = diskCriticalPercent;
-        this.offlineTimeoutMinutes = offlineTimeoutMinutes;
-        this.warrantyWarningDays = warrantyWarningDays;
-        this.licenseWarningDays = licenseWarningDays;
+    @PrePersist
+    @PreUpdate
+    protected void onSave() {
         this.updatedAt = LocalDateTime.now();
     }
 
-    @PrePersist
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    // ==================== GETTERS AND SETTERS ====================
 
     public Long getThresholdId() {
         return thresholdId;
@@ -61,27 +53,27 @@ public class HealthThreshold {
         this.thresholdId = thresholdId;
     }
 
-    public Integer getCpuWarningPercent() {
+    public BigDecimal getCpuWarningPercent() {
         return cpuWarningPercent;
     }
 
-    public void setCpuWarningPercent(Integer cpuWarningPercent) {
+    public void setCpuWarningPercent(BigDecimal cpuWarningPercent) {
         this.cpuWarningPercent = cpuWarningPercent;
     }
 
-    public Integer getRamWarningPercent() {
+    public BigDecimal getRamWarningPercent() {
         return ramWarningPercent;
     }
 
-    public void setRamWarningPercent(Integer ramWarningPercent) {
+    public void setRamWarningPercent(BigDecimal ramWarningPercent) {
         this.ramWarningPercent = ramWarningPercent;
     }
 
-    public Integer getDiskCriticalPercent() {
+    public BigDecimal getDiskCriticalPercent() {
         return diskCriticalPercent;
     }
 
-    public void setDiskCriticalPercent(Integer diskCriticalPercent) {
+    public void setDiskCriticalPercent(BigDecimal diskCriticalPercent) {
         this.diskCriticalPercent = diskCriticalPercent;
     }
 

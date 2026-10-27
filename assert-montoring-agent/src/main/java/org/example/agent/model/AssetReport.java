@@ -9,6 +9,7 @@ public class AssetReport {
     private String serialNumber;
     private String brand;
     private String model;
+    private String deviceName;
 
     private CpuInfo cpu;
     private MemoryInfo memory;
@@ -60,6 +61,15 @@ public class AssetReport {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 
 

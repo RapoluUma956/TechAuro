@@ -30,6 +30,14 @@ public class NetworkData {
 
     private boolean primary;
 
+    public boolean isPrimary() {
+        return primary;
+    }
+
+    public boolean getPrimary() {
+        return primary;
+    }
+
     private Long speedMbps;
 
     private LocalDateTime lastSeenAt;

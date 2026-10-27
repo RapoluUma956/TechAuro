@@ -40,10 +40,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(response);
     }
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        ex.printStackTrace();
-        ApiResponse<Void> response = ApiResponse.error("An unexpected error occurred. Please try again later.");
+        log.error("Unhandled server exception: {}", ex.getMessage(), ex);
+        // Do not expose internal stack traces or database details to client
+        ApiResponse<Void> response = ApiResponse.error("Something went wrong. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

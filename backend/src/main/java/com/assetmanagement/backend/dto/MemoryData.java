@@ -11,4 +11,13 @@ public class MemoryData {
     private Double usagePercent;
     private Long swapTotal;
     private Long swapUsed;
+
+    // GB values & RAM hardware details
+    private Double totalGb;
+    private Double usedGb;
+    private Double availableGb;
+    private String ramType;
+    private Long ramSpeedMhz;
+    private Double swapTotalGb;
+    private Double swapUsedGb;
 }

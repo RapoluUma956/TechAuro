@@ -6,6 +6,7 @@ public class AgentReportRequest {
 
     private String assetTag;
     private String serialNumber;
+    private String deviceName;
     private String brand;
     private String model;
 
@@ -44,6 +45,14 @@ public class AgentReportRequest {
 
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
+    }
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 
 

@@ -56,6 +56,10 @@ public class StorageCollector {
         storageInfo.setAvailable(available);
         storageInfo.setUsagePercent(usagePercent);
 
+        storageInfo.setTotalGb(bytesToGb(total));
+        storageInfo.setUsedGb(bytesToGb(used));
+        storageInfo.setAvailableGb(bytesToGb(available));
+
         // ==================================================
         // PHYSICAL DISK INFORMATION
         // ==================================================
@@ -67,20 +71,25 @@ public class StorageCollector {
         if (!disks.isEmpty()) {
 
             HWDiskStore disk = disks.get(0);
+            String model = disk.getModel() != null ? disk.getModel().trim() : "UNKNOWN";
 
-            storageInfo.setModel(
-                    disk.getModel()
-            );
+            storageInfo.setModel(model);
+            storageInfo.setHealth("GOOD");
 
-            storageInfo.setHealth(
-                    "AVAILABLE"
-            );
-
-            // OSHI does not reliably expose
-            // SSD/HDD type on every platform.
-            storageInfo.setStorageType(
-                    "UNKNOWN"
-            );
+            String upperModel = model.toUpperCase();
+            if (upperModel.contains("NVME")) {
+                storageInfo.setStorageType("SSD");
+                storageInfo.setSsdType("NVMe");
+                storageInfo.setSsdModel(model);
+                storageInfo.setSsdHealth("GOOD");
+            } else if (upperModel.contains("SSD")) {
+                storageInfo.setStorageType("SSD");
+                storageInfo.setSsdType("SSD");
+                storageInfo.setSsdModel(model);
+                storageInfo.setSsdHealth("GOOD");
+            } else {
+                storageInfo.setStorageType("HDD");
+            }
 
         } else {
 
@@ -98,5 +107,12 @@ public class StorageCollector {
         }
 
         return storageInfo;
+    }
+
+    private double bytesToGb(long bytes) {
+        if (bytes <= 0) {
+            return 0.0;
+        }
+        return Math.round((bytes / (1024.0 * 1024.0 * 1024.0)) * 100.0) / 100.0;
     }
 }

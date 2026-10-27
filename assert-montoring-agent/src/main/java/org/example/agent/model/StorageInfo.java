@@ -11,6 +11,14 @@ public class StorageInfo {
     private String model;
     private String health;
 
+    // Direct capacities in GB & SSD details
+    private Double totalGb;
+    private Double usedGb;
+    private Double availableGb;
+    private String ssdType;
+    private String ssdModel;
+    private String ssdHealth;
+
     public StorageInfo() {
     }
 
@@ -70,6 +78,54 @@ public class StorageInfo {
         this.health = health;
     }
 
+    public Double getTotalGb() {
+        return totalGb;
+    }
+
+    public void setTotalGb(Double totalGb) {
+        this.totalGb = totalGb;
+    }
+
+    public Double getUsedGb() {
+        return usedGb;
+    }
+
+    public void setUsedGb(Double usedGb) {
+        this.usedGb = usedGb;
+    }
+
+    public Double getAvailableGb() {
+        return availableGb;
+    }
+
+    public void setAvailableGb(Double availableGb) {
+        this.availableGb = availableGb;
+    }
+
+    public String getSsdType() {
+        return ssdType;
+    }
+
+    public void setSsdType(String ssdType) {
+        this.ssdType = ssdType;
+    }
+
+    public String getSsdModel() {
+        return ssdModel;
+    }
+
+    public void setSsdModel(String ssdModel) {
+        this.ssdModel = ssdModel;
+    }
+
+    public String getSsdHealth() {
+        return ssdHealth;
+    }
+
+    public void setSsdHealth(String ssdHealth) {
+        this.ssdHealth = ssdHealth;
+    }
+
     @Override
     public String toString() {
         return "StorageInfo{" +
@@ -77,9 +133,15 @@ public class StorageInfo {
                 ", used=" + used +
                 ", available=" + available +
                 ", usagePercent=" + usagePercent +
+                ", totalGb=" + totalGb +
+                ", usedGb=" + usedGb +
+                ", availableGb=" + availableGb +
                 ", storageType='" + storageType + '\'' +
                 ", model='" + model + '\'' +
                 ", health='" + health + '\'' +
+                ", ssdType='" + ssdType + '\'' +
+                ", ssdModel='" + ssdModel + '\'' +
+                ", ssdHealth='" + ssdHealth + '\'' +
                 '}';
     }
 }
