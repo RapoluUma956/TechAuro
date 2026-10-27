@@ -43,6 +43,7 @@ public class Accessory {
      *   "buttons": 6
      * }
      */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(name = "specifications", columnDefinition = "jsonb")
     private String specifications;
 
@@ -54,6 +55,18 @@ public class Accessory {
 
     @Column(name = "damaged_quantity", nullable = false)
     private Integer damagedQuantity = 0;
+
+    @Column(name = "accessory_name", length = 150)
+    private String accessoryName;
+
+    @Column(name = "purchase_date")
+    private java.time.LocalDate purchaseDate;
+
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
+
+    @Column(name = "unavailable_quantity")
+    private Integer unavailableQuantity = 0;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -176,6 +189,38 @@ public class Accessory {
         this.updatedAt = updatedAt;
     }
 
+    public String getAccessoryName() {
+        return (accessoryName != null && !accessoryName.isBlank()) ? accessoryName : productName;
+    }
+
+    public void setAccessoryName(String accessoryName) {
+        this.accessoryName = accessoryName;
+    }
+
+    public java.time.LocalDate getPurchaseDate() {
+        return purchaseDate;
+    }
+
+    public void setPurchaseDate(java.time.LocalDate purchaseDate) {
+        this.purchaseDate = purchaseDate;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
+    }
+
+    public void setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+    }
+
+    public Integer getUnavailableQuantity() {
+        return unavailableQuantity;
+    }
+
+    public void setUnavailableQuantity(Integer unavailableQuantity) {
+        this.unavailableQuantity = unavailableQuantity;
+    }
+
 
     // ==================== LIFECYCLE METHODS ====================
 
@@ -197,6 +242,14 @@ public class Accessory {
 
         if (damagedQuantity == null) {
             damagedQuantity = 0;
+        }
+
+        if (unavailableQuantity == null) {
+            unavailableQuantity = 0;
+        }
+
+        if (accessoryName == null || accessoryName.isBlank()) {
+            accessoryName = productName;
         }
     }
 

@@ -149,13 +149,13 @@ class BackendApplicationTests {
         assertTrue(currentOpt.isPresent(), "Default health threshold should exist");
         HealthThreshold threshold = currentOpt.get();
         assertNotNull(threshold.getThresholdId());
-        assertEquals(new BigDecimal("90.00"), threshold.getCpuWarningPercent());
+        assertEquals(90, threshold.getCpuWarningPercent());
         assertEquals(5, threshold.getOfflineTimeoutMinutes());
 
         // Update threshold
-        threshold.setCpuWarningPercent(new BigDecimal("85.00"));
+        threshold.setCpuWarningPercent(85);
         HealthThreshold updated = healthThresholdRepository.save(threshold);
-        assertEquals(new BigDecimal("85.00"), updated.getCpuWarningPercent());
+        assertEquals(85, updated.getCpuWarningPercent());
         assertNotNull(updated.getUpdatedAt());
     }
 

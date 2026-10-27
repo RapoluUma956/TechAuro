@@ -54,6 +54,10 @@ public class AccessoryService {
         existing.setTotalQuantity(updated.getTotalQuantity());
         existing.setAvailableQuantity(updated.getAvailableQuantity());
         existing.setDamagedQuantity(updated.getDamagedQuantity());
+        existing.setAccessoryName(updated.getAccessoryName());
+        existing.setPurchaseDate(updated.getPurchaseDate());
+        existing.setSerialNumber(updated.getSerialNumber());
+        existing.setUnavailableQuantity(updated.getUnavailableQuantity());
         return accessoryRepository.save(existing);
     }
 

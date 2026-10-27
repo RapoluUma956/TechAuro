@@ -13,10 +13,10 @@ public class License {
     @Column(name = "license_id")
     private Long licenseId;
 
-    @Transient
+    @Column(name = "license_name", length = 150)
     private String licenseName;
 
-    @Column(name = "software_name", nullable = false, length = 150)
+    @Column(name = "software_name", length = 150)
     private String softwareName;
 
     @Column(name = "publisher", length = 150)
@@ -28,10 +28,13 @@ public class License {
     @Column(name = "license_type", length = 50)
     private String licenseType;
 
-    @Column(name = "total_licenses")
+    @Column(name = "total_quantity")
     private Integer totalQuantity = 0;
 
-    @Transient
+    @Column(name = "total_licenses")
+    private Integer totalLicenses = 0;
+
+    @Column(name = "available_quantity")
     private Integer availableQuantity = 0;
 
     @Column(name = "purchase_date")
@@ -110,11 +113,25 @@ public class License {
     }
 
     public Integer getTotalQuantity() {
-        return totalQuantity;
+        return (totalQuantity != null && totalQuantity > 0) ? totalQuantity : totalLicenses;
     }
 
     public void setTotalQuantity(Integer totalQuantity) {
         this.totalQuantity = totalQuantity;
+        if (this.totalLicenses == null || this.totalLicenses == 0) {
+            this.totalLicenses = totalQuantity;
+        }
+    }
+
+    public Integer getTotalLicenses() {
+        return (totalLicenses != null && totalLicenses > 0) ? totalLicenses : totalQuantity;
+    }
+
+    public void setTotalLicenses(Integer totalLicenses) {
+        this.totalLicenses = totalLicenses;
+        if (this.totalQuantity == null || this.totalQuantity == 0) {
+            this.totalQuantity = totalLicenses;
+        }
     }
 
     public Integer getAvailableQuantity() {
@@ -200,12 +217,28 @@ public class License {
         createdAt = now;
         updatedAt = now;
 
+        if (totalQuantity == null && totalLicenses != null) {
+            totalQuantity = totalLicenses;
+        } else if (totalLicenses == null && totalQuantity != null) {
+            totalLicenses = totalQuantity;
+        }
+
         if (totalQuantity == null) {
             totalQuantity = 0;
         }
 
+        if (totalLicenses == null) {
+            totalLicenses = 0;
+        }
+
         if (availableQuantity == null) {
             availableQuantity = 0;
+        }
+
+        if (softwareName == null && licenseName != null) {
+            softwareName = licenseName;
+        } else if (licenseName == null && softwareName != null) {
+            licenseName = softwareName;
         }
 
         if (status == null) {
