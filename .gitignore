@@ -5,6 +5,7 @@
 **/dist/
 **/target/
 build/
+**/dependency-reduced-pom.xml
 
 # IDE & Tooling
 .idea/

@@ -510,6 +510,9 @@ public class DeviceCollector {
                     cleanValue(model)
             );
 
+            report.setDeviceName(
+                    cleanValue(model != null && !model.isBlank() ? model : manufacturer)
+            );
 
             report.setSerialNumber(
                     cleanValue(serialNumber)

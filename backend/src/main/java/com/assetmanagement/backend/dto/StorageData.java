@@ -12,4 +12,12 @@ public class StorageData {
     private String storageType;
     private String model;
     private String health;
+
+    // GB values & SSD details
+    private Double totalGb;
+    private Double usedGb;
+    private Double availableGb;
+    private String ssdType;
+    private String ssdModel;
+    private String ssdHealth;
 }

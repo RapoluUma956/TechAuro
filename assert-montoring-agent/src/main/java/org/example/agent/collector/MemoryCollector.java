@@ -41,14 +41,41 @@ public class MemoryCollector {
         memoryInfo.setAvailable(available);
         memoryInfo.setUsagePercent(usagePercent);
 
-        memoryInfo.setSwapTotal(
-                virtualMemory.getSwapTotal()
-        );
+        memoryInfo.setTotalGb(bytesToGb(total));
+        memoryInfo.setUsedGb(bytesToGb(used));
+        memoryInfo.setAvailableGb(bytesToGb(available));
 
-        memoryInfo.setSwapUsed(
-                virtualMemory.getSwapUsed()
-        );
+        long swapTotal = virtualMemory.getSwapTotal();
+        long swapUsed = virtualMemory.getSwapUsed();
+        memoryInfo.setSwapTotal(swapTotal);
+        memoryInfo.setSwapUsed(swapUsed);
+        memoryInfo.setSwapTotalGb(bytesToGb(swapTotal));
+        memoryInfo.setSwapUsedGb(bytesToGb(swapUsed));
+
+        try {
+            var physicalList = memory.getPhysicalMemory();
+            if (physicalList != null && !physicalList.isEmpty()) {
+                var first = physicalList.get(0);
+                if (first.getMemoryType() != null && !first.getMemoryType().isBlank()) {
+                    memoryInfo.setRamType(first.getMemoryType());
+                }
+                long speed = first.getClockSpeed();
+                if (speed > 100_000) {
+                    memoryInfo.setRamSpeedMhz(speed / 1_000_000L);
+                } else if (speed > 0) {
+                    memoryInfo.setRamSpeedMhz(speed);
+                }
+            }
+        } catch (Exception ignored) {
+        }
 
         return memoryInfo;
+    }
+
+    private double bytesToGb(long bytes) {
+        if (bytes <= 0) {
+            return 0.0;
+        }
+        return Math.round((bytes / (1024.0 * 1024.0 * 1024.0)) * 100.0) / 100.0;
     }
 }

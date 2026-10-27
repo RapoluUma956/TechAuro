@@ -1,1758 +1,682 @@
 package com.assetmanagement.backend.service;
 
+import com.assetmanagement.backend.dto.*;
 import com.assetmanagement.backend.entity.*;
 import com.assetmanagement.backend.repository.*;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.assetmanagement.backend.dto.AgentReportRequest;
-import com.assetmanagement.backend.dto.BatteryData;
-import com.assetmanagement.backend.dto.BiosData;
-import com.assetmanagement.backend.dto.CpuData;
-import com.assetmanagement.backend.dto.MemoryData;
-import com.assetmanagement.backend.dto.OsData;
-import com.assetmanagement.backend.dto.SecurityData;
-import com.assetmanagement.backend.dto.SoftwareData;
-import com.assetmanagement.backend.dto.StorageData;
-import com.assetmanagement.backend.dto.VulnerabilityData;
-import com.assetmanagement.backend.dto.NetworkData;
-import com.assetmanagement.backend.dto.PerformanceData;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 @Service
 public class AgentService {
 
+    private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+
     private final DeviceRepository deviceRepository;
-
     private final DeviceNetworkRepository deviceNetworkRepository;
-
     private final InstalledSoftwareRepository installedSoftwareRepository;
-
     private final VulnerabilityRepository vulnerabilityRepository;
-
 
     public AgentService(
             DeviceRepository deviceRepository,
             DeviceNetworkRepository deviceNetworkRepository,
             InstalledSoftwareRepository installedSoftwareRepository,
             VulnerabilityRepository vulnerabilityRepository) {
-
-        this.deviceRepository =
-                deviceRepository;
-
-        this.deviceNetworkRepository =
-                deviceNetworkRepository;
-
-        this.installedSoftwareRepository =
-                installedSoftwareRepository;
-
-        this.vulnerabilityRepository =
-                vulnerabilityRepository;
+        this.deviceRepository = deviceRepository;
+        this.deviceNetworkRepository = deviceNetworkRepository;
+        this.installedSoftwareRepository = installedSoftwareRepository;
+        this.vulnerabilityRepository = vulnerabilityRepository;
     }
 
-
     // =========================================================
-    // RECEIVE AGENT REPORT
+    // RECEIVE MULTIPLE AGENT REPORTS (BATCH / MULTI-DEVICE)
     // =========================================================
-
     @Transactional
-    public void receiveReport(
-            AgentReportRequest request) {
-
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "          PROCESSING AGENT REPORT"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-
-
-        // =====================================================
-        // VALIDATE REQUEST
-        // =====================================================
-
-        if (request == null) {
-
-            throw new IllegalArgumentException(
-                    "Agent report cannot be null"
-            );
+    public List<Device> receiveReports(List<AgentReportRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return Collections.emptyList();
         }
 
-
-        // =====================================================
-        // DEVICE IDENTITY
-        // =====================================================
-
-        String serialNumber =
-                request.getSerialNumber();
-
-        String assetTag =
-                request.getAssetTag();
-
-        String brand =
-                request.getBrand();
-
-        String model =
-                request.getModel();
-
-
-        System.out.println();
-
-        System.out.println(
-                "Serial Number : "
-                        + serialNumber
-        );
-
-        System.out.println(
-                "Asset Tag     : "
-                        + assetTag
-        );
-
-        System.out.println(
-                "Brand         : "
-                        + brand
-        );
-
-        System.out.println(
-                "Model         : "
-                        + model
-        );
-
-
-        // =====================================================
-        // VALIDATE SERIAL NUMBER
-        // =====================================================
-
-        if (serialNumber == null ||
-                serialNumber.isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Serial number is required to identify the device"
-            );
-        }
-
-
-        // =====================================================
-        // FIND DEVICE
-        // =====================================================
-
-        Optional<Device> deviceOptional =
-                deviceRepository.findBySerialNumber(
-                        serialNumber
-                );
-
-
-        Device device;
-
-
-        // =====================================================
-        // CREATE DEVICE IF NOT FOUND
-        // =====================================================
-
-        if (deviceOptional.isEmpty()) {
-
-            System.out.println();
-
-            System.out.println(
-                    "Device not found."
-            );
-
-            System.out.println(
-                    "Creating new device..."
-            );
-
-
-            device =
-                    new Device();
-
-
-            device.setSerialNumber(
-                    serialNumber.trim()
-            );
-
-
-            if (brand != null &&
-                    !brand.isBlank()) {
-
-                device.setBrand(
-                        brand.trim()
-                );
-
-            } else {
-
-                device.setBrand(
-                        "UNKNOWN"
-                );
-            }
-
-
-            if (model != null &&
-                    !model.isBlank()) {
-
-                device.setModel(
-                        model.trim()
-                );
-
-            } else {
-
-                device.setModel(
-                        "UNKNOWN"
-                );
-            }
-
-
-            if (assetTag == null ||
-                    assetTag.isBlank()) {
-
-                assetTag =
-                        "AUTO-"
-                                + serialNumber.trim();
-            }
-
-
-            device.setAssetTag(
-                    assetTag.trim()
-            );
-
-
-            /*
-             * Device.java @PrePersist automatically
-             * sets:
-             *
-             * status = ACTIVE
-             * createdAt
-             * updatedAt
-             */
-
-            device =
-                    deviceRepository.save(
-                            device
-                    );
-
-
-            System.out.println();
-
-            System.out.println(
-                    "New device created successfully."
-            );
-
-        } else {
-
-            // =================================================
-            // EXISTING DEVICE
-            // =================================================
-
-            device =
-                    deviceOptional.get();
-
-
-            System.out.println();
-
-            System.out.println(
-                    "Existing device found."
-            );
-
-
-            /*
-             * Update identity information if the
-             * agent provides it.
-             */
-
-            if (brand != null &&
-                    !brand.isBlank()) {
-
-                device.setBrand(
-                        brand.trim()
-                );
-            }
-
-
-            if (model != null &&
-                    !model.isBlank()) {
-
-                device.setModel(
-                        model.trim()
-                );
-            }
-
-
-            if (assetTag != null &&
-                    !assetTag.isBlank()) {
-
-                device.setAssetTag(
-                        assetTag.trim()
-                );
-            }
-
-
-            device =
-                    deviceRepository.save(
-                            device
-                    );
-        }
-
-
-        // =====================================================
-        // DEVICE INFORMATION
-        // =====================================================
-
-        System.out.println();
-
-        System.out.println(
-                "Device ID     : "
-                        + device.getDeviceId()
-        );
-
-        System.out.println(
-                "Device Asset  : "
-                        + device.getAssetTag()
-        );
-
-        System.out.println(
-                "Device Serial : "
-                        + device.getSerialNumber()
-        );
-
-
-        // Monitoring values are now stored directly on Device.
-
-        // =====================================================
-        // CPU
-        // =====================================================
-
-        CpuData cpu =
-                request.getCpu();
-
-
-        if (cpu != null) {
-
-            device.setCpuName(
-                    cpu.getName()
-            );
-
-            device.setCpuVendor(
-                    cpu.getVendor()
-            );
-
-            device.setCpuCores(
-                    cpu.getCores()
-            );
-
-            device.setCpuThreads(
-                    cpu.getThreads()
-            );
-
-            device.setCpuFrequencyMhz(
-                    cpu.getFrequencyMhz()
-            );
-
-            device.setCpuUsagePercent(
-                    toBigDecimal(
-                            cpu.getUsagePercent()
-                    )
-            );
-
-            device.setCpuTemperature(
-                    toBigDecimal(
-                            cpu.getTemperature()
-                    )
-            );
-        }
-
-
-        // =====================================================
-        // MEMORY
-        // =====================================================
-
-        MemoryData memory =
-                request.getMemory();
-
-
-        if (memory != null) {
-
-            device.setMemoryTotal(
-                    memory.getTotal()
-            );
-
-            device.setMemoryUsed(
-                    memory.getUsed()
-            );
-
-            device.setMemoryAvailable(
-                    memory.getAvailable()
-            );
-
-            device.setMemoryUsagePercent(
-                    toBigDecimal(
-                            memory.getUsagePercent()
-                    )
-            );
-
-            device.setSwapTotal(
-                    memory.getSwapTotal()
-            );
-
-            device.setSwapUsed(
-                    memory.getSwapUsed()
-            );
-        }
-
-
-        // =====================================================
-        // STORAGE
-        // =====================================================
-
-        StorageData storage =
-                request.getStorage();
-
-
-        if (storage != null) {
-
-            device.setStorageTotal(
-                    storage.getTotal()
-            );
-
-            device.setStorageUsed(
-                    storage.getUsed()
-            );
-
-            device.setStorageAvailable(
-                    storage.getAvailable()
-            );
-
-            device.setStorageUsagePercent(
-                    toBigDecimal(
-                            storage.getUsagePercent()
-                    )
-            );
-
-            device.setStorageType(
-                    storage.getStorageType()
-            );
-
-            device.setStorageModel(
-                    storage.getModel()
-            );
-
-            device.setStorageHealth(
-                    storage.getHealth()
-            );
-        }
-
-
-        // =====================================================
-        // BATTERY
-        // =====================================================
-
-        BatteryData battery =
-                request.getBattery();
-
-
-        if (battery != null) {
-
-            device.setBatteryPercentage(
-                    toBigDecimal(
-                            battery.getPercentage()
-                    )
-            );
-
-            device.setBatteryCharging(
-                    battery.getCharging()
-            );
-
-            device.setBatteryHealthPercent(
-                    toBigDecimal(
-                            battery.getHealthPercent()
-                    )
-            );
-
-            device.setBatteryCycleCount(
-                    battery.getCycleCount()
-            );
-
-            device.setPowerSource(
-                    battery.getPowerSource()
-            );
-        }
-
-
-        // =====================================================
-        // OPERATING SYSTEM
-        // =====================================================
-
-        OsData os =
-                request.getOs();
-
-
-        if (os != null) {
-
-            device.setOsName(
-                    os.getName()
-            );
-
-            device.setOsVersion(
-                    os.getVersion()
-            );
-
-            device.setOsBuild(
-                    os.getBuild()
-            );
-
-            device.setOsArchitecture(
-                    os.getArchitecture()
-            );
-
-            device.setHostname(
-                    os.getHostname()
-            );
-
-            device.setBootTime(
-                    os.getBootTime()
-            );
-
-            device.setUptimeSeconds(
-                    os.getUptimeSeconds()
-            );
-        }
-
-
-        // =====================================================
-        // BIOS
-        // =====================================================
-
-        BiosData bios =
-                request.getBios();
-
-
-        if (bios != null) {
-
-            device.setBiosManufacturer(
-                    bios.getManufacturer()
-            );
-
-            device.setBiosVersion(
-                    bios.getVersion()
-            );
-
-            device.setBiosReleaseDate(
-                    bios.getReleaseDate()
-            );
-        }
-
-
-        // =====================================================
-        // SECURITY
-        // =====================================================
-
-        SecurityData security =
-                request.getSecurity();
-
-
-        if (security != null) {
-
-            device.setBitlockerEnabled(
-                    security.getBitlockerEnabled()
-            );
-
-            device.setBitlockerProtectionStatus(
-                    security.getBitlockerProtectionStatus()
-            );
-
-            device.setBitlockerVolumeStatus(
-                    security.getBitlockerVolumeStatus()
-            );
-
-            device.setBitlockerEncryptionPct(
-                    toBigDecimal(
-                            security.getBitlockerEncryptionPct()
-                    )
-            );
-
-            device.setBitlockerEncryptionMethod(
-                    security.getBitlockerEncryptionMethod()
-            );
-
-            device.setBitlockerKeyProtector(
-                    security.getBitlockerKeyProtector()
-            );
-
-            device.setBitlockerVolume(
-                    security.getBitlockerVolume()
-            );
-
-            device.setSecureBootEnabled(
-                    security.getSecureBootEnabled()
-            );
-
-            device.setTpmPresent(
-                    security.getTpmPresent()
-            );
-
-            device.setTpmEnabled(
-                    security.getTpmEnabled()
-            );
-
-            device.setTpmVersion(
-                    security.getTpmVersion()
-            );
-        }
-
-
-        // =====================================================
-        // PERFORMANCE
-        // =====================================================
-
-        PerformanceData performance =
-                request.getPerformance();
-
-
-        if (performance != null) {
-
-            device.setProcessCount(
-                    performance.getProcessCount()
-            );
-
-            device.setThreadCount(
-                    performance.getThreadCount()
-            );
-        }
-
-
-        // =====================================================
-        // AGENT INFORMATION
-        // =====================================================
-
-        device.setAgentVersion(
-                request.getAgentVersion()
-        );
-
-        device.setConnectionStatus(
-                "CONNECTED"
-        );
-
-        // The latest monitoring timestamp is saved on Device.
-        device.setRecordedAt(
-                LocalDateTime.now()
-        );
-
-
-        // =====================================================
-        // SAVE DEVICE WITH LATEST MONITORING VALUES
-        // =====================================================
-
-        device.setRecordedAt(LocalDateTime.now());
-        device.setAgentVersion(request.getAgentVersion());
-        device.setConnectionStatus("CONNECTED");
-
-        Device savedDevice = deviceRepository.save(device);
-
-        System.out.println();
-        System.out.println("==============================================");
-        System.out.println("       DEVICE DATA SAVED SUCCESSFULLY");
-        System.out.println("==============================================");
-        System.out.println("Device ID     : " + savedDevice.getDeviceId());
-        System.out.println("Serial Number : " + savedDevice.getSerialNumber());
-        System.out.println("Asset Tag     : " + savedDevice.getAssetTag());
-        System.out.println("Recorded At   : " + savedDevice.getRecordedAt());
-
-
-        // =====================================================
-        // SAVE NETWORKS
-        // =====================================================
-
-        saveNetworkInformation(
-                request,
-                device
-        );
-
-
-        // =====================================================
-        // SAVE INSTALLED SOFTWARE
-        // =====================================================
-
-        saveInstalledSoftware(
-                request,
-                device
-        );
-
-
-        // =====================================================
-        // SAVE VULNERABILITIES
-        // =====================================================
-
-        saveVulnerabilities(
-                request,
-                device
-        );
-
-
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "          AGENT REPORT COMPLETED"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-    }
-
-
-    // =========================================================
-    // SAVE NETWORK INFORMATION
-    // =========================================================
-
-    private void saveNetworkInformation(
-            AgentReportRequest request,
-            Device device) {
-
-        List<NetworkData> networks =
-                request.getNetworks();
-
-
-        if (networks == null ||
-                networks.isEmpty()) {
-
-            System.out.println();
-
-            System.out.println(
-                    "No network information received."
-            );
-
-            return;
-        }
-
-
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "       SAVING NETWORK INFORMATION"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-
-
-        List<DeviceNetwork> existingNetworks =
-                deviceNetworkRepository
-                        .findByDevice_DeviceId(
-                                device.getDeviceId()
-                        );
-
-
-        int savedCount = 0;
-
-
-        for (
-                NetworkData networkData :
-                networks) {
-
-
-            if (networkData == null) {
+        List<Device> processedDevices = new ArrayList<>();
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (AgentReportRequest req : requests) {
+            if (req == null) {
                 continue;
             }
+            try {
+                Device device = receiveReport(req);
+                processedDevices.add(device);
+                successCount++;
+            } catch (Exception e) {
+                failureCount++;
+                log.error("Failed to process agent report for device serial='{}', assetTag='{}': {}",
+                        req.getSerialNumber(), req.getAssetTag(), e.getMessage(), e);
+            }
+        }
 
+        log.info("Batch report processing completed: {} succeeded, {} failed out of {} total",
+                successCount, failureCount, requests.size());
+        return processedDevices;
+    }
 
-            String interfaceName =
-                    networkData.getInterfaceName();
+    // =========================================================
+    // RECEIVE SINGLE AGENT REPORT
+    // =========================================================
+    @Transactional
+    public Device receiveReport(AgentReportRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Agent report cannot be null");
+        }
 
+        String rawSerial = request.getSerialNumber();
+        if (rawSerial == null || rawSerial.isBlank()) {
+            throw new IllegalArgumentException("Serial number is required to identify the device");
+        }
 
-            DeviceNetwork network =
-                    null;
+        String serialNumber = truncate(rawSerial, 100);
+        String assetTag = truncate(request.getAssetTag(), 50);
+        String brand = truncate(request.getBrand(), 100);
+        String model = truncate(request.getModel(), 150);
 
+        log.info("Processing agent report for Serial Number: '{}', Asset Tag: '{}'", serialNumber, assetTag);
 
-            // =================================================
-            // FIND EXISTING NETWORK
-            // =================================================
+        // =====================================================
+        // FIND OR INITIALIZE DEVICE (SINGLE ATOMIC UPSERT)
+        // =====================================================
+        Optional<Device> deviceOptional = deviceRepository.findBySerialNumber(serialNumber);
+        if (deviceOptional.isEmpty() && assetTag != null && !assetTag.isBlank()) {
+            deviceOptional = deviceRepository.findByAssetTag(assetTag);
+        }
 
-            if (interfaceName != null &&
-                    !interfaceName.isBlank()) {
+        Device device;
+        boolean isNew = false;
 
-                for (
-                        DeviceNetwork existingNetwork :
-                        existingNetworks) {
+        if (deviceOptional.isPresent()) {
+            device = deviceOptional.get();
+            log.info("Existing device found (ID: {}) for serial: {}", device.getDeviceId(), serialNumber);
 
+            // Update brand & model if provided
+            if (brand != null && !brand.isBlank()) {
+                device.setBrand(brand);
+            }
+            if (model != null && !model.isBlank()) {
+                device.setModel(model);
+            }
 
-                    if (
-                            existingNetwork
-                                    .getInterfaceName()
-                                    != null
-                                    &&
-                                    existingNetwork
-                                            .getInterfaceName()
-                                            .equalsIgnoreCase(
-                                                    interfaceName
-                                            )
-                    ) {
+            // Update asset tag safely without violating uniqueness
+            if (assetTag != null && !assetTag.isBlank()) {
+                if (device.getAssetTag() == null || !device.getAssetTag().equalsIgnoreCase(assetTag)) {
+                    Optional<Device> conflict = deviceRepository.findByAssetTag(assetTag);
+                    if (conflict.isEmpty() || conflict.get().getDeviceId().equals(device.getDeviceId())) {
+                        device.setAssetTag(assetTag);
+                    }
+                }
+            } else if (device.getAssetTag() == null || device.getAssetTag().isBlank()) {
+                device.setAssetTag(truncate("AUTO-" + serialNumber, 50));
+            }
+        } else {
+            isNew = true;
+            device = new Device();
+            device.setSerialNumber(serialNumber);
+            device.setBrand(brand != null && !brand.isBlank() ? brand : "UNKNOWN");
+            device.setModel(model != null && !model.isBlank() ? model : "UNKNOWN");
 
-                        network =
-                                existingNetwork;
+            String resolvedTag = (assetTag != null && !assetTag.isBlank()) ? assetTag : "AUTO-" + serialNumber;
+            // Check if tag is in use by another device
+            Optional<Device> conflict = deviceRepository.findByAssetTag(resolvedTag);
+            if (conflict.isPresent()) {
+                resolvedTag = truncate("AUTO-" + serialNumber + "-" + System.currentTimeMillis() % 10000, 50);
+            }
+            device.setAssetTag(truncate(resolvedTag, 50));
+            device.setDeviceStatus("ACTIVE");
+            device.setStatus("ACTIVE");
+            device.setCreatedAt(LocalDateTime.now());
+            log.info("Creating new device record for serial: {}", serialNumber);
+        }
 
-                        break;
+        // =====================================================
+        // MAP DEVICE IDENTITY & STATUS
+        // =====================================================
+        if (request.getDeviceName() != null && !request.getDeviceName().isBlank()) {
+            device.setDeviceName(truncate(request.getDeviceName(), 255));
+        } else if (device.getDeviceName() == null || device.getDeviceName().isBlank()) {
+            String fallbackName = (request.getOs() != null && request.getOs().getHostname() != null)
+                    ? request.getOs().getHostname()
+                    : (model != null && !model.isBlank() ? model : brand);
+            device.setDeviceName(truncate(fallbackName, 255));
+        }
+
+        device.setDeviceStatus("ACTIVE");
+        device.setStatus("ACTIVE");
+        device.setAgentInstalled(true);
+        device.setConnectionStatus("ONLINE");
+        LocalDateTime now = LocalDateTime.now();
+        device.setLastSeenAt(now);
+        device.setRecordedAt(now);
+        device.setUpdatedAt(now);
+
+        // =====================================================
+        // MAP CPU TELEMETRY
+        // =====================================================
+        CpuData cpu = request.getCpu();
+        if (cpu != null) {
+            device.setCpuName(truncate(cpu.getName(), 200));
+            device.setCpuVendor(truncate(cpu.getVendor(), 100));
+            device.setCpuCores(cpu.getCores());
+            device.setCpuThreads(cpu.getThreads());
+            device.setCpuFrequencyMhz(cpu.getFrequencyMhz());
+            device.setCpuUsagePercent(toPercentageBigDecimal(cpu.getUsagePercent()));
+            device.setCpuTemperature(toBigDecimal(cpu.getTemperature()));
+        }
+
+        // =====================================================
+        // MAP MEMORY TELEMETRY (GB CAPACITIES & SPECS)
+        // =====================================================
+        MemoryData memory = request.getMemory();
+        if (memory != null) {
+            BigDecimal totalGb = memory.getTotalGb() != null
+                    ? toBigDecimal(memory.getTotalGb())
+                    : bytesToGbBigDecimal(memory.getTotal());
+            BigDecimal usedGb = memory.getUsedGb() != null
+                    ? toBigDecimal(memory.getUsedGb())
+                    : bytesToGbBigDecimal(memory.getUsed());
+            BigDecimal availGb = memory.getAvailableGb() != null
+                    ? toBigDecimal(memory.getAvailableGb())
+                    : bytesToGbBigDecimal(memory.getAvailable());
+            BigDecimal swapTotalGb = memory.getSwapTotalGb() != null
+                    ? toBigDecimal(memory.getSwapTotalGb())
+                    : bytesToGbBigDecimal(memory.getSwapTotal());
+            BigDecimal swapUsedGb = memory.getSwapUsedGb() != null
+                    ? toBigDecimal(memory.getSwapUsedGb())
+                    : bytesToGbBigDecimal(memory.getSwapUsed());
+
+            device.setRamTotalGb(totalGb);
+            device.setRamUsedGb(usedGb);
+            device.setRamAvailableGb(availGb);
+            device.setRamUsagePercent(toPercentageBigDecimal(memory.getUsagePercent()));
+            device.setRamType(truncate(memory.getRamType(), 50));
+            device.setRamSpeedMhz(memory.getRamSpeedMhz());
+            device.setSwapTotalGb(swapTotalGb);
+            device.setSwapUsedGb(swapUsedGb);
+        }
+
+        // =====================================================
+        // MAP STORAGE TELEMETRY (GB CAPACITIES & SSD SPECS)
+        // =====================================================
+        StorageData storage = request.getStorage();
+        if (storage != null) {
+            BigDecimal totalGb = storage.getTotalGb() != null
+                    ? toBigDecimal(storage.getTotalGb())
+                    : bytesToGbBigDecimal(storage.getTotal());
+            BigDecimal usedGb = storage.getUsedGb() != null
+                    ? toBigDecimal(storage.getUsedGb())
+                    : bytesToGbBigDecimal(storage.getUsed());
+            BigDecimal availGb = storage.getAvailableGb() != null
+                    ? toBigDecimal(storage.getAvailableGb())
+                    : bytesToGbBigDecimal(storage.getAvailable());
+
+            device.setStorageTotalGb(totalGb);
+            device.setStorageUsedGb(usedGb);
+            device.setStorageAvailableGb(availGb);
+            device.setStorageUsagePercent(toPercentageBigDecimal(storage.getUsagePercent()));
+            device.setStorageType(truncate(storage.getStorageType(), 30));
+            device.setStorageModel(truncate(storage.getModel(), 150));
+            device.setStorageHealth(truncate(storage.getHealth(), 30));
+            device.setSsdType(truncate(storage.getSsdType(), 255));
+            device.setSsdModel(truncate(storage.getSsdModel(), 255));
+            device.setSsdHealth(truncate(storage.getSsdHealth(), 255));
+        }
+
+        // =====================================================
+        // MAP BATTERY TELEMETRY
+        // =====================================================
+        BatteryData battery = request.getBattery();
+        if (battery != null) {
+            device.setBatteryPercentage(toPercentageBigDecimal(battery.getPercentage()));
+            device.setBatteryCharging(battery.getCharging());
+            device.setBatteryHealthPercent(toPercentageBigDecimal(battery.getHealthPercent()));
+            device.setBatteryCycleCount(battery.getCycleCount());
+            device.setPowerSource(truncate(battery.getPowerSource(), 30));
+        }
+
+        // =====================================================
+        // MAP OPERATING SYSTEM TELEMETRY
+        // =====================================================
+        OsData os = request.getOs();
+        if (os != null) {
+            device.setOsName(truncate(os.getName(), 100));
+            device.setOsVersion(truncate(os.getVersion(), 100));
+            device.setOsBuild(truncate(os.getBuild(), 100));
+            device.setOsArchitecture(truncate(os.getArchitecture(), 30));
+            device.setHostname(truncate(os.getHostname(), 150));
+            device.setBootTime(os.getBootTime());
+            device.setUptimeSeconds(os.getUptimeSeconds());
+        }
+
+        // =====================================================
+        // MAP PRIMARY IP ADDRESSES
+        // =====================================================
+        if (request.getNetworks() != null) {
+            String selectedIpv4 = null;
+            String selectedIpv6 = null;
+
+            for (NetworkData net : request.getNetworks()) {
+                if (net == null) {
+                    continue;
+                }
+                boolean isPrimary = net.isPrimary();
+                String ipv4 = net.getIpv4Address();
+                String ipv6 = net.getIpv6Address();
+
+                if (isPrimary) {
+                    if (ipv4 != null && !ipv4.isBlank()) {
+                        selectedIpv4 = ipv4.trim();
+                    }
+                    if (ipv6 != null && !ipv6.isBlank()) {
+                        selectedIpv6 = ipv6.trim();
+                    }
+                    break;
+                } else {
+                    if (selectedIpv4 == null && ipv4 != null && !ipv4.isBlank() && !ipv4.startsWith("127.")) {
+                        selectedIpv4 = ipv4.trim();
+                    }
+                    if (selectedIpv6 == null && ipv6 != null && !ipv6.isBlank() && !ipv6.equalsIgnoreCase("::1")) {
+                        selectedIpv6 = ipv6.trim();
                     }
                 }
             }
 
-
-            // =================================================
-            // CREATE NEW NETWORK
-            // =================================================
-
-            if (network == null) {
-
-                network =
-                        new DeviceNetwork();
+            if (selectedIpv4 != null) {
+                device.setIpv4Address(truncate(selectedIpv4, 45));
             }
-
-
-            network.setDevice(
-                    device
-            );
-
-
-            network.setInterfaceName(
-                    networkData.getInterfaceName()
-            );
-
-            network.setInterfaceType(
-                    networkData.getInterfaceType()
-            );
-
-            network.setMacAddress(
-                    networkData.getMacAddress()
-            );
-
-            network.setIpv4Address(
-                    networkData.getIpv4Address()
-            );
-
-            network.setIpv6Address(
-                    networkData.getIpv6Address()
-            );
-
-            network.setSubnetMask(
-                    networkData.getSubnetMask()
-            );
-
-            network.setGateway(
-                    networkData.getGateway()
-            );
-
-
-            // =================================================
-            // DNS SERVERS
-            // =================================================
-
-            if (networkData.getDnsServers() != null &&
-                    !networkData.getDnsServers().isEmpty()) {
-
-                network.setDnsServers(
-                        String.join(
-                                ", ",
-                                networkData.getDnsServers()
-                        )
-                );
-
-            } else {
-
-                network.setDnsServers(
-                        null
-                );
+            if (selectedIpv6 != null) {
+                device.setIpv6Address(truncate(selectedIpv6, 45));
             }
-
-
-            network.setNetworkName(
-                    networkData.getNetworkName()
-            );
-
-            network.setConnectionStatus(
-                    networkData.getConnectionStatus()
-            );
-
-
-            network.setPrimary(
-                    networkData.isPrimary()
-            );
-
-
-            network.setSpeedMbps(
-                    networkData.getSpeedMbps()
-            );
-
-            network.setLastSeenAt(
-                    networkData.getLastSeenAt()
-            );
-
-
-            DeviceNetwork savedNetwork =
-                    deviceNetworkRepository.save(
-                            network
-                    );
-
-
-            savedCount++;
-
-
-            System.out.println();
-
-            System.out.println(
-                    "Network saved: "
-                            + savedNetwork
-                            .getInterfaceName()
-            );
-
-            System.out.println(
-                    "  Type       : "
-                            + savedNetwork
-                            .getInterfaceType()
-            );
-
-            System.out.println(
-                    "  MAC        : "
-                            + savedNetwork
-                            .getMacAddress()
-            );
-
-            System.out.println(
-                    "  IPv4       : "
-                            + savedNetwork
-                            .getIpv4Address()
-            );
-
-            System.out.println(
-                    "  IPv6       : "
-                            + savedNetwork
-                            .getIpv6Address()
-            );
-
-            System.out.println(
-                    "  Gateway    : "
-                            + savedNetwork
-                            .getGateway()
-            );
-
-            System.out.println(
-                    "  Status     : "
-                            + savedNetwork
-                            .getConnectionStatus()
-            );
         }
 
+        // =====================================================
+        // MAP BIOS / FIRMWARE TELEMETRY
+        // =====================================================
+        BiosData bios = request.getBios();
+        if (bios != null) {
+            device.setBiosManufacturer(truncate(bios.getManufacturer(), 100));
+            device.setBiosVersion(truncate(bios.getVersion(), 100));
+            device.setBiosReleaseDate(bios.getReleaseDate());
+        }
 
-        System.out.println();
+        // =====================================================
+        // MAP SECURITY TELEMETRY
+        // =====================================================
+        SecurityData security = request.getSecurity();
+        if (security != null) {
+            device.setBitlockerEnabled(security.getBitlockerEnabled());
+            device.setBitlockerProtectionStatus(truncate(security.getBitlockerProtectionStatus(), 30));
+            device.setBitlockerVolumeStatus(truncate(security.getBitlockerVolumeStatus(), 30));
 
-        System.out.println(
-                "Networks processed: "
-                        + savedCount
-        );
+            Double bitlockerPct = security.getBitlockerEncryptionPercent() != null
+                    ? security.getBitlockerEncryptionPercent()
+                    : security.getBitlockerEncryptionPct();
+            device.setBitlockerEncryptionPercent(toPercentageBigDecimal(bitlockerPct));
+            device.setBitlockerEncryptionPct(device.getBitlockerEncryptionPercent());
+
+            device.setBitlockerEncryptionMethod(truncate(security.getBitlockerEncryptionMethod(), 50));
+            device.setBitlockerKeyProtector(truncate(security.getBitlockerKeyProtector(), 100));
+            device.setBitlockerVolume(truncate(security.getBitlockerVolume(), 20));
+            device.setSecureBootEnabled(security.getSecureBootEnabled());
+            device.setTpmPresent(security.getTpmPresent());
+            device.setTpmEnabled(security.getTpmEnabled());
+            device.setTpmVersion(truncate(security.getTpmVersion(), 30));
+        }
+
+        // =====================================================
+        // MAP PERFORMANCE TELEMETRY
+        // =====================================================
+        PerformanceData performance = request.getPerformance();
+        if (performance != null) {
+            device.setProcessCount(performance.getProcessCount());
+            device.setThreadCount(performance.getThreadCount());
+        }
+
+        // =====================================================
+        // AGENT METADATA
+        // =====================================================
+        device.setAgentVersion(truncate(request.getAgentVersion(), 50));
+
+        // =====================================================
+        // SAVE DEVICE (SINGLE ATOMIC SAVE)
+        // =====================================================
+        Device savedDevice = deviceRepository.saveAndFlush(device);
+        log.info("Device saved successfully (ID: {}, isNew: {})", savedDevice.getDeviceId(), isNew);
+
+        // =====================================================
+        // SAVE CHILD ENTITIES
+        // =====================================================
+        saveNetworkInformation(request, savedDevice);
+        saveInstalledSoftware(request, savedDevice);
+        saveVulnerabilities(request, savedDevice);
+
+        log.info("Agent report completed for Device ID: {}", savedDevice.getDeviceId());
+        return savedDevice;
     }
 
+    // =========================================================
+    // SAVE NETWORK INFORMATION
+    // =========================================================
+    private void saveNetworkInformation(AgentReportRequest request, Device device) {
+        List<NetworkData> networks = request.getNetworks();
+        if (networks == null || networks.isEmpty()) {
+            return;
+        }
+
+        List<DeviceNetwork> existingNetworks = deviceNetworkRepository.findByDevice_DeviceId(device.getDeviceId());
+        Map<String, DeviceNetwork> networkMap = new HashMap<>();
+        for (DeviceNetwork en : existingNetworks) {
+            if (en.getInterfaceName() != null) {
+                networkMap.put(en.getInterfaceName().trim().toLowerCase(), en);
+            }
+        }
+
+        int savedCount = 0;
+        for (NetworkData networkData : networks) {
+            if (networkData == null) {
+                continue;
+            }
+
+            String interfaceName = truncate(networkData.getInterfaceName(), 100);
+            if (interfaceName == null || interfaceName.isBlank()) {
+                continue;
+            }
+
+            String key = interfaceName.toLowerCase();
+            DeviceNetwork network = networkMap.get(key);
+            if (network == null) {
+                network = new DeviceNetwork();
+                network.setDevice(device);
+            }
+
+            network.setInterfaceName(interfaceName);
+            network.setInterfaceType(truncate(networkData.getInterfaceType(), 50));
+            network.setMacAddress(truncate(networkData.getMacAddress(), 17));
+            network.setIpv4Address(truncate(networkData.getIpv4Address(), 45));
+            network.setIpv6Address(truncate(networkData.getIpv6Address(), 45));
+            network.setSubnetMask(truncate(networkData.getSubnetMask(), 45));
+            network.setGateway(truncate(networkData.getGateway(), 45));
+
+            if (networkData.getDnsServers() != null && !networkData.getDnsServers().isEmpty()) {
+                network.setDnsServers(String.join(", ", networkData.getDnsServers()));
+            } else {
+                network.setDnsServers(null);
+            }
+
+            network.setNetworkName(truncate(networkData.getNetworkName(), 150));
+            network.setConnectionStatus(truncate(networkData.getConnectionStatus(), 30));
+            network.setPrimary(networkData.isPrimary());
+            network.setSpeedMbps(networkData.getSpeedMbps());
+            network.setLastSeenAt(networkData.getLastSeenAt() != null ? networkData.getLastSeenAt() : LocalDateTime.now());
+
+            DeviceNetwork saved = deviceNetworkRepository.save(network);
+            networkMap.put(key, saved);
+            savedCount++;
+        }
+
+        log.info("Processed {} network interfaces for device ID: {}", savedCount, device.getDeviceId());
+    }
 
     // =========================================================
     // SAVE INSTALLED SOFTWARE
     // =========================================================
-
-    private void saveInstalledSoftware(
-            AgentReportRequest request,
-            Device device) {
-
-        List<SoftwareData> softwareList =
-                request.getInstalledSoftware();
-
-
-        /*
-         * The agent sends the full current software inventory on every cycle.
-         * A null/empty list is not sufficient evidence that every application
-         * was uninstalled, so do not change database statuses in that case.
-         * The collector throws on registry-source failures, preventing a
-         * partial scan from being sent as a complete inventory.
-         */
-
-        if (softwareList == null ||
-                softwareList.isEmpty()) {
-
-            System.out.println();
-
-            System.out.println(
-                    "No software changes to process."
-            );
-
+    private void saveInstalledSoftware(AgentReportRequest request, Device device) {
+        List<SoftwareData> softwareList = request.getInstalledSoftware();
+        if (softwareList == null || softwareList.isEmpty()) {
             return;
         }
 
+        List<InstalledSoftware> existingSoftware = installedSoftwareRepository.findByDevice_DeviceId(device.getDeviceId());
+        Map<String, InstalledSoftware> existingSoftwareMap = new HashMap<>();
 
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "       SYNCHRONIZING INSTALLED SOFTWARE"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-
-
-        // =====================================================
-        // LOAD CURRENT DATABASE SOFTWARE
-        // =====================================================
-
-        List<InstalledSoftware> existingSoftware =
-                installedSoftwareRepository
-                        .findByDevice_DeviceId(
-                                device.getDeviceId()
-                        );
-
-
-        /*
-         * Create a map using software name as the
-         * software identity for this device.
-         *
-         * Example:
-         *
-         * Chrome     -> InstalledSoftware
-         * Git        -> InstalledSoftware
-         * DBeaver    -> InstalledSoftware
-         */
-
-        Map<String, InstalledSoftware> existingSoftwareMap =
-                new HashMap<>();
-
-
-        for (
-                InstalledSoftware existing :
-                existingSoftware) {
-
-            if (existing.getSoftwareName() == null) {
-                continue;
+        for (InstalledSoftware existing : existingSoftware) {
+            if (existing.getSoftwareName() != null) {
+                existingSoftwareMap.put(existing.getSoftwareName().trim().toLowerCase(), existing);
             }
-
-            existingSoftwareMap.put(
-                    existing.getSoftwareName()
-                            .trim()
-                            .toLowerCase(),
-                    existing
-            );
         }
 
-
-        // =====================================================
-        // TRACK SOFTWARE PRESENT IN CURRENT AGENT SCAN
-        // =====================================================
-
-        Set<String> currentSoftwareNames =
-                new HashSet<>();
-
-
+        Set<String> currentSoftwareNames = new HashSet<>();
         int insertedCount = 0;
-
         int updatedCount = 0;
-
         int unchangedCount = 0;
-
         int uninstalledCount = 0;
 
-
-        // =====================================================
-        // PROCESS CURRENT SOFTWARE
-        // =====================================================
-
-        for (
-                SoftwareData softwareData :
-                softwareList) {
-
-
+        for (SoftwareData softwareData : softwareList) {
             if (softwareData == null) {
                 continue;
             }
 
-
-            String softwareName =
-                    softwareData.getSoftwareName();
-
-
-            if (softwareName == null ||
-                    softwareName.isBlank()) {
-
+            String softwareName = truncate(softwareData.getSoftwareName(), 255);
+            if (softwareName == null || softwareName.isBlank()) {
                 continue;
             }
 
+            String softwareKey = softwareName.toLowerCase();
+            currentSoftwareNames.add(softwareKey);
 
-            softwareName =
-                    softwareName.trim();
+            String version = truncate(softwareData.getVersion(), 255);
+            String publisher = truncate(softwareData.getPublisher(), 255);
+            String installLocation = truncate(softwareData.getInstallLocation(), 1000);
 
-
-            String softwareKey =
-                    softwareName.toLowerCase();
-
-
-            currentSoftwareNames.add(
-                    softwareKey
-            );
-
-
-            // =================================================
-            // FIND EXISTING SOFTWARE
-            // =================================================
-
-            InstalledSoftware software =
-                    existingSoftwareMap.get(
-                            softwareKey
-                    );
-
-
-            // =================================================
-            // NEW SOFTWARE
-            // =================================================
+            InstalledSoftware software = existingSoftwareMap.get(softwareKey);
 
             if (software == null) {
+                software = new InstalledSoftware();
+                software.setDevice(device);
+                software.setSoftwareName(softwareName);
+                software.setVersion(version);
+                software.setPublisher(publisher);
+                software.setInstallLocation(installLocation);
+                software.setInstalledAt(toLocalDateTime(softwareData.getInstalledAt()));
 
-                software =
-                        new InstalledSoftware();
+                LocalDateTime lastSeen = toLocalDateTime(softwareData.getLastSeenAt());
+                software.setLastSeenAt(lastSeen != null ? lastSeen : LocalDateTime.now());
+                software.setStatus("INSTALLED");
 
-
-                software.setDevice(
-                        device
-                );
-
-                software.setSoftwareName(
-                        softwareName
-                );
-
-                software.setVersion(
-                        softwareData.getVersion()
-                );
-
-                software.setPublisher(
-                        softwareData.getPublisher()
-                );
-
-                software.setInstallLocation(
-                        softwareData.getInstallLocation()
-                );
-
-                software.setInstalledAt(
-                        toLocalDateTime(
-                                softwareData.getInstalledAt()
-                        )
-                );
-
-                software.setLastSeenAt(
-                        toLocalDateTime(
-                                softwareData.getLastSeenAt()
-                        )
-                );
-
-                software.setStatus(
-                        "INSTALLED"
-                );
-
-
-                InstalledSoftware savedSoftware =
-                        installedSoftwareRepository.save(
-                                software
-                        );
-
-
+                InstalledSoftware savedSoftware = installedSoftwareRepository.save(software);
+                // CRUCIAL FIX: update map immediately to prevent duplicate insert in same report
+                existingSoftwareMap.put(softwareKey, savedSoftware);
                 insertedCount++;
-
-
-                System.out.println();
-
-                System.out.println(
-                        "NEW SOFTWARE INSERTED: "
-                                + savedSoftware
-                                .getSoftwareName()
-                                + " "
-                                + savedSoftware
-                                .getVersion()
-                );
-
-
-                continue;
-            }
-
-
-            // =================================================
-            // EXISTING SOFTWARE
-            // =================================================
-
-            boolean versionChanged =
-                    !areEqual(
-                            software.getVersion(),
-                            softwareData.getVersion()
-                    );
-
-
-            boolean publisherChanged =
-                    !areEqual(
-                            software.getPublisher(),
-                            softwareData.getPublisher()
-                    );
-
-
-            boolean installLocationChanged =
-                    !areEqual(
-                            software.getInstallLocation(),
-                            softwareData.getInstallLocation()
-                    );
-
-
-            boolean wasUninstalled =
-                    !"INSTALLED".equalsIgnoreCase(
-                            software.getStatus()
-                    );
-
-
-            // =================================================
-            // SOFTWARE CHANGED / REINSTALLED
-            // =================================================
-
-            if (versionChanged ||
-                    publisherChanged ||
-                    installLocationChanged ||
-                    wasUninstalled) {
-
-
-                software.setVersion(
-                        softwareData.getVersion()
-                );
-
-                software.setPublisher(
-                        softwareData.getPublisher()
-                );
-
-                software.setInstallLocation(
-                        softwareData.getInstallLocation()
-                );
-
-
-                /*
-                 * Do not overwrite the original
-                 * installation date when an existing
-                 * software record is updated.
-                 */
-
-                if (software.getInstalledAt() == null) {
-
-                    software.setInstalledAt(
-                            toLocalDateTime(
-                                    softwareData.getInstalledAt()
-                            )
-                    );
-                }
-
-
-                /*
-                 * lastSeenAt is updated ONLY when
-                 * the software actually changed or
-                 * was previously uninstalled.
-                 */
-
-                LocalDateTime lastSeen =
-                        toLocalDateTime(
-                                softwareData.getLastSeenAt()
-                        );
-
-
-                if (lastSeen != null) {
-
-                    software.setLastSeenAt(
-                            lastSeen
-                    );
-
-                } else {
-
-                    software.setLastSeenAt(
-                            LocalDateTime.now()
-                    );
-                }
-
-
-                software.setStatus(
-                        "INSTALLED"
-                );
-
-
-                InstalledSoftware savedSoftware =
-                        installedSoftwareRepository.save(
-                                software
-                        );
-
-
-                updatedCount++;
-
-
-                System.out.println();
-
-                System.out.println(
-                        "SOFTWARE UPDATED: "
-                                + savedSoftware
-                                .getSoftwareName()
-                                + " "
-                                + savedSoftware
-                                .getVersion()
-                );
-
-
             } else {
+                boolean versionChanged = !areEqual(software.getVersion(), version);
+                boolean publisherChanged = !areEqual(software.getPublisher(), publisher);
+                boolean installLocationChanged = !areEqual(software.getInstallLocation(), installLocation);
+                boolean wasUninstalled = !"INSTALLED".equalsIgnoreCase(software.getStatus());
 
-                // =================================================
-                // EXISTING SOFTWARE - NO CHANGE
-                // =================================================
+                if (versionChanged || publisherChanged || installLocationChanged || wasUninstalled) {
+                    software.setVersion(version);
+                    software.setPublisher(publisher);
+                    software.setInstallLocation(installLocation);
 
-                unchangedCount++;
+                    if (software.getInstalledAt() == null) {
+                        software.setInstalledAt(toLocalDateTime(softwareData.getInstalledAt()));
+                    }
 
+                    LocalDateTime lastSeen = toLocalDateTime(softwareData.getLastSeenAt());
+                    software.setLastSeenAt(lastSeen != null ? lastSeen : LocalDateTime.now());
+                    software.setStatus("INSTALLED");
 
-                System.out.println();
-
-                System.out.println(
-                        "SOFTWARE UNCHANGED: "
-                                + software
-                                .getSoftwareName()
-                );
+                    InstalledSoftware savedSoftware = installedSoftwareRepository.save(software);
+                    existingSoftwareMap.put(softwareKey, savedSoftware);
+                    updatedCount++;
+                } else {
+                    unchangedCount++;
+                }
             }
         }
 
-
-        // =====================================================
-        // FIND SOFTWARE THAT DISAPPEARED
-        // =====================================================
-
-        for (
-                InstalledSoftware existing :
-                existingSoftware) {
-
-
+        // Identify software that disappeared from current complete inventory
+        for (InstalledSoftware existing : existingSoftware) {
             if (existing.getSoftwareName() == null) {
                 continue;
             }
-
-
-            String existingKey =
-                    existing.getSoftwareName()
-                            .trim()
-                            .toLowerCase();
-
-
-            /*
-             * If software exists in DB but was not
-             * returned by the current complete scan,
-             * it has been removed/uninstalled.
-             */
-
-            if (!currentSoftwareNames.contains(
-                    existingKey
-            )) {
-
-
-                /*
-                 * Only change the record if it is
-                 * currently marked INSTALLED.
-                 */
-
-                if ("INSTALLED".equalsIgnoreCase(
-                        existing.getStatus()
-                )) {
-
-                    existing.setStatus(
-                            "UNINSTALLED"
-                    );
-
-
-                    InstalledSoftware savedSoftware =
-                            installedSoftwareRepository.save(
-                                    existing
-                            );
-
-
+            String existingKey = existing.getSoftwareName().trim().toLowerCase();
+            if (!currentSoftwareNames.contains(existingKey)) {
+                if ("INSTALLED".equalsIgnoreCase(existing.getStatus())) {
+                    existing.setStatus("UNINSTALLED");
+                    installedSoftwareRepository.save(existing);
                     uninstalledCount++;
-
-
-                    System.out.println();
-
-                    System.out.println(
-                            "SOFTWARE UNINSTALLED: "
-                                    + savedSoftware
-                                    .getSoftwareName()
-                    );
                 }
             }
         }
 
-
-        // =====================================================
-        // SOFTWARE SUMMARY
-        // =====================================================
-
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "       SOFTWARE SYNCHRONIZATION COMPLETED"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "New software inserted : "
-                        + insertedCount
-        );
-
-        System.out.println(
-                "Software updated      : "
-                        + updatedCount
-        );
-
-        System.out.println(
-                "Software unchanged    : "
-                        + unchangedCount
-        );
-
-        System.out.println(
-                "Software uninstalled  : "
-                        + uninstalledCount
-        );
+        log.info("Software synchronization completed: inserted={}, updated={}, unchanged={}, uninstalled={}",
+                insertedCount, updatedCount, unchangedCount, uninstalledCount);
     }
-
 
     // =========================================================
     // SAVE VULNERABILITIES
     // =========================================================
-
-    private void saveVulnerabilities(
-            AgentReportRequest request,
-            Device device) {
-
-        List<VulnerabilityData> vulnerabilityList =
-                request.getVulnerabilities();
-
-
-        if (vulnerabilityList == null ||
-                vulnerabilityList.isEmpty()) {
-
-            System.out.println();
-
-            System.out.println(
-                    "No vulnerabilities received."
-            );
-
+    private void saveVulnerabilities(AgentReportRequest request, Device device) {
+        List<VulnerabilityData> vulnerabilityList = request.getVulnerabilities();
+        if (vulnerabilityList == null || vulnerabilityList.isEmpty()) {
             return;
         }
 
+        List<Vulnerability> existingVulnerabilities = vulnerabilityRepository.findByDevice_DeviceId(device.getDeviceId());
+        Map<String, Vulnerability> vulnMap = new HashMap<>();
 
-        System.out.println();
-
-        System.out.println(
-                "=============================================="
-        );
-
-        System.out.println(
-                "       SAVING VULNERABILITIES"
-        );
-
-        System.out.println(
-                "=============================================="
-        );
-
-
-        List<Vulnerability> existingVulnerabilities =
-                vulnerabilityRepository
-                        .findByDevice_DeviceId(
-                                device.getDeviceId()
-                        );
-
+        for (Vulnerability existing : existingVulnerabilities) {
+            if (existing.getCveId() != null && !existing.getCveId().isBlank()) {
+                vulnMap.put("cve:" + existing.getCveId().trim().toLowerCase(), existing);
+            } else if (existing.getTitle() != null && !existing.getTitle().isBlank()) {
+                vulnMap.put("title:" + existing.getTitle().trim().toLowerCase(), existing);
+            }
+        }
 
         int savedCount = 0;
-
-
-        for (
-                VulnerabilityData vulnerabilityData :
-                vulnerabilityList) {
-
-
+        for (VulnerabilityData vulnerabilityData : vulnerabilityList) {
             if (vulnerabilityData == null) {
                 continue;
             }
 
+            String cveId = truncate(vulnerabilityData.getCveId(), 30);
+            String title = truncate(vulnerabilityData.getTitle(), 255);
 
-            Vulnerability vulnerability =
-                    null;
-
-
-            String cveId =
-                    vulnerabilityData.getCveId();
-
-            String title =
-                    vulnerabilityData.getTitle();
-
-
-            // =================================================
-            // FIND EXISTING VULNERABILITY
-            // =================================================
-
-            for (
-                    Vulnerability existing :
-                    existingVulnerabilities) {
-
-
-                boolean matchesCve =
-                        cveId != null
-                                &&
-                                !cveId.isBlank()
-                                &&
-                                existing.getCveId() != null
-                                &&
-                                existing.getCveId()
-                                        .equalsIgnoreCase(
-                                                cveId
-                                        );
-
-
-                boolean matchesTitle =
-                        (cveId == null ||
-                                cveId.isBlank())
-                                &&
-                                title != null
-                                &&
-                                !title.isBlank()
-                                &&
-                                existing.getTitle() != null
-                                &&
-                                existing.getTitle()
-                                        .equalsIgnoreCase(
-                                                title
-                                        );
-
-
-                if (matchesCve ||
-                        matchesTitle) {
-
-                    vulnerability =
-                            existing;
-
-                    break;
-                }
+            if ((cveId == null || cveId.isBlank()) && (title == null || title.isBlank())) {
+                continue;
             }
 
+            Vulnerability vulnerability = null;
+            String key = null;
 
-            // =================================================
-            // CREATE NEW VULNERABILITY
-            // =================================================
+            if (cveId != null && !cveId.isBlank()) {
+                key = "cve:" + cveId.toLowerCase();
+                vulnerability = vulnMap.get(key);
+            }
+
+            if (vulnerability == null && title != null && !title.isBlank()) {
+                key = "title:" + title.toLowerCase();
+                vulnerability = vulnMap.get(key);
+            }
 
             if (vulnerability == null) {
-
-                vulnerability =
-                        new Vulnerability();
+                vulnerability = new Vulnerability();
+                vulnerability.setDevice(device);
             }
 
+            vulnerability.setCveId(cveId);
+            vulnerability.setTitle(title);
+            vulnerability.setDescription(vulnerabilityData.getDescription()); // columnDefinition = TEXT
+            vulnerability.setSeverity(truncate(vulnerabilityData.getSeverity(), 20));
+            vulnerability.setDetectedAt(toLocalDateTime(vulnerabilityData.getDetectedAt()));
 
-            vulnerability.setDevice(
-                    device
-            );
-
-            vulnerability.setCveId(
-                    vulnerabilityData.getCveId()
-            );
-
-            vulnerability.setTitle(
-                    vulnerabilityData.getTitle()
-            );
-
-            vulnerability.setDescription(
-                    vulnerabilityData.getDescription()
-            );
-
-            vulnerability.setSeverity(
-                    vulnerabilityData.getSeverity()
-            );
-
-
-            // =================================================
-            // STRING → LOCALDATETIME
-            // =================================================
-
-            vulnerability.setDetectedAt(
-                    toLocalDateTime(
-                            vulnerabilityData
-                                    .getDetectedAt()
-                    )
-            );
-
-
-            // =================================================
-            // STATUS
-            // =================================================
-
-            if (vulnerabilityData.getStatus() != null &&
-                    !vulnerabilityData.getStatus().isBlank()) {
-
-                vulnerability.setStatus(
-                        vulnerabilityData.getStatus()
-                );
+            if (vulnerabilityData.getStatus() != null && !vulnerabilityData.getStatus().isBlank()) {
+                vulnerability.setStatus(truncate(vulnerabilityData.getStatus(), 20));
+            } else if (vulnerability.getStatus() == null) {
+                vulnerability.setStatus("OPEN");
             }
 
+            vulnerability.setResolvedAt(toLocalDateTime(vulnerabilityData.getResolvedAt()));
 
-            vulnerability.setResolvedAt(
-                    toLocalDateTime(
-                            vulnerabilityData
-                                    .getResolvedAt()
-                    )
-            );
-
-
-            Vulnerability savedVulnerability =
-                    vulnerabilityRepository.save(
-                            vulnerability
-                    );
-
-
+            Vulnerability saved = vulnerabilityRepository.save(vulnerability);
+            if (key != null) {
+                vulnMap.put(key, saved);
+            }
             savedCount++;
-
-
-            System.out.println();
-
-            System.out.println(
-                    "Vulnerability saved: "
-                            +
-                            (
-                                    savedVulnerability
-                                            .getCveId()
-                                            != null
-                                            &&
-                                            !savedVulnerability
-                                                    .getCveId()
-                                                    .isBlank()
-                                            ?
-                                            savedVulnerability
-                                                    .getCveId()
-                                            :
-                                            savedVulnerability
-                                                    .getTitle()
-                            )
-            );
         }
 
-
-        System.out.println();
-
-        System.out.println(
-                "Vulnerabilities processed: "
-                        + savedCount
-        );
+        log.info("Processed {} vulnerabilities for device ID: {}", savedCount, device.getDeviceId());
     }
 
-
     // =========================================================
-    // STRING COMPARISON
+    // HELPER METHODS
     // =========================================================
+    private String truncate(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= maxLength) {
+            return trimmed;
+        }
+        return trimmed.substring(0, maxLength).trim();
+    }
 
-    private boolean areEqual(
-            String first,
-            String second) {
-
-        if (first == null &&
-                second == null) {
-
+    private boolean areEqual(String first, String second) {
+        if (first == null && second == null) {
             return true;
         }
-
-
-        if (first == null ||
-                second == null) {
-
+        if (first == null || second == null) {
             return false;
         }
-
-
-        return first.trim()
-                .equalsIgnoreCase(
-                        second.trim()
-                );
+        return first.trim().equalsIgnoreCase(second.trim());
     }
 
-
-    // =========================================================
-    // STRING → LOCALDATETIME
-    // =========================================================
-
-    private LocalDateTime toLocalDateTime(
-            String value) {
-
-        if (value == null ||
-                value.isBlank()) {
-
+    private LocalDateTime toLocalDateTime(String value) {
+        if (value == null || value.isBlank()) {
             return null;
         }
-
-
         try {
-
-            return LocalDateTime.parse(
-                    value
-            );
-
-        } catch (Exception e) {
-
-            System.out.println();
-
-            System.out.println(
-                    "Invalid LocalDateTime value: "
-                            + value
-            );
-
-            return null;
+            return LocalDateTime.parse(value);
+        } catch (Exception e1) {
+            try {
+                return OffsetDateTime.parse(value).toLocalDateTime();
+            } catch (Exception e2) {
+                try {
+                    return LocalDate.parse(value).atStartOfDay();
+                } catch (Exception e3) {
+                    log.debug("Unable to parse datetime string: '{}'", value);
+                    return null;
+                }
+            }
         }
     }
 
-
-    // =========================================================
-    // DOUBLE → BIGDECIMAL
-    // =========================================================
-
-    private BigDecimal toBigDecimal(
-            Double value) {
-
-        if (value == null) {
-
+    private BigDecimal toBigDecimal(Double value) {
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
             return null;
         }
+        return BigDecimal.valueOf(value).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
 
+    private BigDecimal toPercentageBigDecimal(Double value) {
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
+            return null;
+        }
+        double clamped = Math.max(0.0, Math.min(100.0, value));
+        return BigDecimal.valueOf(clamped).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
 
-        return BigDecimal.valueOf(
-                value
-        );
+    private BigDecimal bytesToGbBigDecimal(Long bytes) {
+        if (bytes == null || bytes <= 0) {
+            return null;
+        }
+        double gb = (double) bytes / (1024.0 * 1024.0 * 1024.0);
+        return BigDecimal.valueOf(gb).setScale(2, java.math.RoundingMode.HALF_UP);
     }
 }
-

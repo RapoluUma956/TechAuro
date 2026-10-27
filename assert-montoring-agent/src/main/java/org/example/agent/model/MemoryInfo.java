@@ -10,6 +10,15 @@ public class MemoryInfo {
     private Long swapTotal;
     private Long swapUsed;
 
+    // Direct capacities in GB and hardware specs
+    private Double totalGb;
+    private Double usedGb;
+    private Double availableGb;
+    private String ramType;
+    private Long ramSpeedMhz;
+    private Double swapTotalGb;
+    private Double swapUsedGb;
+
     public MemoryInfo() {
     }
 
@@ -61,6 +70,62 @@ public class MemoryInfo {
         this.swapUsed = swapUsed;
     }
 
+    public Double getTotalGb() {
+        return totalGb;
+    }
+
+    public void setTotalGb(Double totalGb) {
+        this.totalGb = totalGb;
+    }
+
+    public Double getUsedGb() {
+        return usedGb;
+    }
+
+    public void setUsedGb(Double usedGb) {
+        this.usedGb = usedGb;
+    }
+
+    public Double getAvailableGb() {
+        return availableGb;
+    }
+
+    public void setAvailableGb(Double availableGb) {
+        this.availableGb = availableGb;
+    }
+
+    public String getRamType() {
+        return ramType;
+    }
+
+    public void setRamType(String ramType) {
+        this.ramType = ramType;
+    }
+
+    public Long getRamSpeedMhz() {
+        return ramSpeedMhz;
+    }
+
+    public void setRamSpeedMhz(Long ramSpeedMhz) {
+        this.ramSpeedMhz = ramSpeedMhz;
+    }
+
+    public Double getSwapTotalGb() {
+        return swapTotalGb;
+    }
+
+    public void setSwapTotalGb(Double swapTotalGb) {
+        this.swapTotalGb = swapTotalGb;
+    }
+
+    public Double getSwapUsedGb() {
+        return swapUsedGb;
+    }
+
+    public void setSwapUsedGb(Double swapUsedGb) {
+        this.swapUsedGb = swapUsedGb;
+    }
+
     @Override
     public String toString() {
         return "MemoryInfo{" +
@@ -68,8 +133,13 @@ public class MemoryInfo {
                 ", used=" + used +
                 ", available=" + available +
                 ", usagePercent=" + usagePercent +
-                ", swapTotal=" + swapTotal +
-                ", swapUsed=" + swapUsed +
+                ", totalGb=" + totalGb +
+                ", usedGb=" + usedGb +
+                ", availableGb=" + availableGb +
+                ", ramType='" + ramType + '\'' +
+                ", ramSpeedMhz=" + ramSpeedMhz +
+                ", swapTotalGb=" + swapTotalGb +
+                ", swapUsedGb=" + swapUsedGb +
                 '}';
     }
 }
