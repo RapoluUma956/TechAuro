@@ -252,7 +252,7 @@ public class DashboardService {
         // 4. Software License Expiring Alerts
         for (License l : licenses) {
             if (l.getExpiryDate() != null) {
-                long daysUntil = Period.between(today, l.getExpiryDate()).getDays();
+                long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, l.getExpiryDate());
                 boolean isExpired = l.getExpiryDate().isBefore(today);
                 boolean isExpiringSoon = !isExpired && !l.getExpiryDate().isAfter(today.plusDays(thresholds.getLicenseWarningDays()));
 
@@ -284,7 +284,7 @@ public class DashboardService {
                 boolean isWarrantyExpiring = !d.getWarrantyEndDate().isBefore(today) &&
                         !d.getWarrantyEndDate().isAfter(today.plusDays(thresholds.getWarrantyWarningDays()));
                 if (isWarrantyExpiring) {
-                    long daysUntil = Period.between(today, d.getWarrantyEndDate()).getDays();
+                    long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, d.getWarrantyEndDate());
                     LocalDateTime time = d.getUpdatedAt() != null ? d.getUpdatedAt() : LocalDateTime.now();
                     alerts.add(new DashboardAlertItem(
                             "WARRANTY-" + d.getDeviceId(),

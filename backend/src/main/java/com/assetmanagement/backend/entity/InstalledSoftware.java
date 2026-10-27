@@ -78,6 +78,24 @@ public class InstalledSoftware {
     )
     private String status;
 
+    @Column(name = "software_type", length = 100)
+    private String softwareType;
+
+    @Column(name = "uninstall_string", length = 1000)
+    private String uninstallString;
+
+    @Column(name = "install_date")
+    private java.time.LocalDate installDate;
+
+    @Column(name = "detected_at")
+    private LocalDateTime detectedAt;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
 
     // =========================================================
     // GETTERS AND SETTERS
@@ -155,6 +173,54 @@ public class InstalledSoftware {
         this.status = status;
     }
 
+    public String getSoftwareType() {
+        return softwareType;
+    }
+
+    public void setSoftwareType(String softwareType) {
+        this.softwareType = softwareType;
+    }
+
+    public String getUninstallString() {
+        return uninstallString;
+    }
+
+    public void setUninstallString(String uninstallString) {
+        this.uninstallString = uninstallString;
+    }
+
+    public java.time.LocalDate getInstallDate() {
+        return installDate;
+    }
+
+    public void setInstallDate(java.time.LocalDate installDate) {
+        this.installDate = installDate;
+    }
+
+    public LocalDateTime getDetectedAt() {
+        return detectedAt;
+    }
+
+    public void setDetectedAt(LocalDateTime detectedAt) {
+        this.detectedAt = detectedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
 
     // =========================================================
     // JPA LIFECYCLE METHODS
@@ -162,19 +228,38 @@ public class InstalledSoftware {
 
     @PrePersist
     protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (createdAt == null) {
+            createdAt = now;
+        }
+
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+
+        if (detectedAt == null) {
+            detectedAt = now;
+        }
 
         if (status == null || status.isBlank()) {
             status = "ACTIVE";
         }
 
         if (lastSeenAt == null) {
-            lastSeenAt = LocalDateTime.now();
+            lastSeenAt = now;
+        }
+
+        if (installedAt != null && installDate == null) {
+            installDate = installedAt.toLocalDate();
+        } else if (installDate != null && installedAt == null) {
+            installedAt = installDate.atStartOfDay();
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
-
+        updatedAt = LocalDateTime.now();
         lastSeenAt = LocalDateTime.now();
     }
 }

@@ -20,13 +20,12 @@ public record UserRequest(
 
         @NotBlank
         @Email
-        @Size(max = 255)
+        @Size(max = 150)
         String email,
 
         @Size(max = 30)
         String phone,
 
-        @NotBlank
         String password,
 
         @Size(max = 100)

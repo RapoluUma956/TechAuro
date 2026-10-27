@@ -45,6 +45,7 @@ public class NotificationService {
     public Notification markAsRead(Long id) {
         Notification notification = getNotificationById(id);
         notification.setStatus("READ");
+        notification.setIsRead(true);
         notification.setReadAt(LocalDateTime.now());
         return notificationRepository.save(notification);
     }
