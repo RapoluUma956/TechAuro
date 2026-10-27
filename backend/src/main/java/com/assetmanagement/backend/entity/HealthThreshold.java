@@ -1,3 +1,4 @@
+
 package com.assetmanagement.backend.entity;
 
 import jakarta.persistence.*;
@@ -37,13 +38,27 @@ public class HealthThreshold {
     public HealthThreshold() {
     }
 
+    public HealthThreshold(
+            int cpuWarningPercent,
+            int ramWarningPercent,
+            int diskCriticalPercent,
+            int offlineTimeoutMinutes,
+            int warrantyWarningDays,
+            int licenseWarningDays) {
+
+        this.cpuWarningPercent = BigDecimal.valueOf(cpuWarningPercent);
+        this.ramWarningPercent = BigDecimal.valueOf(ramWarningPercent);
+        this.diskCriticalPercent = BigDecimal.valueOf(diskCriticalPercent);
+        this.offlineTimeoutMinutes = offlineTimeoutMinutes;
+        this.warrantyWarningDays = warrantyWarningDays;
+        this.licenseWarningDays = licenseWarningDays;
+    }
+
     @PrePersist
     @PreUpdate
     protected void onSave() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    // ==================== GETTERS AND SETTERS ====================
 
     public Long getThresholdId() {
         return thresholdId;

@@ -7,9 +7,12 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface HealthThresholdRepository extends JpaRepository<HealthThreshold, Long> {
+public interface HealthThresholdRepository
+        extends JpaRepository<HealthThreshold, Long> {
+
+    Optional<HealthThreshold> findFirstByOrderByThresholdIdAsc();
 
     default Optional<HealthThreshold> findCurrentThresholds() {
-        return findAll().stream().findFirst();
+        return findFirstByOrderByThresholdIdAsc();
     }
 }

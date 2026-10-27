@@ -547,4 +547,15 @@ public class Device {
 
     public BigDecimal getBitlockerEncryptionPct() { return bitlockerEncryptionPercent; }
     public void setBitlockerEncryptionPct(BigDecimal pct) { this.bitlockerEncryptionPercent = pct; }
+
+
+    // Compatibility methods for code that uses memoryUsagePercent.
+    // The value is stored in the existing ram_usage_percent column.
+    public BigDecimal getMemoryUsagePercent() {
+        return ramUsagePercent;
+    }
+
+    public void setMemoryUsagePercent(BigDecimal memoryUsagePercent) {
+        this.ramUsagePercent = memoryUsagePercent;
+    }
 }

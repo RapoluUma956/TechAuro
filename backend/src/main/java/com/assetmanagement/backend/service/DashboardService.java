@@ -214,7 +214,7 @@ public class DashboardService {
         // 2. High Disk Utilization Alerts
         for (Device d : devices) {
             BigDecimal storageUsage = d.getStorageUsagePercent();
-            if (storageUsage != null && storageUsage.intValue() >= thresholds.getDiskCriticalPercent()) {
+            if (storageUsage != null && storageUsage.compareTo(thresholds.getDiskCriticalPercent()) >= 0) {
                 LocalDateTime time = d.getRecordedAt() != null ? d.getRecordedAt() : d.getUpdatedAt();
                 alerts.add(new DashboardAlertItem(
                         "DISK-" + d.getDeviceId(),
@@ -417,8 +417,8 @@ public class DashboardService {
             filtered = filtered.stream()
                     .filter(item ->
                             (item.assetTag() != null && item.assetTag().toLowerCase().contains(q)) ||
-                            (item.employeeName() != null && item.employeeName().toLowerCase().contains(q)) ||
-                            (item.designation() != null && item.designation().toLowerCase().contains(q))
+                                    (item.employeeName() != null && item.employeeName().toLowerCase().contains(q)) ||
+                                    (item.designation() != null && item.designation().toLowerCase().contains(q))
                     )
                     .toList();
         }
@@ -461,9 +461,9 @@ public class DashboardService {
 
         return new ThresholdDto(
                 thresholds.getThresholdId(),
-                thresholds.getCpuWarningPercent(),
-                thresholds.getRamWarningPercent(),
-                thresholds.getDiskCriticalPercent(),
+                thresholds.getCpuWarningPercent().intValue(),
+                thresholds.getRamWarningPercent().intValue(),
+                thresholds.getDiskCriticalPercent().intValue(),
                 thresholds.getOfflineTimeoutMinutes(),
                 thresholds.getWarrantyWarningDays(),
                 thresholds.getLicenseWarningDays(),
@@ -478,9 +478,9 @@ public class DashboardService {
     public ThresholdDto updateThresholds(UpdateThresholdRequest request) {
         HealthThreshold thresholds = getOrCreateThresholds();
 
-        thresholds.setCpuWarningPercent(request.cpuWarningPercent());
-        thresholds.setRamWarningPercent(request.ramWarningPercent());
-        thresholds.setDiskCriticalPercent(request.diskCriticalPercent());
+        thresholds.setCpuWarningPercent(BigDecimal.valueOf(request.cpuWarningPercent()));
+        thresholds.setRamWarningPercent(BigDecimal.valueOf(request.ramWarningPercent()));
+        thresholds.setDiskCriticalPercent(BigDecimal.valueOf(request.diskCriticalPercent()));
         thresholds.setOfflineTimeoutMinutes(request.offlineTimeoutMinutes());
         thresholds.setWarrantyWarningDays(request.warrantyWarningDays());
         thresholds.setLicenseWarningDays(request.licenseWarningDays());
@@ -493,9 +493,9 @@ public class DashboardService {
 
         return new ThresholdDto(
                 thresholds.getThresholdId(),
-                thresholds.getCpuWarningPercent(),
-                thresholds.getRamWarningPercent(),
-                thresholds.getDiskCriticalPercent(),
+                thresholds.getCpuWarningPercent().intValue(),
+                thresholds.getRamWarningPercent().intValue(),
+                thresholds.getDiskCriticalPercent().intValue(),
                 thresholds.getOfflineTimeoutMinutes(),
                 thresholds.getWarrantyWarningDays(),
                 thresholds.getLicenseWarningDays(),
@@ -546,7 +546,7 @@ public class DashboardService {
         boolean hasMediumVuln = devVulns.stream().anyMatch(v -> "MEDIUM".equalsIgnoreCase(v.getSeverity()));
 
         // CRITICAL condition
-        if (hasCriticalVuln || (disk >= thresholds.getDiskCriticalPercent()) || cpu >= 95 || ram >= 95) {
+        if (hasCriticalVuln || (disk >= thresholds.getDiskCriticalPercent().intValue()) || cpu >= 95 || ram >= 95) {
             return "CRITICAL";
         }
 
@@ -558,8 +558,8 @@ public class DashboardService {
         if (!isOnline ||
                 hasHighVuln ||
                 hasMediumVuln ||
-                (cpu >= thresholds.getCpuWarningPercent()) ||
-                (ram >= thresholds.getRamWarningPercent()) ||
+                (cpu >= thresholds.getCpuWarningPercent().intValue()) ||
+                (ram >= thresholds.getRamWarningPercent().intValue()) ||
                 (disk >= 80) ||
                 isWarrantyExpiring) {
             return "WARNING";
