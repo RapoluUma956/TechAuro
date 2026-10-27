@@ -42,8 +42,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        // Do not expose internal stack traces or database details to client
-        ApiResponse<Void> response = ApiResponse.error("Something went wrong. Please try again later.");
+        ex.printStackTrace();
+        ApiResponse<Void> response = ApiResponse.error("An unexpected error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

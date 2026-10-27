@@ -13,7 +13,7 @@ public class License {
     @Column(name = "license_id")
     private Long licenseId;
 
-    @Column(name = "license_name", nullable = false, length = 150)
+    @Transient
     private String licenseName;
 
     @Column(name = "software_name", nullable = false, length = 150)
@@ -28,10 +28,10 @@ public class License {
     @Column(name = "license_type", length = 50)
     private String licenseType;
 
-    @Column(name = "total_quantity", nullable = false)
+    @Column(name = "total_licenses")
     private Integer totalQuantity = 0;
 
-    @Column(name = "available_quantity", nullable = false)
+    @Transient
     private Integer availableQuantity = 0;
 
     @Column(name = "purchase_date")
@@ -70,7 +70,7 @@ public class License {
     }
 
     public String getLicenseName() {
-        return licenseName;
+        return (licenseName != null && !licenseName.isBlank()) ? licenseName : softwareName;
     }
 
     public void setLicenseName(String licenseName) {

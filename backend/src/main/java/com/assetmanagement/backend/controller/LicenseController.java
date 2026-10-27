@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/licenses")
-@CrossOrigin(origins = "*")
 public class LicenseController {
 
     private final LicenseService licenseService;
