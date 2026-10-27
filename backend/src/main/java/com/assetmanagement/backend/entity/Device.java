@@ -8,17 +8,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "devices",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_devices_asset_tag",
-                        columnNames = "asset_tag"
-                ),
-                @UniqueConstraint(
-                        name = "uk_devices_serial_number",
-                        columnNames = "serial_number"
-                )
-        }
+        name = "devices"
 )
 public class Device {
 
@@ -29,16 +19,16 @@ public class Device {
     @Column(name = "device_id")
     private Long deviceId;
 
-    @Column(name = "asset_tag", nullable = false, unique = true, length = 50)
+    @Column(name = "asset_id", length = 50)
     private String assetTag;
 
-    @Column(name = "serial_number", nullable = false, unique = true, length = 100)
+    @Column(name = "serial_number", unique = true, length = 100)
     private String serialNumber;
 
-    @Column(name = "brand", nullable = false, length = 100)
+    @Column(name = "brand", length = 100)
     private String brand;
 
-    @Column(name = "model", nullable = false, length = 150)
+    @Column(name = "model", length = 150)
     private String model;
 
     @Column(name = "warranty_start_date")
@@ -47,7 +37,7 @@ public class Device {
     @Column(name = "warranty_end_date")
     private LocalDate warrantyEndDate;
 
-    @Column(name = "status", nullable = false, length = 30)
+    @Column(name = "asset_status", length = 50)
     private String status;
 
     @Column(name = "created_at", nullable = false)

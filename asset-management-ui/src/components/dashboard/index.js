@@ -9,4 +9,5 @@ export { default as LicenseExpiryDonutCard } from "./LicenseExpiryDonutCard";
 export { default as AssetsAttentionTable } from "./AssetsAttentionTable";
 export { default as QuickActionsCard } from "./QuickActionsCard";
 export { default as RecentAlertsCard } from "./RecentAlertsCard";
+export { default as ThresholdSettingsModal } from "./ThresholdSettingsModal";
 export * from "./DashboardIcons";
