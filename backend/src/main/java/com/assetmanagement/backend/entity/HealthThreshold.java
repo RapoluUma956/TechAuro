@@ -1,3 +1,4 @@
+
 package com.assetmanagement.backend.entity;
 
 import jakarta.persistence.*;
@@ -37,8 +38,30 @@ public class HealthThreshold {
     public HealthThreshold() {
     }
 
-    public HealthThreshold(Integer cpuWarningPercent, Integer ramWarningPercent, Integer diskCriticalPercent,
-                           Integer offlineTimeoutMinutes, Integer warrantyWarningDays, Integer licenseWarningDays) {
+    public HealthThreshold(
+            int cpuWarningPercent,
+            int ramWarningPercent,
+            int diskCriticalPercent,
+            int offlineTimeoutMinutes,
+            int warrantyWarningDays,
+            int licenseWarningDays) {
+        this(
+                Integer.valueOf(cpuWarningPercent),
+                Integer.valueOf(ramWarningPercent),
+                Integer.valueOf(diskCriticalPercent),
+                Integer.valueOf(offlineTimeoutMinutes),
+                Integer.valueOf(warrantyWarningDays),
+                Integer.valueOf(licenseWarningDays)
+        );
+    }
+
+    public HealthThreshold(
+            Integer cpuWarningPercent,
+            Integer ramWarningPercent,
+            Integer diskCriticalPercent,
+            Integer offlineTimeoutMinutes,
+            Integer warrantyWarningDays,
+            Integer licenseWarningDays) {
         this.cpuWarningPercent = cpuWarningPercent != null ? cpuWarningPercent : 90;
         this.ramWarningPercent = ramWarningPercent != null ? ramWarningPercent : 90;
         this.diskCriticalPercent = diskCriticalPercent != null ? diskCriticalPercent : 90;
@@ -48,25 +71,11 @@ public class HealthThreshold {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public HealthThreshold(BigDecimal cpuWarningPercent, BigDecimal ramWarningPercent, BigDecimal diskCriticalPercent,
-                           Integer offlineTimeoutMinutes, Integer warrantyWarningDays, Integer licenseWarningDays) {
-        this(
-            cpuWarningPercent != null ? cpuWarningPercent.intValue() : 90,
-            ramWarningPercent != null ? ramWarningPercent.intValue() : 90,
-            diskCriticalPercent != null ? diskCriticalPercent.intValue() : 90,
-            offlineTimeoutMinutes,
-            warrantyWarningDays,
-            licenseWarningDays
-        );
-    }
-
     @PrePersist
     @PreUpdate
     protected void onSave() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    // ==================== GETTERS AND SETTERS ====================
 
     public Long getThresholdId() {
         return thresholdId;
@@ -85,7 +94,8 @@ public class HealthThreshold {
     }
 
     public void setCpuWarningPercent(BigDecimal cpuWarningPercent) {
-        this.cpuWarningPercent = cpuWarningPercent != null ? cpuWarningPercent.intValue() : 90;
+        this.cpuWarningPercent = cpuWarningPercent != null
+                ? cpuWarningPercent.intValue() : 90;
     }
 
     public Integer getRamWarningPercent() {
@@ -97,7 +107,8 @@ public class HealthThreshold {
     }
 
     public void setRamWarningPercent(BigDecimal ramWarningPercent) {
-        this.ramWarningPercent = ramWarningPercent != null ? ramWarningPercent.intValue() : 90;
+        this.ramWarningPercent = ramWarningPercent != null
+                ? ramWarningPercent.intValue() : 90;
     }
 
     public Integer getDiskCriticalPercent() {
@@ -109,7 +120,8 @@ public class HealthThreshold {
     }
 
     public void setDiskCriticalPercent(BigDecimal diskCriticalPercent) {
-        this.diskCriticalPercent = diskCriticalPercent != null ? diskCriticalPercent.intValue() : 90;
+        this.diskCriticalPercent = diskCriticalPercent != null
+                ? diskCriticalPercent.intValue() : 90;
     }
 
     public Integer getOfflineTimeoutMinutes() {
