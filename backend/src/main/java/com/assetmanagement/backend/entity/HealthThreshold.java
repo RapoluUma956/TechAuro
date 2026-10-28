@@ -14,14 +14,14 @@ public class HealthThreshold {
     @Column(name = "threshold_id")
     private Long thresholdId;
 
-    @Column(name = "cpu_warning_percent", precision = 5, scale = 2, nullable = false)
-    private BigDecimal cpuWarningPercent = new BigDecimal("90.00");
+    @Column(name = "cpu_warning_percent", nullable = false)
+    private Integer cpuWarningPercent = 90;
 
-    @Column(name = "ram_warning_percent", precision = 5, scale = 2, nullable = false)
-    private BigDecimal ramWarningPercent = new BigDecimal("90.00");
+    @Column(name = "ram_warning_percent", nullable = false)
+    private Integer ramWarningPercent = 90;
 
-    @Column(name = "disk_critical_percent", precision = 5, scale = 2, nullable = false)
-    private BigDecimal diskCriticalPercent = new BigDecimal("90.00");
+    @Column(name = "disk_critical_percent", nullable = false)
+    private Integer diskCriticalPercent = 90;
 
     @Column(name = "offline_timeout_minutes", nullable = false)
     private Integer offlineTimeoutMinutes = 5;
@@ -45,13 +45,30 @@ public class HealthThreshold {
             int offlineTimeoutMinutes,
             int warrantyWarningDays,
             int licenseWarningDays) {
+        this(
+                Integer.valueOf(cpuWarningPercent),
+                Integer.valueOf(ramWarningPercent),
+                Integer.valueOf(diskCriticalPercent),
+                Integer.valueOf(offlineTimeoutMinutes),
+                Integer.valueOf(warrantyWarningDays),
+                Integer.valueOf(licenseWarningDays)
+        );
+    }
 
-        this.cpuWarningPercent = BigDecimal.valueOf(cpuWarningPercent);
-        this.ramWarningPercent = BigDecimal.valueOf(ramWarningPercent);
-        this.diskCriticalPercent = BigDecimal.valueOf(diskCriticalPercent);
-        this.offlineTimeoutMinutes = offlineTimeoutMinutes;
-        this.warrantyWarningDays = warrantyWarningDays;
-        this.licenseWarningDays = licenseWarningDays;
+    public HealthThreshold(
+            Integer cpuWarningPercent,
+            Integer ramWarningPercent,
+            Integer diskCriticalPercent,
+            Integer offlineTimeoutMinutes,
+            Integer warrantyWarningDays,
+            Integer licenseWarningDays) {
+        this.cpuWarningPercent = cpuWarningPercent != null ? cpuWarningPercent : 90;
+        this.ramWarningPercent = ramWarningPercent != null ? ramWarningPercent : 90;
+        this.diskCriticalPercent = diskCriticalPercent != null ? diskCriticalPercent : 90;
+        this.offlineTimeoutMinutes = offlineTimeoutMinutes != null ? offlineTimeoutMinutes : 5;
+        this.warrantyWarningDays = warrantyWarningDays != null ? warrantyWarningDays : 30;
+        this.licenseWarningDays = licenseWarningDays != null ? licenseWarningDays : 30;
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PrePersist
@@ -68,28 +85,43 @@ public class HealthThreshold {
         this.thresholdId = thresholdId;
     }
 
-    public BigDecimal getCpuWarningPercent() {
+    public Integer getCpuWarningPercent() {
         return cpuWarningPercent;
     }
 
-    public void setCpuWarningPercent(BigDecimal cpuWarningPercent) {
+    public void setCpuWarningPercent(Integer cpuWarningPercent) {
         this.cpuWarningPercent = cpuWarningPercent;
     }
 
-    public BigDecimal getRamWarningPercent() {
+    public void setCpuWarningPercent(BigDecimal cpuWarningPercent) {
+        this.cpuWarningPercent = cpuWarningPercent != null
+                ? cpuWarningPercent.intValue() : 90;
+    }
+
+    public Integer getRamWarningPercent() {
         return ramWarningPercent;
     }
 
-    public void setRamWarningPercent(BigDecimal ramWarningPercent) {
+    public void setRamWarningPercent(Integer ramWarningPercent) {
         this.ramWarningPercent = ramWarningPercent;
     }
 
-    public BigDecimal getDiskCriticalPercent() {
+    public void setRamWarningPercent(BigDecimal ramWarningPercent) {
+        this.ramWarningPercent = ramWarningPercent != null
+                ? ramWarningPercent.intValue() : 90;
+    }
+
+    public Integer getDiskCriticalPercent() {
         return diskCriticalPercent;
     }
 
-    public void setDiskCriticalPercent(BigDecimal diskCriticalPercent) {
+    public void setDiskCriticalPercent(Integer diskCriticalPercent) {
         this.diskCriticalPercent = diskCriticalPercent;
+    }
+
+    public void setDiskCriticalPercent(BigDecimal diskCriticalPercent) {
+        this.diskCriticalPercent = diskCriticalPercent != null
+                ? diskCriticalPercent.intValue() : 90;
     }
 
     public Integer getOfflineTimeoutMinutes() {

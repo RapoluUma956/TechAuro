@@ -46,7 +46,6 @@ public class Device {
     @Column(name = "serial_number", unique = true, length = 100)
     private String serialNumber;
 
-
     // ==================== OPERATING SYSTEM ====================
 
     @Column(name = "os_name", length = 100)
@@ -60,7 +59,6 @@ public class Device {
 
     @Column(name = "os_architecture", length = 30)
     private String osArchitecture;
-
 
     // ==================== CPU ====================
 
@@ -85,7 +83,6 @@ public class Device {
     @Column(name = "cpu_temperature", precision = 6, scale = 2)
     private BigDecimal cpuTemperature;
 
-
     // ==================== RAM (IN GB) ====================
 
     @Column(name = "ram_total_gb", precision = 10, scale = 2)
@@ -105,7 +102,6 @@ public class Device {
 
     @Column(name = "ram_speed_mhz")
     private Long ramSpeedMhz;
-
 
     // ==================== STORAGE (IN GB) ====================
 
@@ -130,7 +126,6 @@ public class Device {
     @Column(name = "storage_health", length = 30)
     private String storageHealth;
 
-
     // ==================== SSD DETAILS ====================
 
     @Column(name = "ssd_type", length = 255)
@@ -142,7 +137,6 @@ public class Device {
     @Column(name = "ssd_health", length = 255)
     private String ssdHealth;
 
-
     // ==================== SWAP MEMORY (IN GB) ====================
 
     @Column(name = "swap_total_gb", precision = 10, scale = 2)
@@ -150,7 +144,6 @@ public class Device {
 
     @Column(name = "swap_used_gb", precision = 10, scale = 2)
     private BigDecimal swapUsedGb;
-
 
     // ==================== BATTERY ====================
 
@@ -169,7 +162,6 @@ public class Device {
     @Column(name = "power_source", length = 30)
     private String powerSource;
 
-
     // ==================== NETWORK (PRIMARY) ====================
 
     @Column(name = "ipv4_address", length = 45)
@@ -177,7 +169,6 @@ public class Device {
 
     @Column(name = "ipv6_address", length = 45)
     private String ipv6Address;
-
 
     // ==================== BIOS AND SECURITY ====================
 
@@ -223,7 +214,6 @@ public class Device {
     @Column(name = "bitlocker_volume", length = 20)
     private String bitlockerVolume;
 
-
     // ==================== SYSTEM ACTIVITY ====================
 
     @Column(name = "boot_time")
@@ -238,7 +228,6 @@ public class Device {
     @Column(name = "thread_count")
     private Integer threadCount;
 
-
     // ==================== ASSET LIFECYCLE ====================
 
     @Column(name = "purchase_date")
@@ -250,7 +239,6 @@ public class Device {
     @Column(name = "warranty_end_date")
     private LocalDate warrantyEndDate;
 
-
     // ==================== AGENT ====================
 
     @Column(name = "agent_installed", nullable = false)
@@ -258,7 +246,6 @@ public class Device {
 
     @Column(name = "agent_version", length = 50)
     private String agentVersion;
-
 
     // ==================== DEVICE STATUS & MONITORING ====================
 
@@ -274,7 +261,6 @@ public class Device {
     @Column(name = "recorded_at")
     private LocalDateTime recordedAt;
 
-
     // ==================== AUDIT TIMESTAMPS ====================
 
     @Column(name = "created_at", nullable = false)
@@ -283,19 +269,22 @@ public class Device {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-
     // ==================== JPA LIFECYCLE ====================
 
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
+
         if (createdAt == null) {
             createdAt = now;
         }
+
         updatedAt = now;
+
         if (deviceStatus == null || deviceStatus.isBlank()) {
             deviceStatus = "ACTIVE";
         }
+
         if (agentInstalled == null) {
             agentInstalled = false;
         }
@@ -305,7 +294,6 @@ public class Device {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
 
     // ==================== GETTERS & SETTERS ====================
 
@@ -539,7 +527,6 @@ public class Device {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-
     // ==================== COMPATIBILITY GETTERS / SETTERS ====================
 
     public String getStatus() { return deviceStatus; }
@@ -548,9 +535,7 @@ public class Device {
     public BigDecimal getBitlockerEncryptionPct() { return bitlockerEncryptionPercent; }
     public void setBitlockerEncryptionPct(BigDecimal pct) { this.bitlockerEncryptionPercent = pct; }
 
-
-    // Compatibility methods for code that uses memoryUsagePercent.
-    // The value is stored in the existing ram_usage_percent column.
+    // Compatibility with older code that uses "memoryUsagePercent".
     public BigDecimal getMemoryUsagePercent() {
         return ramUsagePercent;
     }

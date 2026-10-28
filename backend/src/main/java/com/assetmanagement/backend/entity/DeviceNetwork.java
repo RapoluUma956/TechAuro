@@ -52,6 +52,9 @@ public class DeviceNetwork {
     @Column(name = "dns_servers", columnDefinition = "TEXT")
     private String dnsServers;
 
+    @Column(name = "dns_server", length = 100)
+    private String dnsServer;
+
     @Column(name = "network_name", length = 150)
     private String networkName;
 
@@ -143,11 +146,25 @@ public class DeviceNetwork {
     }
 
     public String getDnsServers() {
-        return dnsServers;
+        return (dnsServers != null && !dnsServers.isBlank()) ? dnsServers : dnsServer;
     }
 
     public void setDnsServers(String dnsServers) {
         this.dnsServers = dnsServers;
+        if (this.dnsServer == null || this.dnsServer.isBlank()) {
+            this.dnsServer = dnsServers;
+        }
+    }
+
+    public String getDnsServer() {
+        return (dnsServer != null && !dnsServer.isBlank()) ? dnsServer : dnsServers;
+    }
+
+    public void setDnsServer(String dnsServer) {
+        this.dnsServer = dnsServer;
+        if (this.dnsServers == null || this.dnsServers.isBlank()) {
+            this.dnsServers = dnsServer;
+        }
     }
 
     public String getNetworkName() {

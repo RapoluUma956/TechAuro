@@ -57,6 +57,9 @@ public class Notification {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    @Column(name = "is_read")
+    private Boolean isRead = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -147,6 +150,18 @@ public class Notification {
     }
 
 
+    public Boolean getIsRead() {
+        return isRead;
+    }
+
+    public void setIsRead(Boolean isRead) {
+        this.isRead = isRead;
+        if (Boolean.TRUE.equals(isRead) && "UNREAD".equalsIgnoreCase(this.status)) {
+            this.status = "READ";
+        }
+    }
+
+
     // ==================== LIFECYCLE ====================
 
     @PrePersist
@@ -158,6 +173,10 @@ public class Notification {
 
         if (status == null) {
             status = "UNREAD";
+        }
+
+        if (isRead == null) {
+            isRead = "READ".equalsIgnoreCase(status);
         }
     }
 }
