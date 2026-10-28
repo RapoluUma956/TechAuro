@@ -19,7 +19,31 @@ public interface LicenseAssignmentRepository
             Long licenseId
     );
 
+    List<LicenseAssignment> findByLicense_LicenseIdOrderByAssignedAtDesc(
+            Long licenseId
+    );
+
     List<LicenseAssignment> findByStatus(
+            String status
+    );
+
+    long countByLicense_LicenseIdAndStatus(
+            Long licenseId,
+            String status
+    );
+
+    long countByStatus(
+            String status
+    );
+
+    java.util.Optional<LicenseAssignment> findByAssignmentIdAndLicense_LicenseId(
+            Long assignmentId,
+            Long licenseId
+    );
+
+    boolean existsByLicense_LicenseIdAndUser_UserIdAndStatus(
+            Long licenseId,
+            Long userId,
             String status
     );
 }

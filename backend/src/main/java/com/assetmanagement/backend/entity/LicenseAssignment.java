@@ -49,6 +49,9 @@ public class LicenseAssignment {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
 
     // ==================== GETTERS AND SETTERS ====================
 
@@ -98,6 +101,14 @@ public class LicenseAssignment {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
 
