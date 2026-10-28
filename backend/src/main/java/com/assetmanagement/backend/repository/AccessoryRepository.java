@@ -16,4 +16,10 @@ public interface AccessoryRepository
     List<Accessory> findBySubCategory(String subCategory);
 
     List<Accessory> findByBrand(String brand);
+
+    java.util.Optional<Accessory> findFirstByCategoryIgnoreCaseAndBrandIgnoreCaseAndModelIgnoreCase(String category, String brand, String model);
+
+    java.util.Optional<Accessory> findFirstByAccessoryNameIgnoreCaseAndBrandIgnoreCaseAndModelIgnoreCase(String accessoryName, String brand, String model);
+
+    java.util.Optional<Accessory> findFirstByProductNameIgnoreCaseAndBrandIgnoreCaseAndModelIgnoreCase(String productName, String brand, String model);
 }

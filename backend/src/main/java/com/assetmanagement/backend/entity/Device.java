@@ -46,6 +46,7 @@ public class Device {
     @Column(name = "serial_number", unique = true, length = 100)
     private String serialNumber;
 
+
     // ==================== OPERATING SYSTEM ====================
 
     @Column(name = "os_name", length = 100)
@@ -60,10 +61,14 @@ public class Device {
     @Column(name = "os_architecture", length = 30)
     private String osArchitecture;
 
+
     // ==================== CPU ====================
 
     @Column(name = "cpu_name", length = 200)
     private String cpuName;
+
+    @Column(name = "cpu", length = 200)
+    private String cpu;
 
     @Column(name = "cpu_vendor", length = 100)
     private String cpuVendor;
@@ -83,10 +88,26 @@ public class Device {
     @Column(name = "cpu_temperature", precision = 6, scale = 2)
     private BigDecimal cpuTemperature;
 
+
     // ==================== RAM (IN GB) ====================
 
     @Column(name = "ram_total_gb", precision = 10, scale = 2)
     private BigDecimal ramTotalGb;
+
+    @Column(name = "ram_gb", precision = 10, scale = 2)
+    private BigDecimal ramGb;
+
+    @Column(name = "memory_total", precision = 10, scale = 2)
+    private BigDecimal memoryTotal;
+
+    @Column(name = "memory_used", precision = 10, scale = 2)
+    private BigDecimal memoryUsed;
+
+    @Column(name = "memory_available", precision = 10, scale = 2)
+    private BigDecimal memoryAvailable;
+
+    @Column(name = "memory_usage_percent", precision = 5, scale = 2)
+    private BigDecimal memoryUsagePercent;
 
     @Column(name = "ram_used_gb", precision = 10, scale = 2)
     private BigDecimal ramUsedGb;
@@ -103,16 +124,26 @@ public class Device {
     @Column(name = "ram_speed_mhz")
     private Long ramSpeedMhz;
 
+
     // ==================== STORAGE (IN GB) ====================
 
     @Column(name = "storage_total_gb", precision = 10, scale = 2)
     private BigDecimal storageTotalGb;
 
+    @Column(name = "storage_total", precision = 10, scale = 2)
+    private BigDecimal storageTotal;
+
     @Column(name = "storage_used_gb", precision = 10, scale = 2)
     private BigDecimal storageUsedGb;
 
+    @Column(name = "storage_used", precision = 10, scale = 2)
+    private BigDecimal storageUsed;
+
     @Column(name = "storage_available_gb", precision = 10, scale = 2)
     private BigDecimal storageAvailableGb;
+
+    @Column(name = "storage_available", precision = 10, scale = 2)
+    private BigDecimal storageAvailable;
 
     @Column(name = "storage_usage_percent", precision = 5, scale = 2)
     private BigDecimal storageUsagePercent;
@@ -126,6 +157,7 @@ public class Device {
     @Column(name = "storage_health", length = 30)
     private String storageHealth;
 
+
     // ==================== SSD DETAILS ====================
 
     @Column(name = "ssd_type", length = 255)
@@ -137,13 +169,33 @@ public class Device {
     @Column(name = "ssd_health", length = 255)
     private String ssdHealth;
 
+    @Column(name = "ssd_capacity_gb", precision = 10, scale = 2)
+    private BigDecimal ssdCapacityGb;
+
+    @Column(name = "ssd_available_gb", precision = 10, scale = 2)
+    private BigDecimal ssdAvailableGb;
+
+    @Column(name = "ssd_used_gb", precision = 10, scale = 2)
+    private BigDecimal ssdUsedGb;
+
+    @Column(name = "ssd_usage_percent", precision = 5, scale = 2)
+    private BigDecimal ssdUsagePercent;
+
+
     // ==================== SWAP MEMORY (IN GB) ====================
 
     @Column(name = "swap_total_gb", precision = 10, scale = 2)
     private BigDecimal swapTotalGb;
 
+    @Column(name = "swap_total", precision = 10, scale = 2)
+    private BigDecimal swapTotal;
+
     @Column(name = "swap_used_gb", precision = 10, scale = 2)
     private BigDecimal swapUsedGb;
+
+    @Column(name = "swap_used", precision = 10, scale = 2)
+    private BigDecimal swapUsed;
+
 
     // ==================== BATTERY ====================
 
@@ -162,6 +214,7 @@ public class Device {
     @Column(name = "power_source", length = 30)
     private String powerSource;
 
+
     // ==================== NETWORK (PRIMARY) ====================
 
     @Column(name = "ipv4_address", length = 45)
@@ -169,6 +222,7 @@ public class Device {
 
     @Column(name = "ipv6_address", length = 45)
     private String ipv6Address;
+
 
     // ==================== BIOS AND SECURITY ====================
 
@@ -208,11 +262,15 @@ public class Device {
     @Column(name = "bitlocker_encryption_percent", precision = 5, scale = 2)
     private BigDecimal bitlockerEncryptionPercent;
 
+    @Column(name = "bitlocker_encryption_pct", precision = 5, scale = 2)
+    private BigDecimal bitlockerEncryptionPct;
+
     @Column(name = "bitlocker_key_protector", length = 100)
     private String bitlockerKeyProtector;
 
     @Column(name = "bitlocker_volume", length = 20)
     private String bitlockerVolume;
+
 
     // ==================== SYSTEM ACTIVITY ====================
 
@@ -228,6 +286,7 @@ public class Device {
     @Column(name = "thread_count")
     private Integer threadCount;
 
+
     // ==================== ASSET LIFECYCLE ====================
 
     @Column(name = "purchase_date")
@@ -239,6 +298,19 @@ public class Device {
     @Column(name = "warranty_end_date")
     private LocalDate warrantyEndDate;
 
+    @Column(name = "warranty_expiry_date")
+    private LocalDate warrantyExpiryDate;
+
+    @Column(name = "asset_id", length = 100)
+    private String assetId;
+
+    @Column(name = "asset_status", length = 50)
+    private String assetStatus;
+
+    @Column(name = "current_user_id")
+    private Long currentUserId;
+
+
     // ==================== AGENT ====================
 
     @Column(name = "agent_installed", nullable = false)
@@ -247,10 +319,14 @@ public class Device {
     @Column(name = "agent_version", length = 50)
     private String agentVersion;
 
+
     // ==================== DEVICE STATUS & MONITORING ====================
 
     @Column(name = "device_status", length = 30)
     private String deviceStatus;
+
+    @Column(name = "status", length = 30)
+    private String status;
 
     @Column(name = "connection_status", length = 30)
     private String connectionStatus;
@@ -261,6 +337,7 @@ public class Device {
     @Column(name = "recorded_at")
     private LocalDateTime recordedAt;
 
+
     // ==================== AUDIT TIMESTAMPS ====================
 
     @Column(name = "created_at", nullable = false)
@@ -269,31 +346,110 @@ public class Device {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+
     // ==================== JPA LIFECYCLE ====================
 
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
-
         if (createdAt == null) {
             createdAt = now;
         }
-
         updatedAt = now;
 
+        if (deviceStatus == null && status != null) {
+            deviceStatus = status;
+        } else if (status == null && deviceStatus != null) {
+            status = deviceStatus;
+        }
         if (deviceStatus == null || deviceStatus.isBlank()) {
             deviceStatus = "ACTIVE";
+            status = "ACTIVE";
         }
 
         if (agentInstalled == null) {
             agentInstalled = false;
         }
+
+        syncAliases();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        syncAliases();
     }
+
+    private void syncAliases() {
+        if (cpu == null && cpuName != null) {
+            cpu = cpuName;
+        } else if (cpuName == null && cpu != null) {
+            cpuName = cpu;
+        }
+
+        if (ramGb == null && ramTotalGb != null) {
+            ramGb = ramTotalGb;
+        } else if (ramTotalGb == null && ramGb != null) {
+            ramTotalGb = ramGb;
+        }
+
+        if (memoryTotal == null) {
+            memoryTotal = ramTotalGb;
+        }
+        if (memoryUsed == null) {
+            memoryUsed = ramUsedGb;
+        }
+        if (memoryAvailable == null) {
+            memoryAvailable = ramAvailableGb;
+        }
+        if (memoryUsagePercent == null) {
+            memoryUsagePercent = ramUsagePercent;
+        }
+
+        if (storageTotal == null) {
+            storageTotal = storageTotalGb;
+        }
+        if (storageUsed == null) {
+            storageUsed = storageUsedGb;
+        }
+        if (storageAvailable == null) {
+            storageAvailable = storageAvailableGb;
+        }
+
+        if (swapTotal == null) {
+            swapTotal = swapTotalGb;
+        }
+        if (swapUsed == null) {
+            swapUsed = swapUsedGb;
+        }
+
+        if (bitlockerEncryptionPct == null && bitlockerEncryptionPercent != null) {
+            bitlockerEncryptionPct = bitlockerEncryptionPercent;
+        } else if (bitlockerEncryptionPercent == null && bitlockerEncryptionPct != null) {
+            bitlockerEncryptionPercent = bitlockerEncryptionPct;
+        }
+
+        if (warrantyExpiryDate == null && warrantyEndDate != null) {
+            warrantyExpiryDate = warrantyEndDate;
+        } else if (warrantyEndDate == null && warrantyExpiryDate != null) {
+            warrantyEndDate = warrantyExpiryDate;
+        }
+
+        if (assetStatus == null && deviceStatus != null) {
+            assetStatus = deviceStatus;
+        }
+
+        if (assetId == null && assetTag != null) {
+            assetId = assetTag;
+        }
+
+        if (status == null && deviceStatus != null) {
+            status = deviceStatus;
+        } else if (deviceStatus == null && status != null) {
+            deviceStatus = status;
+        }
+    }
+
 
     // ==================== GETTERS & SETTERS ====================
 
@@ -527,20 +683,220 @@ public class Device {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // ==================== COMPATIBILITY GETTERS / SETTERS ====================
 
-    public String getStatus() { return deviceStatus; }
-    public void setStatus(String status) { this.deviceStatus = status; }
+    // ==================== ERD ALIASES & ADDITIONAL GETTERS / SETTERS ====================
 
-    public BigDecimal getBitlockerEncryptionPct() { return bitlockerEncryptionPercent; }
-    public void setBitlockerEncryptionPct(BigDecimal pct) { this.bitlockerEncryptionPercent = pct; }
+    public String getStatus() {
+        return (status != null && !status.isBlank()) ? status : deviceStatus;
+    }
 
-    // Compatibility with older code that uses "memoryUsagePercent".
+    public void setStatus(String status) {
+        this.status = status;
+        this.deviceStatus = status;
+    }
+
+    public String getCpu() {
+        return (cpu != null && !cpu.isBlank()) ? cpu : cpuName;
+    }
+
+    public void setCpu(String cpu) {
+        this.cpu = cpu;
+        if (this.cpuName == null || this.cpuName.isBlank()) {
+            this.cpuName = cpu;
+        }
+    }
+
+    public BigDecimal getRamGb() {
+        return (ramGb != null) ? ramGb : ramTotalGb;
+    }
+
+    public void setRamGb(BigDecimal ramGb) {
+        this.ramGb = ramGb;
+        if (this.ramTotalGb == null) {
+            this.ramTotalGb = ramGb;
+        }
+    }
+
+    public BigDecimal getMemoryTotal() {
+        return (memoryTotal != null) ? memoryTotal : ramTotalGb;
+    }
+
+    public void setMemoryTotal(BigDecimal memoryTotal) {
+        this.memoryTotal = memoryTotal;
+        if (this.ramTotalGb == null) {
+            this.ramTotalGb = memoryTotal;
+        }
+    }
+
+    public BigDecimal getMemoryUsed() {
+        return (memoryUsed != null) ? memoryUsed : ramUsedGb;
+    }
+
+    public void setMemoryUsed(BigDecimal memoryUsed) {
+        this.memoryUsed = memoryUsed;
+        if (this.ramUsedGb == null) {
+            this.ramUsedGb = memoryUsed;
+        }
+    }
+
+    public BigDecimal getMemoryAvailable() {
+        return (memoryAvailable != null) ? memoryAvailable : ramAvailableGb;
+    }
+
+    public void setMemoryAvailable(BigDecimal memoryAvailable) {
+        this.memoryAvailable = memoryAvailable;
+        if (this.ramAvailableGb == null) {
+            this.ramAvailableGb = memoryAvailable;
+        }
+    }
+
     public BigDecimal getMemoryUsagePercent() {
-        return ramUsagePercent;
+        return (memoryUsagePercent != null) ? memoryUsagePercent : ramUsagePercent;
     }
 
     public void setMemoryUsagePercent(BigDecimal memoryUsagePercent) {
-        this.ramUsagePercent = memoryUsagePercent;
+        this.memoryUsagePercent = memoryUsagePercent;
+        if (this.ramUsagePercent == null) {
+            this.ramUsagePercent = memoryUsagePercent;
+        }
+    }
+
+    public BigDecimal getStorageTotal() {
+        return (storageTotal != null) ? storageTotal : storageTotalGb;
+    }
+
+    public void setStorageTotal(BigDecimal storageTotal) {
+        this.storageTotal = storageTotal;
+        if (this.storageTotalGb == null) {
+            this.storageTotalGb = storageTotal;
+        }
+    }
+
+    public BigDecimal getStorageUsed() {
+        return (storageUsed != null) ? storageUsed : storageUsedGb;
+    }
+
+    public void setStorageUsed(BigDecimal storageUsed) {
+        this.storageUsed = storageUsed;
+        if (this.storageUsedGb == null) {
+            this.storageUsedGb = storageUsed;
+        }
+    }
+
+    public BigDecimal getStorageAvailable() {
+        return (storageAvailable != null) ? storageAvailable : storageAvailableGb;
+    }
+
+    public void setStorageAvailable(BigDecimal storageAvailable) {
+        this.storageAvailable = storageAvailable;
+        if (this.storageAvailableGb == null) {
+            this.storageAvailableGb = storageAvailable;
+        }
+    }
+
+    public BigDecimal getSwapTotal() {
+        return (swapTotal != null) ? swapTotal : swapTotalGb;
+    }
+
+    public void setSwapTotal(BigDecimal swapTotal) {
+        this.swapTotal = swapTotal;
+        if (this.swapTotalGb == null) {
+            this.swapTotalGb = swapTotal;
+        }
+    }
+
+    public BigDecimal getSwapUsed() {
+        return (swapUsed != null) ? swapUsed : swapUsedGb;
+    }
+
+    public void setSwapUsed(BigDecimal swapUsed) {
+        this.swapUsed = swapUsed;
+        if (this.swapUsedGb == null) {
+            this.swapUsedGb = swapUsed;
+        }
+    }
+
+    public BigDecimal getSsdCapacityGb() {
+        return ssdCapacityGb;
+    }
+
+    public void setSsdCapacityGb(BigDecimal ssdCapacityGb) {
+        this.ssdCapacityGb = ssdCapacityGb;
+    }
+
+    public BigDecimal getSsdAvailableGb() {
+        return ssdAvailableGb;
+    }
+
+    public void setSsdAvailableGb(BigDecimal ssdAvailableGb) {
+        this.ssdAvailableGb = ssdAvailableGb;
+    }
+
+    public BigDecimal getSsdUsedGb() {
+        return ssdUsedGb;
+    }
+
+    public void setSsdUsedGb(BigDecimal ssdUsedGb) {
+        this.ssdUsedGb = ssdUsedGb;
+    }
+
+    public BigDecimal getSsdUsagePercent() {
+        return ssdUsagePercent;
+    }
+
+    public void setSsdUsagePercent(BigDecimal ssdUsagePercent) {
+        this.ssdUsagePercent = ssdUsagePercent;
+    }
+
+    public BigDecimal getBitlockerEncryptionPct() {
+        return (bitlockerEncryptionPct != null) ? bitlockerEncryptionPct : bitlockerEncryptionPercent;
+    }
+
+    public void setBitlockerEncryptionPct(BigDecimal bitlockerEncryptionPct) {
+        this.bitlockerEncryptionPct = bitlockerEncryptionPct;
+        if (this.bitlockerEncryptionPercent == null) {
+            this.bitlockerEncryptionPercent = bitlockerEncryptionPct;
+        }
+    }
+
+    public LocalDate getWarrantyExpiryDate() {
+        return (warrantyExpiryDate != null) ? warrantyExpiryDate : warrantyEndDate;
+    }
+
+    public void setWarrantyExpiryDate(LocalDate warrantyExpiryDate) {
+        this.warrantyExpiryDate = warrantyExpiryDate;
+        if (this.warrantyEndDate == null) {
+            this.warrantyEndDate = warrantyExpiryDate;
+        }
+    }
+
+    public Long getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(Long currentUserId) {
+        this.currentUserId = currentUserId;
+    }
+
+    public String getAssetId() {
+        return (assetId != null && !assetId.isBlank()) ? assetId : assetTag;
+    }
+
+    public void setAssetId(String assetId) {
+        this.assetId = assetId;
+        if (this.assetTag == null || this.assetTag.isBlank()) {
+            this.assetTag = assetId;
+        }
+    }
+
+    public String getAssetStatus() {
+        return (assetStatus != null && !assetStatus.isBlank()) ? assetStatus : deviceStatus;
+    }
+
+    public void setAssetStatus(String assetStatus) {
+        this.assetStatus = assetStatus;
+        if (this.deviceStatus == null || this.deviceStatus.isBlank()) {
+            this.deviceStatus = assetStatus;
+        }
     }
 }

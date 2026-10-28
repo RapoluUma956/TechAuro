@@ -20,4 +20,6 @@ public interface DeviceAssignmentRepository
             Long deviceId,
             String status
     );
+
+    List<DeviceAssignment> findByStatus(String status);
 }
