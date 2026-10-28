@@ -1,12 +1,14 @@
 package com.assetmanagement.backend.controller;
 
-import com.assetmanagement.backend.entity.License;
+import com.assetmanagement.backend.dto.license.*;
 import com.assetmanagement.backend.service.LicenseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/licenses")
@@ -19,34 +21,75 @@ public class LicenseController {
         this.licenseService = licenseService;
     }
 
+    // ==================== 1. SUMMARY METRICS ====================
+    @GetMapping("/summary")
+    public ResponseEntity<LicenseSummaryResponse> getSummary() {
+        return ResponseEntity.ok(licenseService.getSummary());
+    }
+
+    // ==================== 2. FILTER DROPDOWNS ====================
+    @GetMapping("/filter-options")
+    public ResponseEntity<Map<String, List<String>>> getFilterOptions() {
+        return ResponseEntity.ok(licenseService.getFilterOptions());
+    }
+
+    // ==================== 3. GET LICENSES (PAGINATED & FILTERED) ====================
     @GetMapping
-    public ResponseEntity<List<License>> getAllLicenses() {
-        return ResponseEntity.ok(licenseService.getAllLicenses());
+    public ResponseEntity<LicensePageResponse> getLicenses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String software,
+            @RequestParam(required = false) String publisher,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String expiry
+    ) {
+        return ResponseEntity.ok(licenseService.getLicensesPage(page, size, search, software, publisher, status, expiry));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<License> getLicenseById(@PathVariable Long id) {
-        return ResponseEntity.ok(licenseService.getLicenseById(id));
+    // ==================== 4. GET LICENSE BY ID (WITH ASSIGNMENTS) ====================
+    @GetMapping("/{licenseId}")
+    public ResponseEntity<LicenseDetailResponse> getLicenseById(@PathVariable Long licenseId) {
+        return ResponseEntity.ok(licenseService.getLicenseDetail(licenseId));
     }
 
-    @GetMapping("/software/{softwareName}")
-    public ResponseEntity<List<License>> getBySoftwareName(@PathVariable String softwareName) {
-        return ResponseEntity.ok(licenseService.getBySoftwareName(softwareName));
-    }
-
+    // ==================== 5. CREATE LICENSE ====================
     @PostMapping
-    public ResponseEntity<License> createLicense(@RequestBody License license) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(licenseService.createLicense(license));
+    public ResponseEntity<LicenseItemDto> createLicense(@Valid @RequestBody CreateLicenseRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(licenseService.createLicense(request));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<License> updateLicense(@PathVariable Long id, @RequestBody License license) {
-        return ResponseEntity.ok(licenseService.updateLicense(id, license));
+    // ==================== 6. UPDATE LICENSE ====================
+    @PutMapping("/{licenseId}")
+    public ResponseEntity<LicenseItemDto> updateLicense(
+            @PathVariable Long licenseId,
+            @Valid @RequestBody UpdateLicenseRequest request
+    ) {
+        return ResponseEntity.ok(licenseService.updateLicense(licenseId, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLicense(@PathVariable Long id) {
-        licenseService.deleteLicense(id);
+    // ==================== 7. DELETE LICENSE ====================
+    @DeleteMapping("/{licenseId}")
+    public ResponseEntity<Void> deleteLicense(@PathVariable Long licenseId) {
+        licenseService.deleteLicense(licenseId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== 8. ASSIGN LICENSE TO EMPLOYEE ====================
+    @PostMapping("/{licenseId}/assign")
+    public ResponseEntity<LicenseAssignmentDto> assignLicense(
+            @PathVariable Long licenseId,
+            @Valid @RequestBody AssignLicenseRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(licenseService.assignLicense(licenseId, request));
+    }
+
+    // ==================== 9. RELEASE / RETURN LICENSE ====================
+    @PostMapping("/{licenseId}/release")
+    public ResponseEntity<LicenseAssignmentDto> releaseLicense(
+            @PathVariable Long licenseId,
+            @Valid @RequestBody ReleaseLicenseRequest request
+    ) {
+        return ResponseEntity.ok(licenseService.releaseLicense(licenseId, request));
     }
 }

@@ -7,6 +7,8 @@ import Employees from "../pages/employees/Employees.jsx";
 import EmployeeDetail from "../pages/employees/EmployeeDetail.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import AppLayout from "../components/layout/AppLayout.jsx";
+import Accessories from "../pages/accessories/Accessories.jsx";
+import Licenses from "../pages/licenses/Licenses.jsx";
 import {
   roleCatalogHeaderData,
   accessoriesHeaderData,
@@ -53,11 +55,11 @@ export default function AppRouter() {
             />
             <Route
               path="/accessories"
-              element={<FeaturePage headerData={accessoriesHeaderData} />}
+              element={<Accessories />}
             />
             <Route
               path="/licenses"
-              element={<FeaturePage headerData={licensesHeaderData} />}
+              element={<Licenses />}
             />
             <Route
               path="/notifications"

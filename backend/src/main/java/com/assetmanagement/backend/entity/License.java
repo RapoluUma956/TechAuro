@@ -55,6 +55,12 @@ public class License {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "renewal_type", length = 50)
+    private String renewalType;
+
+    @Column(name = "renewal_method", length = 50)
+    private String renewalMethod;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -190,6 +196,22 @@ public class License {
         this.notes = notes;
     }
 
+    public String getRenewalType() {
+        return renewalType;
+    }
+
+    public void setRenewalType(String renewalType) {
+        this.renewalType = renewalType;
+    }
+
+    public String getRenewalMethod() {
+        return renewalMethod;
+    }
+
+    public void setRenewalMethod(String renewalMethod) {
+        this.renewalMethod = renewalMethod;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -243,6 +265,14 @@ public class License {
 
         if (status == null) {
             status = "ACTIVE";
+        }
+
+        if (renewalType == null) {
+            renewalType = "YEARLY";
+        }
+
+        if (renewalMethod == null) {
+            renewalMethod = "AUTO";
         }
     }
 
