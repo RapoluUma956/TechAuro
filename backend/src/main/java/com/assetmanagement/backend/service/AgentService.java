@@ -23,16 +23,19 @@ public class AgentService {
     private final DeviceNetworkRepository deviceNetworkRepository;
     private final InstalledSoftwareRepository installedSoftwareRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final DeviceAssignmentRepository deviceAssignmentRepository;
 
     public AgentService(
             DeviceRepository deviceRepository,
             DeviceNetworkRepository deviceNetworkRepository,
             InstalledSoftwareRepository installedSoftwareRepository,
-            VulnerabilityRepository vulnerabilityRepository) {
+            VulnerabilityRepository vulnerabilityRepository,
+            DeviceAssignmentRepository deviceAssignmentRepository) {
         this.deviceRepository = deviceRepository;
         this.deviceNetworkRepository = deviceNetworkRepository;
         this.installedSoftwareRepository = installedSoftwareRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
+        this.deviceAssignmentRepository = deviceAssignmentRepository;
     }
 
     // =========================================================
@@ -351,10 +354,39 @@ public class AgentService {
         // =====================================================
         device.setAgentVersion(truncate(request.getAgentVersion(), 50));
 
+        // Auto-link active assignment user if device is not currently assigned
+        if (device.getCurrentUserId() == null && serialNumber != null) {
+            deviceAssignmentRepository.findBySerialNumberIgnoreCaseAndStatus(serialNumber, "ACTIVE")
+                    .ifPresent(activeDa -> {
+                        if (activeDa.getUser() != null) {
+                            device.setCurrentUserId(activeDa.getUser().getUserId());
+                        }
+                    });
+        }
+
         // =====================================================
         // SAVE DEVICE (SINGLE ATOMIC SAVE)
         // =====================================================
         Device savedDevice = deviceRepository.saveAndFlush(device);
+
+        // Ensure active assignment links this device entity and serial number
+        if (savedDevice.getSerialNumber() != null) {
+            deviceAssignmentRepository.findBySerialNumberIgnoreCaseAndStatus(savedDevice.getSerialNumber(), "ACTIVE")
+                    .ifPresent(activeDa -> {
+                        boolean modified = false;
+                        if (activeDa.getDevice() == null || !activeDa.getDevice().getDeviceId().equals(savedDevice.getDeviceId())) {
+                            activeDa.setDevice(savedDevice);
+                            modified = true;
+                        }
+                        if (activeDa.getSerialNumber() == null || !activeDa.getSerialNumber().equalsIgnoreCase(savedDevice.getSerialNumber())) {
+                            activeDa.setSerialNumber(savedDevice.getSerialNumber());
+                            modified = true;
+                        }
+                        if (modified) {
+                            deviceAssignmentRepository.save(activeDa);
+                        }
+                    });
+        }
         log.info("Device saved successfully (ID: {}, isNew: {})", savedDevice.getDeviceId(), isNew);
 
         // =====================================================
@@ -592,7 +624,11 @@ public class AgentService {
             vulnerability.setCveId(cveId);
             vulnerability.setTitle(title);
             vulnerability.setDescription(vulnerabilityData.getDescription()); // columnDefinition = TEXT
-            vulnerability.setSeverity(truncate(vulnerabilityData.getSeverity(), 20));
+            String rawSeverity = vulnerabilityData.getSeverity();
+            String resolvedSeverity = (rawSeverity == null || rawSeverity.isBlank() || "UNKNOWN".equalsIgnoreCase(rawSeverity))
+                    ? "MEDIUM"
+                    : rawSeverity;
+            vulnerability.setSeverity(truncate(resolvedSeverity, 20));
             vulnerability.setDetectedAt(toLocalDateTime(vulnerabilityData.getDetectedAt()));
 
             if (vulnerabilityData.getStatus() != null && !vulnerabilityData.getStatus().isBlank()) {

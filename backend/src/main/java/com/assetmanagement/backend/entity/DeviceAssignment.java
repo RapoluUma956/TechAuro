@@ -28,6 +28,9 @@ public class DeviceAssignment {
     )
     private User user;
 
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
+
     @Column(name = "assigned_at", nullable = false)
     private LocalDateTime assignedAt;
 
@@ -37,6 +40,16 @@ public class DeviceAssignment {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    public DeviceAssignment() {
+    }
+
+    public DeviceAssignment(Device device, User user, String serialNumber, String status) {
+        this.device = device;
+        this.user = user;
+        this.serialNumber = serialNumber != null ? serialNumber : (device != null ? device.getSerialNumber() : null);
+        this.status = status != null ? status : "ACTIVE";
+        this.assignedAt = LocalDateTime.now();
+    }
 
     // Getters and Setters
 
@@ -54,6 +67,9 @@ public class DeviceAssignment {
 
     public void setDevice(Device device) {
         this.device = device;
+        if ((this.serialNumber == null || this.serialNumber.isBlank()) && device != null && device.getSerialNumber() != null) {
+            this.serialNumber = device.getSerialNumber();
+        }
     }
 
     public User getUser() {
@@ -62,6 +78,14 @@ public class DeviceAssignment {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
+    }
+
+    public void setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
     }
 
     public LocalDateTime getAssignedAt() {
@@ -88,16 +112,19 @@ public class DeviceAssignment {
         this.status = status;
     }
 
-
     @PrePersist
-    protected void onCreate() {
-
+    @PreUpdate
+    protected void onPersistOrUpdate() {
         if (assignedAt == null) {
             assignedAt = LocalDateTime.now();
         }
 
         if (status == null) {
             status = "ACTIVE";
+        }
+
+        if ((serialNumber == null || serialNumber.isBlank()) && device != null && device.getSerialNumber() != null) {
+            serialNumber = device.getSerialNumber();
         }
     }
 }

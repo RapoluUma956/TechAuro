@@ -3,6 +3,7 @@ import { DataTable, StatusBadge, SearchBar } from "../../common";
 
 export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return installedSoftwares;
@@ -19,6 +20,9 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
       return fields.some((val) => (val || "").toLowerCase().includes(query));
     });
   }, [installedSoftwares, searchQuery]);
+
+  const effectivePageSize =
+    pageSize === "all" ? Math.max(filteredData.length, 1) : Number(pageSize) || 10;
 
   const columns = [
     {
@@ -112,21 +116,44 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
       {/* Header matching wireframe */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
-            Installed Softwares
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
+              Installed Softwares
+            </h2>
+            <span className="rounded-full bg-[#E3F2FD] px-2.5 py-0.5 text-xs font-bold text-[#1976D2]">
+              {filteredData.length} items
+            </span>
+          </div>
           <p className="text-xs text-[#5C7370]">
             Binaries, system dependencies, IDEs, and business applications discovered on this host.
           </p>
         </div>
 
-        {/* Search Input */}
-        <div className="w-full sm:w-72">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Filter installed apps..."
-          />
+        {/* Controls: Search and Page Size */}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="w-full sm:w-72">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter installed apps..."
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs text-[#5C7370] font-medium hidden sm:inline">Show:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(e.target.value === "all" ? "all" : Number(e.target.value))}
+              className="rounded-lg border border-[#DCE5E1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#03312E] shadow-2xs hover:bg-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#1976D2] cursor-pointer"
+              title="Rows per page"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value="all">All</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -137,7 +164,8 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
         keyField="id"
         showSerialNo={true}
         serialNoHeader="s.no"
-        pageSize={6}
+        pageSize={effectivePageSize}
+        itemLabel="softwares"
         emptyMessage="No software applications found"
         emptySubtitle="Try searching with a different application name or vendor."
       />

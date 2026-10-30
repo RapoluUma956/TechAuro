@@ -38,7 +38,8 @@ public class SecurityInterceptor implements HandlerInterceptor {
         String path = request.getRequestURI();
 
         // Allow public authentication endpoints and agent telemetry reporting
-        if (path.startsWith("/api/auth/") || path.startsWith("/api/agent/")) {
+        if (path.startsWith("/api/auth/") || path.startsWith("/api/agent/") ||
+            path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/agent/")) {
             return true;
         }
 

@@ -4,6 +4,12 @@ import com.assetmanagement.backend.controller.AgentController;
 import com.assetmanagement.backend.dto.*;
 import com.assetmanagement.backend.entity.AuditLog;
 import com.assetmanagement.backend.entity.Device;
+import com.assetmanagement.backend.entity.DeviceAssignment;
+import com.assetmanagement.backend.entity.User;
+import com.assetmanagement.backend.repository.DeviceAssignmentRepository;
+import com.assetmanagement.backend.repository.UserRepository;
+import com.assetmanagement.backend.service.UserService;
+import java.time.LocalDate;
 import com.assetmanagement.backend.entity.HealthThreshold;
 import com.assetmanagement.backend.repository.AuditLogRepository;
 import com.assetmanagement.backend.repository.DeviceRepository;
@@ -40,6 +46,15 @@ class BackendApplicationTests {
 
     @Autowired
     private AuditLogRepository auditLogRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private DeviceAssignmentRepository deviceAssignmentRepository;
 
     @Test
     void testSingleReportUpsert() {
@@ -188,5 +203,87 @@ class BackendApplicationTests {
         List<AuditLog> found = auditLogRepository.findByEntityTypeAndEntityId("DEVICE", 1L);
         assertFalse(found.isEmpty());
         assertTrue(found.stream().anyMatch(a -> a.getAuditId().equals(saved.getAuditId())));
+    }
+
+    @Test
+    void testUserCreationAndDeviceAssignmentBySerialNumber() {
+        String serial = "SN-AGENT-TEST-001";
+        String empCode = "EMP-TEST-" + System.currentTimeMillis();
+        String email = "test." + System.currentTimeMillis() + "@techaura.io";
+
+        // 1. Ensure test device exists
+        Device dev = deviceRepository.findBySerialNumberIgnoreCase(serial).orElseGet(() -> {
+            Device d = new Device();
+            d.setSerialNumber(serial);
+            d.setAssetTag("AST-" + serial);
+            d.setBrand("Lenovo");
+            d.setModel("ThinkPad P16");
+            d.setConnectionStatus("ONLINE");
+            d.setDeviceStatus("ACTIVE");
+            return deviceRepository.save(d);
+        });
+
+        // 2. Create User with device assigned by Serial Number
+        UserRequest userRequest = new UserRequest(
+                empCode,
+                "Sathwika",
+                "Engineer",
+                email,
+                "+1 555-0199",
+                "Password@123",
+                "Senior Systems Engineer",
+                LocalDate.now(),
+                serial,
+                null
+        );
+
+        UserResponse userResponse = userService.createUser(userRequest);
+        assertNotNull(userResponse.userId());
+        assertEquals(empCode, userResponse.employeeCode());
+        assertEquals(serial, userResponse.assignedSerialNumber());
+        assertEquals("ONLINE", userResponse.assignedConnectionStatus());
+
+        // 3. Verify active assignment in DB
+        Optional<DeviceAssignment> activeAssignment = deviceAssignmentRepository
+                .findByUser_UserIdAndStatus(userResponse.userId(), "ACTIVE");
+        assertTrue(activeAssignment.isPresent());
+        assertEquals(serial, activeAssignment.get().getDevice().getSerialNumber());
+        assertEquals(serial, activeAssignment.get().getSerialNumber());
+
+        // Verify device current_user_id updated
+        Device updatedDev = deviceRepository.findById(dev.getDeviceId()).orElseThrow();
+        assertEquals(userResponse.userId(), updatedDev.getCurrentUserId());
+
+        // 4. Retrieve complete Employee Detail and verify telemetry mapping
+        EmployeeDetailResponse detail = userService.getEmployeeDetail(userResponse.userId());
+        assertNotNull(detail);
+        assertEquals(userResponse.userId(), detail.userId());
+        assertNotNull(detail.device());
+        assertEquals(serial, detail.device().getSerialNumber());
+        assertNotNull(detail.currentAssignment());
+        assertEquals("ACTIVE", detail.currentAssignment().status());
+
+        // 5. Test unassigning device
+        UserResponse unassignedResponse = userService.unassignDevice(userResponse.userId());
+        assertNull(unassignedResponse.assignedSerialNumber());
+
+        Device devAfterUnassign = deviceRepository.findById(dev.getDeviceId()).orElseThrow();
+        assertNull(devAfterUnassign.getCurrentUserId());
+
+        Optional<DeviceAssignment> afterUnassign = deviceAssignmentRepository
+                .findByUser_UserIdAndStatus(userResponse.userId(), "ACTIVE");
+        assertTrue(afterUnassign.isEmpty());
+
+        // 6. Test reassigning device by serial number
+        UserResponse reassignedResponse = userService.assignDevice(
+                userResponse.userId(),
+                new AssignDeviceRequest(serial, null)
+        );
+        assertEquals(serial, reassignedResponse.assignedSerialNumber());
+
+        // Clean up
+        deviceAssignmentRepository.deleteAll(deviceAssignmentRepository.findByDevice_DeviceId(dev.getDeviceId()));
+        userService.deleteUser(userResponse.userId());
+        deviceRepository.delete(dev);
     }
 }

@@ -125,6 +125,12 @@ public class DashboardService {
         long lowVulns = openVulns.stream()
                 .filter(v -> "LOW".equalsIgnoreCase(v.getSeverity())).count();
 
+        // Categorize any unclassified or unknown severities as MEDIUM so the sum always matches totalOpenVulns
+        long categorized = criticalVulns + highVulns + mediumVulns + lowVulns;
+        if (categorized < totalOpenVulns) {
+            mediumVulns += (totalOpenVulns - categorized);
+        }
+
         long totalLicenses = licenses.size();
         long expiredLicenses = 0;
         long expiringWithin7Days = 0;

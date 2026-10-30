@@ -79,13 +79,23 @@ export default function EmployeeTable({
       ),
     },
     {
-      key: "deviceId",
-      header: "Device ID",
-      render: (emp) => (
-        <span className="inline-block rounded-md bg-[#E3F2FD] px-2.5 py-1 font-mono text-xs font-bold text-[#1976D2]">
-          {emp.deviceId}
-        </span>
-      ),
+      key: "serialNumber",
+      header: "Serial Number",
+      render: (emp) => {
+        const serial = emp.serialNumber || emp.deviceId;
+        if (!serial || serial === "Unassigned" || serial === "—") {
+          return (
+            <span className="inline-block rounded-md bg-gray-100 px-2.5 py-1 font-mono text-xs font-medium text-gray-500">
+              Unassigned
+            </span>
+          );
+        }
+        return (
+          <span className="inline-block rounded-md bg-[#E3F2FD] px-2.5 py-1 font-mono text-xs font-bold text-[#1976D2] border border-[#BBDEFB]">
+            {serial}
+          </span>
+        );
+      },
     },
     {
       key: "deviceName",
@@ -106,7 +116,7 @@ export default function EmployeeTable({
             <line x1="12" y1="17" x2="12" y2="21" />
           </svg>
           <span className="text-sm font-medium text-[#03312E]">
-            {emp.deviceName}
+            {emp.deviceName || "—"}
           </span>
         </div>
       ),
@@ -114,7 +124,7 @@ export default function EmployeeTable({
     {
       key: "deviceStatus",
       header: "Device Status",
-      render: (emp) => <StatusBadge status={emp.deviceStatus} />,
+      render: (emp) => <StatusBadge status={emp.deviceStatus || "Unassigned"} />,
     },
     {
       key: "warrantyDate",

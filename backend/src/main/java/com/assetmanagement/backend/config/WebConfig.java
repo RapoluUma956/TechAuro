@@ -35,13 +35,18 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(securityInterceptor)
-                .addPathPatterns("/api/**")
+                .addPathPatterns("/api/**", "/api/v1/**")
                 .excludePathPatterns(
                         "/api/auth/csrf",
                         "/api/auth/login",
                         "/api/auth/refresh",
                         "/api/auth/logout",
-                        "/api/agent/**"
+                        "/api/agent/**",
+                        "/api/v1/auth/csrf",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/refresh",
+                        "/api/v1/auth/logout",
+                        "/api/v1/agent/**"
                 );
     }
 }

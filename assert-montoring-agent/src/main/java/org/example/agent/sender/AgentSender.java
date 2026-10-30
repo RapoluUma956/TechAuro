@@ -18,7 +18,7 @@ import java.util.List;
 public class AgentSender {
 
     private static final String DEFAULT_PRIMARY_URL = "http://localhost:8080/api/agent/report";
-    private static final String DEFAULT_CURRENT_IP_URL = "http://192.168.254.135:8080/api/agent/report";
+    private static final String DEFAULT_CURRENT_IP_URL = "http://1+92.168.254.135:8080/api/agent/report";
     private static final String DEFAULT_FALLBACK_URL = "http://192.168.140.128:8080/api/agent/report";
 
     private final HttpClient httpClient;

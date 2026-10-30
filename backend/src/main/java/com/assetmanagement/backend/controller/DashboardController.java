@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping({"/api/v1/dashboard", "/api/dashboard"})
 public class DashboardController {
 
     private final DashboardService dashboardService;

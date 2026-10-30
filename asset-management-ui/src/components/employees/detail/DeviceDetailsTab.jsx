@@ -49,6 +49,7 @@ export default function DeviceDetailsTab({
 
   // Use raw DB device or fallback to device props
   const db = rawDbDevice || device;
+  const isOffline = db.connection_status === "OFFLINE" || !db.connection_status || db.status === "Offline";
 
   const handleCopy = (field, text) => {
     if (!text) return;
@@ -59,6 +60,23 @@ export default function DeviceDetailsTab({
 
   return (
     <div className="space-y-6">
+      {/* Offline Alert Banner */}
+      {isOffline && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-xs shadow-xs">
+          <svg className="h-5 w-5 shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <div>
+            <p className="font-bold text-amber-900">Device is currently Offline</p>
+            <p className="text-amber-700 mt-0.5">
+              Live hardware telemetry, metrics, and software will automatically stream once the monitoring agent begins reporting for serial number <span className="font-mono font-bold text-amber-900">{db.serial_number || db.serialNumber || "—"}</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ============================================================== */}
       {/* TOP SECTION: Left 3 Cards (CPU, Memory, Storage) + Right Tall Device Details Card */}
       {/* ============================================================== */}
@@ -88,7 +106,7 @@ export default function DeviceDetailsTab({
                   </p>
                 </div>
               </div>
-              {db.cpu_temperature && (
+              {db.cpu_temperature != null && (
                 <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
                   {db.cpu_temperature} °C
                 </span>
@@ -98,8 +116,8 @@ export default function DeviceDetailsTab({
             <div className="space-y-2.5 text-xs">
               <div>
                 <span className="text-[11px] text-[#64748B]">Processor Model</span>
-                <p className="font-bold text-[#03312E] truncate" title={db.cpu}>
-                  {db.cpu || cpuDetails?.model || "Standard Multi-Core Processor"}
+                <p className="font-bold text-[#03312E] truncate" title={db.cpu || "—"}>
+                  {db.cpu || cpuDetails?.model || (isOffline ? "Offline — Awaiting telemetry" : "—")}
                 </p>
               </div>
 
@@ -107,14 +125,14 @@ export default function DeviceDetailsTab({
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Cores &amp; Threads</span>
                   <p className="mt-0.5 font-bold text-[#03312E]">
-                    {db.cpu_cores || 8} Cores / {db.cpu_threads || 16} Threads
+                    {db.cpu_cores ? `${db.cpu_cores} Cores / ${db.cpu_threads || "—"} Threads` : "—"}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Base Frequency</span>
                   <p className="mt-0.5 font-bold text-[#03312E]">
-                    {db.cpu_frequency_mhz ? `${(db.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : "2.50 GHz"}
+                    {db.cpu_frequency_mhz ? `${(db.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : "—"}
                   </p>
                 </div>
               </div>
@@ -123,12 +141,12 @@ export default function DeviceDetailsTab({
               <div className="pt-1 space-y-1">
                 <div className="flex justify-between text-[11px]">
                   <span className="text-[#64748B]">CPU Utilization</span>
-                  <span className="font-bold text-[#1976D2]">{db.cpu_usage_percent || 18}%</span>
+                  <span className="font-bold text-[#1976D2]">{db.cpu_usage_percent != null ? `${db.cpu_usage_percent}%` : "—"}</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                   <div
                     className="h-full rounded-full bg-[#1976D2]"
-                    style={{ width: `${Math.min(db.cpu_usage_percent || 18, 100)}%` }}
+                    style={{ width: `${Math.min(db.cpu_usage_percent || 0, 100)}%` }}
                   />
                 </div>
               </div>
@@ -158,7 +176,7 @@ export default function DeviceDetailsTab({
                 </div>
               </div>
               <span className="font-mono text-xs font-bold text-[#03312E] bg-[#F1F5F9] px-2 py-0.5 rounded">
-                {db.ram_gb || 32} GB Total
+                {db.ram_gb != null ? `${db.ram_gb} GB Total` : "—"}
               </span>
             </div>
 
@@ -167,14 +185,14 @@ export default function DeviceDetailsTab({
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Memory Used</span>
                   <p className="mt-0.5 font-bold text-amber-700">
-                    {db.ram_used_gb || 14.2} GB ({db.ram_usage_percent || 44}%)
+                    {db.ram_used_gb != null ? `${db.ram_used_gb} GB (${db.ram_usage_percent || 0}%)` : "—"}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Memory Remaining</span>
                   <p className="mt-0.5 font-bold text-emerald-700">
-                    {db.ram_available_gb || 17.8} GB
+                    {db.ram_available_gb != null ? `${db.ram_available_gb} GB` : "—"}
                   </p>
                 </div>
               </div>
@@ -182,11 +200,11 @@ export default function DeviceDetailsTab({
               <div className="flex items-center justify-between text-[11px] text-[#64748B]">
                 <span>Type &amp; Speed:</span>
                 <span className="font-bold text-[#03312E]">
-                  {db.ram_type || "DDR5"} {db.ram_speed_mhz ? `@ ${db.ram_speed_mhz} MHz` : ""}
+                  {db.ram_type ? `${db.ram_type} ${db.ram_speed_mhz ? `@ ${db.ram_speed_mhz} MHz` : ""}` : "—"}
                 </span>
               </div>
 
-              {db.swap_total_gb && (
+              {db.swap_total_gb != null && (
                 <div className="flex items-center justify-between text-[11px] text-[#64748B]">
                   <span>Swap Memory:</span>
                   <span className="font-bold text-[#03312E]">
@@ -200,7 +218,7 @@ export default function DeviceDetailsTab({
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                   <div
                     className="h-full rounded-full bg-[#1976D2]"
-                    style={{ width: `${Math.min(db.ram_usage_percent || 45, 100)}%` }}
+                    style={{ width: `${Math.min(db.ram_usage_percent || 0, 100)}%` }}
                   />
                 </div>
               </div>
@@ -227,7 +245,7 @@ export default function DeviceDetailsTab({
                 </div>
               </div>
               <span className="font-mono text-xs font-bold text-[#03312E] bg-[#F1F5F9] px-2 py-0.5 rounded">
-                {db.ssd_capacity_gb || 1024} GB Total
+                {db.ssd_capacity_gb != null ? `${db.ssd_capacity_gb} GB Total` : "—"}
               </span>
             </div>
 
@@ -236,29 +254,29 @@ export default function DeviceDetailsTab({
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Storage Used</span>
                   <p className="mt-0.5 font-bold text-amber-700">
-                    {db.ssd_used_gb || 384} GB
+                    {db.ssd_used_gb != null ? `${db.ssd_used_gb} GB` : "—"}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-[#F8FAF9] p-2.5 border border-[#EBF0EE]">
                   <span className="text-[10px] font-semibold uppercase text-[#64748B]">Storage Remaining</span>
                   <p className="mt-0.5 font-bold text-emerald-700">
-                    {db.ssd_available_gb || 640} GB
+                    {db.ssd_available_gb != null ? `${db.ssd_available_gb} GB` : "—"}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-[#64748B]">
                 <span>Drive Model:</span>
-                <span className="font-bold text-[#03312E] truncate max-w-[200px]" title={db.ssd_model}>
-                  {db.ssd_model || db.ssd_type || "NVMe PCIe 4.0 M.2 SSD"}
+                <span className="font-bold text-[#03312E] truncate max-w-[200px]" title={db.ssd_model || "—"}>
+                  {db.ssd_model || db.ssd_type || "—"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-[#64748B]">
                 <span>Health State:</span>
                 <span className="font-bold text-emerald-700 truncate max-w-[200px]">
-                  {db.ssd_health || "Healthy (0 Bad Sectors)"}
+                  {db.ssd_health || "—"}
                 </span>
               </div>
 
@@ -268,10 +286,11 @@ export default function DeviceDetailsTab({
                   <div
                     className="h-full rounded-full bg-[#1976D2]"
                     style={{
-                      width: `${Math.min(
-                        ((db.ssd_used_gb || 384) / (db.ssd_capacity_gb || 1024)) * 100,
-                        100
-                      )}%`,
+                      width: `${
+                        db.ssd_used_gb && db.ssd_capacity_gb
+                          ? Math.min((db.ssd_used_gb / db.ssd_capacity_gb) * 100, 100)
+                          : 0
+                      }%`,
                     }}
                   />
                 </div>
@@ -294,7 +313,7 @@ export default function DeviceDetailsTab({
                 Device ID, tag, serial number, warranty date, last seen, status, etc.
               </p>
             </div>
-            <StatusBadge status={db.asset_status || device.status || "Active"} />
+            <StatusBadge status={db.connection_status === "OFFLINE" ? "Offline" : (db.asset_status || device.status || "Active")} />
           </div>
 
           {/* Grid of Device Details as requested in wireframe */}
@@ -302,31 +321,31 @@ export default function DeviceDetailsTab({
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Device Name</span>
               <p className="mt-1 font-bold text-sm text-[#03312E]">
-                {db.device_name || `${db.brand} ${db.model}`}
+                {db.device_name || (db.brand && db.model ? `${db.brand} ${db.model}` : "Assigned Device")}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
-              <span className="text-[11px] font-semibold text-[#64748B]">Device ID</span>
+              <span className="text-[11px] font-semibold text-[#64748B]">Hardware Serial Number</span>
               <p className="mt-1 font-mono font-bold text-sm text-[#1976D2]">
-                {device.deviceId || `DEV-${db.device_id || 1}`}
+                {db.serial_number || db.serialNumber || device.serialNumber || "—"}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Asset Tag</span>
               <p className="mt-1 font-mono font-bold text-sm text-[#03312E]">
-                {db.asset_id || device.assetTag || "AST-2023-8042"}
+                {db.asset_id || device.assetTag || "—"}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Serial Number</span>
               <div className="mt-1 flex items-center justify-between font-mono font-bold text-sm text-[#03312E]">
-                <span>{db.serial_number || "7X9K2P4-DL"}</span>
+                <span>{db.serial_number || db.serialNumber || device.serialNumber || "—"}</span>
                 <button
                   type="button"
-                  onClick={() => handleCopy("sn", db.serial_number)}
+                  onClick={() => handleCopy("sn", db.serial_number || db.serialNumber || device.serialNumber)}
                   className="text-[#94A3B8] hover:text-[#1976D2] cursor-pointer"
                   title="Copy Serial Number"
                 >
@@ -338,35 +357,35 @@ export default function DeviceDetailsTab({
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Brand &amp; Model</span>
               <p className="mt-1 font-bold text-[#03312E]">
-                {db.brand} {db.model}
+                {(db.brand && db.brand !== "—") ? `${db.brand} ${db.model || ""}` : (db.model || "—")}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Operating System</span>
               <p className="mt-1 font-bold text-[#03312E]">
-                {db.os_name} {db.os_version} ({db.os_architecture || "x86_64"})
+                {(db.os_name ? `${db.os_name} ${db.os_version || ""}`.trim() : (db.os || "—")) + (db.os_architecture ? ` (${db.os_architecture})` : "")}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Hostname</span>
-              <p className="mt-1 font-mono text-[#03312E] truncate" title={db.hostname}>
-                {db.hostname || "CORP-WKS-8042.techaura.internal"}
+              <p className="mt-1 font-mono text-[#03312E] truncate" title={db.hostname || "—"}>
+                {db.hostname || "—"}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">IP Address (IPv4)</span>
               <p className="mt-1 font-mono font-bold text-[#03312E]">
-                {db.ipv4_address || "192.168.1.142"}
+                {db.ipv4_address || (isOffline ? "Offline" : "—")}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Warranty Expiry Date</span>
               <p className="mt-1 font-bold text-emerald-700">
-                {formatDateDisplay(db.warranty_expiry)} (Active Coverage)
+                {db.warranty_expiry ? `${formatDateDisplay(db.warranty_expiry)} (Active Coverage)` : "—"}
               </p>
             </div>
 
@@ -380,20 +399,20 @@ export default function DeviceDetailsTab({
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Last Seen Online</span>
               <p className="mt-1 font-mono text-[#03312E]">
-                {formatDateDisplay(db.last_seen_at)}
+                {db.last_seen_at ? formatDateDisplay(db.last_seen_at) : "Never"}
               </p>
             </div>
 
             <div className="rounded-xl bg-[#F8FAF9] p-3 border border-[#EBF0EE]">
               <span className="text-[11px] font-semibold text-[#64748B]">Connection &amp; MDM Agent</span>
               <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  {db.connection_status || "ONLINE"}
+                <span className={`inline-flex items-center gap-1 font-bold ${!isOffline ? "text-emerald-700" : "text-slate-600"}`}>
+                  <span className={`h-2 w-2 rounded-full ${!isOffline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                  {db.connection_status || "OFFLINE"}
                 </span>
                 <span className="text-[#94A3B8]">•</span>
                 <span className="text-[#64748B]">
-                  {db.agent_installed ? `Agent ${db.agent_version}` : "No Agent"}
+                  {db.agent_installed ? (db.agent_version ? `Agent ${db.agent_version}` : "Agent Active") : "No Agent"}
                 </span>
               </div>
             </div>
@@ -420,7 +439,7 @@ export default function DeviceDetailsTab({
               </h3>
             </div>
             <span className="font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              {db.battery_percentage || 92}% Charged
+              {db.battery_percentage != null ? `${db.battery_percentage}% Charged` : "—"}
             </span>
           </div>
 
@@ -428,28 +447,28 @@ export default function DeviceDetailsTab({
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">State:</span>
               <span className="font-bold text-[#03312E]">
-                {db.battery_charging ? "Charging (Plugged In)" : "On Battery"}
+                {db.battery_charging != null ? (db.battery_charging ? "Charging (Plugged In)" : "On Battery") : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Health Condition:</span>
               <span className="font-bold text-emerald-700">
-                {db.battery_health_percent || 96.5}% Optimal
+                {db.battery_health_percent != null ? `${db.battery_health_percent}% Optimal` : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Cycle Count:</span>
               <span className="font-bold text-[#03312E]">
-                {db.battery_cycle_count || 84} cycles
+                {db.battery_cycle_count != null ? `${db.battery_cycle_count} cycles` : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Power Source:</span>
-              <span className="font-bold text-[#03312E] truncate max-w-[180px]" title={db.power_source}>
-                {db.power_source || "AC Power Adapter (130W)"}
+              <span className="font-bold text-[#03312E] truncate max-w-[180px]" title={db.power_source || "—"}>
+                {db.power_source || "—"}
               </span>
             </div>
 
@@ -458,7 +477,7 @@ export default function DeviceDetailsTab({
               <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                 <div
                   className="h-full rounded-full bg-emerald-500"
-                  style={{ width: `${Math.min(db.battery_percentage || 92, 100)}%` }}
+                  style={{ width: `${Math.min(db.battery_percentage || 0, 100)}%` }}
                 />
               </div>
             </div>
@@ -480,43 +499,43 @@ export default function DeviceDetailsTab({
               </h3>
             </div>
             <span className="font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              {db.bitlocker_enabled ? "Encrypted" : "Standard"}
+              {db.bitlocker_enabled ? "Encrypted" : (db.bitlocker_protection_status || "—")}
             </span>
           </div>
 
           <div className="space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">BitLocker Protection:</span>
-              <span className="font-bold text-emerald-700">
-                {db.bitlocker_protection_status || "Protection On"}
+              <span className="font-bold text-[#03312E]">
+                {db.bitlocker_protection_status || (db.bitlocker_enabled ? "Enabled" : "—")}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Encryption Method:</span>
               <span className="font-bold text-[#03312E]">
-                {db.bitlocker_encryption_method || "XTS-AES 256-bit"}
+                {db.bitlocker_encryption_method || "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Encrypted Volume:</span>
               <span className="font-mono text-[#03312E]">
-                {db.bitlocker_volume || "C: [OS Disk]"}
+                {db.bitlocker_volume || "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">TPM Security:</span>
-              <span className="font-bold text-emerald-700">
-                {db.tpm_present ? `TPM ${db.tpm_version || "2.0"} (Active)` : "Not Present"}
+              <span className="font-bold text-[#03312E]">
+                {db.tpm_present ? `TPM ${db.tpm_version || "2.0"} (Active)` : (db.tpm_version ? `TPM ${db.tpm_version}` : "—")}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Secure Boot:</span>
-              <span className="font-bold text-emerald-700">
-                {db.secure_boot_enabled ? "Enabled" : "Disabled"}
+              <span className="font-bold text-[#03312E]">
+                {db.secure_boot_enabled != null ? (db.secure_boot_enabled ? "Enabled" : "Disabled") : "—"}
               </span>
             </div>
           </div>
@@ -537,7 +556,7 @@ export default function DeviceDetailsTab({
               </h3>
             </div>
             <span className="font-mono text-xs font-bold text-[#03312E] bg-[#F1F5F9] px-2 py-0.5 rounded">
-              v{db.bios_version || "1.18.0"}
+              {db.bios_version ? `v${db.bios_version}` : "—"}
             </span>
           </div>
 
@@ -545,7 +564,7 @@ export default function DeviceDetailsTab({
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">BIOS Vendor:</span>
               <span className="font-bold text-[#03312E]">
-                {db.bios_manufacturer || "Dell Inc."}
+                {db.bios_manufacturer || (db.brand && db.brand !== "—" ? db.brand : "—")}
               </span>
             </div>
 
@@ -559,20 +578,20 @@ export default function DeviceDetailsTab({
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">System Uptime:</span>
               <span className="font-bold text-[#1976D2]">
-                {formatUptime(db.uptime_seconds)}
+                {db.uptime_seconds != null ? formatUptime(db.uptime_seconds) : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Processes / Threads:</span>
               <span className="font-bold text-[#03312E]">
-                {db.process_count || 218} / {db.thread_count || 2894}
+                {(db.process_count != null && db.thread_count != null) ? `${db.process_count} / ${db.thread_count}` : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Boot Timestamp:</span>
-              <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[170px]" title={db.boot_time}>
+              <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[170px]" title={db.boot_time || "—"}>
                 {formatDateDisplay(db.boot_time)}
               </span>
             </div>
@@ -604,86 +623,92 @@ export default function DeviceDetailsTab({
             </div>
           </div>
           <span className="text-xs font-mono text-[#03312E] bg-[#F8FAF9] px-2.5 py-1 rounded-md border border-[#DCE5E1]">
-            Primary Host IP: {db.ipv4_address || "192.168.1.142"}
+            Primary Host IP: {db.ipv4_address || (isOffline ? "Offline" : "—")}
           </span>
         </div>
 
         {/* Adapters Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {networkAdapters.map((adapter) => {
-            const isConnected = adapter.status === "Connected";
+        {networkAdapters.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {networkAdapters.map((adapter) => {
+              const isConnected = adapter.status === "Connected";
 
-            return (
-              <div
-                key={adapter.id}
-                className="rounded-xl border border-[#DCE5E1] bg-[#FBFDFD] p-4 space-y-2.5 hover:shadow-xs hover:bg-white transition-all"
-              >
-                <div className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[#1976D2] bg-[#E3F2FD] px-2 py-0.5 rounded">
-                      {adapter.interface || "wlan0"}
-                    </span>
-                    <span className="font-bold text-xs text-[#03312E] truncate max-w-[150px]" title={adapter.name}>
-                      {adapter.name}
-                    </span>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      isConnected
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-slate-100 text-slate-600 border border-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                      }`}
-                    />
-                    {adapter.status || "Connected"}
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748B]">MAC Address:</span>
-                    <div className="flex items-center gap-1 font-mono font-bold text-[#03312E]">
-                      <span>{adapter.macAddress}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(`mac-${adapter.id}`, adapter.macAddress)}
-                        className="text-[#94A3B8] hover:text-[#1976D2] cursor-pointer"
-                        title="Copy MAC"
-                      >
-                        {copiedField === `mac-${adapter.id}` ? "✓" : "📋"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#64748B]">IPv4 Address:</span>
-                    <span className="font-mono font-bold text-[#03312E]">
-                      {adapter.ipv4 || "—"}
-                    </span>
-                  </div>
-
-                  {adapter.ipv6 && adapter.ipv6 !== "N/A" && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#64748B]">IPv6:</span>
-                      <span className="font-mono text-[#5C7370] truncate max-w-[160px]" title={adapter.ipv6}>
-                        {adapter.ipv6}
+              return (
+                <div
+                  key={adapter.id}
+                  className="rounded-xl border border-[#DCE5E1] bg-[#FBFDFD] p-4 space-y-2.5 hover:shadow-xs hover:bg-white transition-all"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#1976D2] bg-[#E3F2FD] px-2 py-0.5 rounded">
+                        {adapter.interface || "eth0"}
+                      </span>
+                      <span className="font-bold text-xs text-[#03312E] truncate max-w-[150px]" title={adapter.name}>
+                        {adapter.name}
                       </span>
                     </div>
-                  )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        isConnected
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                        }`}
+                      />
+                      {adapter.status || "Connected"}
+                    </span>
+                  </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 border-t border-[#F1F5F9]">
-                    <span>Interface Type:</span>
-                    <span className="font-semibold text-[#03312E]">{adapter.type}</span>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#64748B]">MAC Address:</span>
+                      <div className="flex items-center gap-1 font-mono font-bold text-[#03312E]">
+                        <span>{adapter.macAddress}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(`mac-${adapter.id}`, adapter.macAddress)}
+                          className="text-[#94A3B8] hover:text-[#1976D2] cursor-pointer"
+                          title="Copy MAC"
+                        >
+                          {copiedField === `mac-${adapter.id}` ? "✓" : "📋"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#64748B]">IPv4 Address:</span>
+                      <span className="font-mono font-bold text-[#03312E]">
+                        {adapter.ipv4 || "—"}
+                      </span>
+                    </div>
+
+                    {adapter.ipv6 && adapter.ipv6 !== "N/A" && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#64748B]">IPv6:</span>
+                        <span className="font-mono text-[#5C7370] truncate max-w-[160px]" title={adapter.ipv6}>
+                          {adapter.ipv6}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 border-t border-[#F1F5F9]">
+                      <span>Interface Type:</span>
+                      <span className="font-semibold text-[#03312E]">{adapter.type}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-[#DCE5E1] p-6 text-center text-xs text-[#64748B]">
+            No active network adapters reported yet. When the agent reports, interfaces will appear here.
+          </div>
+        )}
       </div>
 
       {/* ============================================================== */}

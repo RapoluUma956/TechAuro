@@ -11,110 +11,8 @@ import {
   DeleteLicenseModal,
 } from "../../components/licenses";
 
-// Fallback data matching wireframe in case server is starting or offline
-const fallbackSummary = {
-  totalLicenses: 24,
-  totalSeats: 520,
-  assignedSeats: 428,
-  availableSeats: 92,
-  expiringSoonCount: 6,
-};
-
-const fallbackLicenses = [
-  {
-    licenseId: 1,
-    licenseName: "Microsoft 365 Business",
-    softwareName: "Microsoft 365",
-    publisher: "Microsoft",
-    licenseType: "SUBSCRIPTION",
-    renewalType: "YEARLY",
-    renewalMethod: "AUTO",
-    totalQuantity: 100,
-    assignedQuantity: 85,
-    availableQuantity: 15,
-    expiryDate: "2026-12-15",
-    status: "ACTIVE",
-    notes: "Business subscription",
-  },
-  {
-    licenseId: 2,
-    licenseName: "IntelliJ IDEA Commercial",
-    softwareName: "IntelliJ IDEA",
-    publisher: "JetBrains",
-    licenseType: "SUBSCRIPTION",
-    renewalType: "YEARLY",
-    renewalMethod: "AUTO",
-    totalQuantity: 50,
-    assignedQuantity: 48,
-    availableQuantity: 2,
-    expiryDate: "2027-01-02",
-    status: "ACTIVE",
-    notes: "Commercial dev licenses",
-  },
-  {
-    licenseId: 3,
-    licenseName: "Windows 11 Pro",
-    softwareName: "Windows 11",
-    publisher: "Microsoft",
-    licenseType: "VOLUME",
-    renewalType: "ONE_TIME",
-    renewalMethod: "NOT_APPLICABLE",
-    totalQuantity: 200,
-    assignedQuantity: 180,
-    availableQuantity: 20,
-    expiryDate: null,
-    status: "ACTIVE",
-    notes: "Volume licensing",
-  },
-  {
-    licenseId: 4,
-    licenseName: "Adobe Acrobat Pro",
-    softwareName: "Acrobat Pro",
-    publisher: "Adobe",
-    licenseType: "SUBSCRIPTION",
-    renewalType: "YEARLY",
-    renewalMethod: "AUTO",
-    totalQuantity: 30,
-    assignedQuantity: 25,
-    availableQuantity: 5,
-    expiryDate: "2026-11-20",
-    status: "ACTIVE",
-    notes: "PDF & document editor",
-  },
-  {
-    licenseId: 5,
-    licenseName: "Visual Studio Enterprise",
-    softwareName: "Visual Studio",
-    publisher: "Microsoft",
-    licenseType: "SUBSCRIPTION",
-    renewalType: "YEARLY",
-    renewalMethod: "AUTO",
-    totalQuantity: 40,
-    assignedQuantity: 38,
-    availableQuantity: 2,
-    expiryDate: "2026-12-10",
-    status: "EXPIRING_SOON",
-    notes: "Enterprise developer tooling",
-  },
-  {
-    licenseId: 6,
-    licenseName: "AutoCAD",
-    softwareName: "AutoCAD",
-    publisher: "Autodesk",
-    licenseType: "PERPETUAL",
-    renewalType: "ONE_TIME",
-    renewalMethod: "NOT_APPLICABLE",
-    totalQuantity: 25,
-    assignedQuantity: 20,
-    availableQuantity: 5,
-    expiryDate: null,
-    status: "ACTIVE",
-    notes: "Drafting workstation software",
-  },
-];
-
 export default function Licenses() {
-  // 1. Summary Metrics
+  // 1. Metric Cards State
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
@@ -157,9 +55,24 @@ export default function Licenses() {
     try {
       setSummaryLoading(true);
       const data = await licenseService.getSummary();
-      setSummary(data);
-    } catch {
-      setSummary(fallbackSummary);
+      setSummary(
+        data || {
+          totalLicenses: 0,
+          totalSeats: 0,
+          assignedSeats: 0,
+          availableSeats: 0,
+          expiringSoonCount: 0,
+        }
+      );
+    } catch (err) {
+      console.error("Failed to load license summary:", err);
+      setSummary({
+        totalLicenses: 0,
+        totalSeats: 0,
+        assignedSeats: 0,
+        availableSeats: 0,
+        expiringSoonCount: 0,
+      });
     } finally {
       setSummaryLoading(false);
     }
@@ -170,20 +83,15 @@ export default function Licenses() {
     try {
       const data = await licenseService.getFilterOptions();
       if (data) {
-        if (Array.isArray(data.softwares) && data.softwares.length > 0) {
+        if (Array.isArray(data.softwares)) {
           setSoftwareOptions(data.softwares);
-        } else {
-          setSoftwareOptions(["Microsoft 365", "IntelliJ IDEA", "Windows 11", "Acrobat Pro", "Visual Studio", "AutoCAD"]);
         }
-        if (Array.isArray(data.publishers) && data.publishers.length > 0) {
+        if (Array.isArray(data.publishers)) {
           setPublisherOptions(data.publishers);
-        } else {
-          setPublisherOptions(["Microsoft", "JetBrains", "Adobe", "Autodesk"]);
         }
       }
-    } catch {
-      setSoftwareOptions(["Microsoft 365", "IntelliJ IDEA", "Windows 11", "Acrobat Pro", "Visual Studio", "AutoCAD"]);
-      setPublisherOptions(["Microsoft", "JetBrains", "Adobe", "Autodesk"]);
+    } catch (err) {
+      console.error("Failed to fetch filter options:", err);
     }
   }, []);
 
@@ -206,49 +114,27 @@ export default function Licenses() {
         setTotalElements(res.totalElements ?? res.content.length);
         setTotalPages(res.totalPages ?? 1);
       } else {
-        setLicenses(fallbackLicenses);
-        setTotalElements(fallbackLicenses.length);
+        setLicenses([]);
+        setTotalElements(0);
         setTotalPages(1);
       }
-    } catch {
-      // Local client filtering fallback
-      let filtered = [...fallbackLicenses];
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        filtered = filtered.filter(
-          (l) =>
-            l.licenseName?.toLowerCase().includes(q) ||
-            l.softwareName?.toLowerCase().includes(q) ||
-            l.publisher?.toLowerCase().includes(q)
-        );
-      }
-
-      if (selectedSoftware !== "All") {
-        filtered = filtered.filter(
-          (l) => l.softwareName?.toLowerCase() === selectedSoftware.toLowerCase()
-        );
-      }
-
-      if (selectedPublisher !== "All") {
-        filtered = filtered.filter(
-          (l) => l.publisher?.toLowerCase() === selectedPublisher.toLowerCase()
-        );
-      }
-
-      if (selectedStatus !== "All") {
-        filtered = filtered.filter(
-          (l) => l.status?.toUpperCase() === selectedStatus.toUpperCase()
-        );
-      }
-
-      setLicenses(filtered);
-      setTotalElements(filtered.length);
-      setTotalPages(Math.ceil(filtered.length / pageSize) || 1);
+    } catch (err) {
+      console.error("Failed to fetch licenses:", err);
+      setLicenses([]);
+      setTotalElements(0);
+      setTotalPages(1);
     } finally {
       setLicensesLoading(false);
     }
-  }, [page, pageSize, searchQuery, selectedSoftware, selectedPublisher, selectedStatus, selectedExpiry]);
+  }, [
+    page,
+    pageSize,
+    searchQuery,
+    selectedSoftware,
+    selectedPublisher,
+    selectedStatus,
+    selectedExpiry,
+  ]);
 
   // Initial mount
   useEffect(() => {

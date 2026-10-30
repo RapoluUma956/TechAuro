@@ -234,7 +234,7 @@ export default function EmployeeDetailHeader({
                 </p>
                 <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-[#64748B]">
                   <span className="rounded bg-[#E2E8F0] px-1.5 py-0.2 text-[#1E293B] font-semibold">
-                    {device.deviceId}
+                    SN: {device.serialNumber || device.deviceId}
                   </span>
                   <span>•</span>
                   <span className="truncate">{device.os}</span>

@@ -11,130 +11,6 @@ import {
   AssignAccessoryModal,
 } from "../../components/accessories";
 
-// Static fallback data in case backend is offline
-const fallbackSummary = {
-  totalAccessories: 248,
-  assignedAccessories: 176,
-  unassignedAccessories: 58,
-  repairAccessories: 14,
-};
-
-const fallbackAccessories = [
-  {
-    accessoryId: 1,
-    accessoryName: "Wireless Mouse",
-    category: "Mouse",
-    subCategory: "Wireless",
-    brand: "Logitech",
-    model: "M185",
-    totalQuantity: 40,
-    assignedQuantity: 28,
-    availableQuantity: 10,
-    repairQuantity: 2,
-    damagedQuantity: 2,
-  },
-  {
-    accessoryId: 2,
-    accessoryName: "USB-C Headset",
-    category: "Headset",
-    subCategory: "Wired USB-C",
-    brand: "Jabra",
-    model: "Evolve 20",
-    totalQuantity: 18,
-    assignedQuantity: 14,
-    availableQuantity: 3,
-    repairQuantity: 1,
-    damagedQuantity: 1,
-  },
-  {
-    accessoryId: 3,
-    accessoryName: "External Monitor",
-    category: "Monitor",
-    subCategory: "Standard 24\"",
-    brand: "Dell",
-    model: "P2422H",
-    totalQuantity: 20,
-    assignedQuantity: 16,
-    availableQuantity: 3,
-    repairQuantity: 1,
-    damagedQuantity: 1,
-  },
-  {
-    accessoryId: 4,
-    accessoryName: "Mechanical Keyboard",
-    category: "Keyboard",
-    subCategory: "Wireless",
-    brand: "Logitech",
-    model: "MX Mechanical",
-    totalQuantity: 30,
-    assignedQuantity: 18,
-    availableQuantity: 12,
-    repairQuantity: 0,
-    damagedQuantity: 0,
-  },
-];
-
-const fallbackLaptopConfigs = [
-  {
-    brand: "Lenovo",
-    model: "ThinkPad E14",
-    ram: "16 GB",
-    ssd: "512 GB",
-    total: 12,
-    assigned: 9,
-    remaining: 2,
-    repair: 1,
-    devices: [
-      {
-        deviceId: 1,
-        assetTag: "AST-LEN-E14-001",
-        serialNumber: "LEN-E14-1001",
-        warrantyExpiryDate: "2028-10-20",
-        assignmentStatus: "ASSIGNED",
-        assignedUserName: "Alice Johnson",
-        deviceStatus: "ACTIVE",
-      },
-      {
-        deviceId: 2,
-        assetTag: "AST-LEN-E14-002",
-        serialNumber: "LEN-E14-1002",
-        warrantyExpiryDate: "2028-10-20",
-        assignmentStatus: "UNASSIGNED",
-        deviceStatus: "ACTIVE",
-      },
-    ],
-  },
-  {
-    brand: "Dell",
-    model: "Latitude 5540",
-    ram: "32 GB",
-    ssd: "1 TB",
-    total: 8,
-    assigned: 5,
-    remaining: 3,
-    repair: 0,
-    devices: [
-      {
-        deviceId: 3,
-        assetTag: "AST-DELL-5540-001",
-        serialNumber: "SN-DELL-5540-01",
-        warrantyExpiryDate: "2027-12-15",
-        assignmentStatus: "ASSIGNED",
-        assignedUserName: "Bob Smith",
-        deviceStatus: "ACTIVE",
-      },
-      {
-        deviceId: 4,
-        assetTag: "AST-DELL-5540-002",
-        serialNumber: "SN-DELL-5540-02",
-        warrantyExpiryDate: "2027-12-15",
-        assignmentStatus: "UNASSIGNED",
-        deviceStatus: "ACTIVE",
-      },
-    ],
-  },
-];
-
 export default function Accessories() {
   // Summary state
   const [summary, setSummary] = useState(null);
@@ -185,9 +61,22 @@ export default function Accessories() {
     try {
       setSummaryLoading(true);
       const data = await accessoryService.getSummary();
-      setSummary(data);
-    } catch {
-      setSummary(fallbackSummary);
+      setSummary(
+        data || {
+          totalAccessories: 0,
+          assignedAccessories: 0,
+          unassignedAccessories: 0,
+          repairAccessories: 0,
+        }
+      );
+    } catch (err) {
+      console.error("Failed to load accessory summary:", err);
+      setSummary({
+        totalAccessories: 0,
+        assignedAccessories: 0,
+        unassignedAccessories: 0,
+        repairAccessories: 0,
+      });
     } finally {
       setSummaryLoading(false);
     }
@@ -206,31 +95,17 @@ export default function Accessories() {
 
       if (res && res.content) {
         setAccessories(res.content);
-        setAccessoryTotalElements(res.totalElements || res.content.length);
-        setAccessoryTotalPages(res.totalPages || 1);
+        setAccessoryTotalElements(res.totalElements ?? res.content.length);
+        setAccessoryTotalPages(res.totalPages ?? 1);
       } else {
-        setAccessories(fallbackAccessories);
-        setAccessoryTotalElements(fallbackAccessories.length);
+        setAccessories([]);
+        setAccessoryTotalElements(0);
         setAccessoryTotalPages(1);
       }
-    } catch {
-      let filtered = [...fallbackAccessories];
-      if (selectedCategory && selectedCategory !== "All") {
-        filtered = filtered.filter(
-          (a) => a.category?.toLowerCase() === selectedCategory.toLowerCase()
-        );
-      }
-      if (accessorySearch.trim()) {
-        const q = accessorySearch.toLowerCase().trim();
-        filtered = filtered.filter(
-          (a) =>
-            a.accessoryName?.toLowerCase().includes(q) ||
-            a.brand?.toLowerCase().includes(q) ||
-            a.model?.toLowerCase().includes(q)
-        );
-      }
-      setAccessories(filtered);
-      setAccessoryTotalElements(filtered.length);
+    } catch (err) {
+      console.error("Failed to fetch accessories:", err);
+      setAccessories([]);
+      setAccessoryTotalElements(0);
       setAccessoryTotalPages(1);
     } finally {
       setAccessoriesLoading(false);
@@ -250,32 +125,17 @@ export default function Accessories() {
 
       if (res && res.content) {
         setLaptopConfigs(res.content);
-        setLaptopTotalElements(res.totalElements || res.content.length);
-        setLaptopTotalPages(res.totalPages || 1);
+        setLaptopTotalElements(res.totalElements ?? res.content.length);
+        setLaptopTotalPages(res.totalPages ?? 1);
       } else {
-        setLaptopConfigs(fallbackLaptopConfigs);
-        setLaptopTotalElements(fallbackLaptopConfigs.length);
+        setLaptopConfigs([]);
+        setLaptopTotalElements(0);
         setLaptopTotalPages(1);
       }
-    } catch {
-      let filtered = [...fallbackLaptopConfigs];
-      if (selectedBrand && selectedBrand !== "All") {
-        filtered = filtered.filter(
-          (c) => c.brand?.toLowerCase() === selectedBrand.toLowerCase()
-        );
-      }
-      if (laptopSearch.trim()) {
-        const q = laptopSearch.toLowerCase().trim();
-        filtered = filtered.filter(
-          (c) =>
-            c.brand?.toLowerCase().includes(q) ||
-            c.model?.toLowerCase().includes(q) ||
-            c.ram?.toLowerCase().includes(q) ||
-            c.ssd?.toLowerCase().includes(q)
-        );
-      }
-      setLaptopConfigs(filtered);
-      setLaptopTotalElements(filtered.length);
+    } catch (err) {
+      console.error("Failed to fetch laptop configs:", err);
+      setLaptopConfigs([]);
+      setLaptopTotalElements(0);
       setLaptopTotalPages(1);
     } finally {
       setLaptopsLoading(false);
@@ -289,8 +149,8 @@ export default function Accessories() {
       if (Array.isArray(data)) {
         setCategories(data);
       }
-    } catch {
-      // Keep defaults
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
     }
   }, []);
 
@@ -313,17 +173,12 @@ export default function Accessories() {
     try {
       const res = await accessoryService.bulkAddLaptops(payload);
       showToast(
-        `Successfully registered ${res.quantityAdded || payload.quantity} ${payload.brand} ${payload.model} laptops!`
+        `Successfully registered ${res?.quantityAdded || payload.quantity} ${payload.brand} ${payload.model} laptops!`
       );
       fetchSummary();
       fetchLaptopConfigs();
-    } catch {
-      showToast(
-        `Registered ${payload.quantity} ${payload.brand} ${payload.model} laptops!`,
-        "success"
-      );
-      fetchSummary();
-      fetchLaptopConfigs();
+    } catch (err) {
+      showToast(err?.message || "Failed to add laptops", "error");
     }
   };
 
@@ -332,17 +187,12 @@ export default function Accessories() {
     try {
       const res = await accessoryService.createAccessory(payload);
       showToast(
-        `Added ${res.quantityAdded || payload.quantity} units of ${payload.accessoryName}!`
+        `Added ${res?.quantityAdded || payload.quantity} units of ${payload.accessoryName}!`
       );
       fetchSummary();
       fetchAccessories();
-    } catch {
-      showToast(
-        `Added ${payload.quantity} units of ${payload.accessoryName}!`,
-        "success"
-      );
-      fetchSummary();
-      fetchAccessories();
+    } catch (err) {
+      showToast(err?.message || "Failed to add accessory", "error");
     }
   };
 
@@ -353,13 +203,8 @@ export default function Accessories() {
       showToast(`Updated ${updated.accessoryName} successfully!`);
       fetchSummary();
       fetchAccessories();
-    } catch {
-      showToast(`Updated ${updated.accessoryName} (local update)`, "success");
-      setAccessories((prev) =>
-        prev.map((item) =>
-          item.accessoryId === updated.accessoryId ? { ...item, ...updated } : item
-        )
-      );
+    } catch (err) {
+      showToast(err?.message || "Failed to update accessory", "error");
     }
   };
 
@@ -378,10 +223,8 @@ export default function Accessories() {
       );
       fetchSummary();
       fetchAccessories();
-    } catch {
-      showToast(`Added ${quantityToAdd} units!`, "success");
-      fetchSummary();
-      fetchAccessories();
+    } catch (err) {
+      showToast(err?.message || "Failed to add stock", "error");
     }
   };
 
@@ -392,9 +235,8 @@ export default function Accessories() {
       showToast("Accessory deleted successfully.");
       fetchSummary();
       fetchAccessories();
-    } catch {
-      showToast("Accessory removed.", "info");
-      setAccessories((prev) => prev.filter((a) => a.accessoryId !== accessoryId));
+    } catch (err) {
+      showToast(err?.message || "Failed to delete accessory", "error");
     }
   };
 
@@ -433,69 +275,49 @@ export default function Accessories() {
         fetchSummary();
         fetchAccessories();
       }
-    } catch {
-      // Graceful fallback for local/offline operations
-      showToast(
-        `Assigned ${isLaptop ? "laptop" : `${quantity} unit(s)`} to ${employeeName}!`,
-        "success"
-      );
-      if (!isLaptop) {
-        setAccessories((prev) =>
-          prev.map((acc) => {
-            if (acc.accessoryId === item.accessoryId) {
-              const newAvail = Math.max(0, (acc.availableQuantity || 0) - quantity);
-              const newAssigned = (acc.assignedQuantity || 0) + quantity;
-              return {
-                ...acc,
-                availableQuantity: newAvail,
-                assignedQuantity: newAssigned,
-              };
-            }
-            return acc;
-          })
-        );
-      }
-      fetchSummary();
-      fetchAccessories();
-      fetchLaptopConfigs();
+    } catch (err) {
+      showToast(err?.message || "Failed to assign asset", "error");
     }
   };
 
   return (
     <div className="space-y-6 text-[#24211D]">
-      {/* Toast Notification matching Employees page */}
+      {/* Toast Notification */}
       {toast.message && (
         <div
           className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold shadow-xs transition-all ${
             toast.type === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-sky-200 bg-sky-50 text-sky-800"
+              : "border-red-200 bg-red-50 text-red-800"
           }`}
         >
           <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-200 text-xs font-bold text-emerald-800">
-              ✓
+            <span
+              className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
+                toast.type === "success"
+                  ? "bg-emerald-200 text-emerald-800"
+                  : "bg-red-200 text-red-800"
+              }`}
+            >
+              {toast.type === "success" ? "✓" : "!"}
             </span>
             <span>{toast.message}</span>
           </div>
           <button
             type="button"
             onClick={() => setToast({ message: "", type: "success" })}
-            className="cursor-pointer text-emerald-700 hover:text-emerald-900"
+            className="cursor-pointer text-gray-500 hover:text-gray-700"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Page Header matching Employees & Dashboard */}
+      {/* Page Header */}
       <AccessoryHeader onAddAccessory={() => setIsAddModalOpen(true)} />
 
-      {/* Top 4 Metrics Summary Cards matching EmployeeMetricCards */}
-      <AccessoriesMetricCards
-        metrics={summary}
-        loading={summaryLoading}
-      />
+      {/* Top Metrics Summary Cards */}
+      <AccessoriesMetricCards metrics={summary} loading={summaryLoading} />
 
       {/* Both Tables Stacked Directly on the Page */}
       <AccessoryTable

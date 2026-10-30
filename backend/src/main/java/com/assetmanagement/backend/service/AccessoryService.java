@@ -701,6 +701,7 @@ public class AccessoryService {
         DeviceAssignment da = new DeviceAssignment();
         da.setDevice(dev);
         da.setUser(user);
+        da.setSerialNumber(dev.getSerialNumber());
         da.setStatus("ACTIVE");
         if (req.getAssignedDate() != null) {
             da.setAssignedAt(req.getAssignedDate().atStartOfDay());

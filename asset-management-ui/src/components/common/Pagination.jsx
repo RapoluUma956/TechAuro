@@ -36,22 +36,30 @@ export default function Pagination({
         pages.push(i);
       }
     } else {
-      pages.push(1);
-      if (currentPage > 3) {
+      if (currentPage <= 4) {
+        // Near the beginning: 1, 2, 3, 4, 5, "...", totalPages
+        for (let i = 1; i <= 5; i++) {
+          pages.push(i);
+        }
         pages.push("...");
-      }
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) {
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        // Near the end: 1, "...", totalPages - 4, ..., totalPages
+        pages.push(1);
         pages.push("...");
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // In the middle: 1, "...", current - 1, current, current + 1, "...", totalPages
+        pages.push(1);
+        pages.push("...");
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push("...");
+        pages.push(totalPages);
       }
-      pages.push(totalPages);
     }
     return pages;
   };

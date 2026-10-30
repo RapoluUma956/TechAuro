@@ -1,12 +1,21 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { dashboardHeaderData } from "../../data/dashboardData";
+import notificationService from "../../services/notificationService";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
+
+const DEFAULT_PROFILE = {
+  name: "Admin User",
+  role: "IT Administrator",
+  initials: "AU",
+};
 
 export default function AppHeader() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
   const mobileSearchContainerRef = useRef(null);
   const mobileInputRef = useRef(null);
   const profileDropdownRef = useRef(null);
@@ -15,18 +24,37 @@ export default function AppHeader() {
 
   const profileName = user
     ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "User"
-    : dashboardHeaderData.userProfile.name;
+    : DEFAULT_PROFILE.name;
 
   const profileRole =
     user?.designation ||
-    (user?.roles?.[0] ? (user.roles[0] === "ADMIN" ? "IT Administrator" : user.roles[0]) : (user?.role || dashboardHeaderData.userProfile.role));
+    (user?.roles?.[0] ? (user.roles[0] === "ADMIN" ? "IT Administrator" : user.roles[0]) : (user?.role || DEFAULT_PROFILE.role));
 
   const profileInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
       (user.username ? user.username.slice(0, 2).toUpperCase() : "AD")
-    : dashboardHeaderData.userProfile.initials;
+    : DEFAULT_PROFILE.initials;
 
   const profileEmail = user?.email || "admin@example.com";
+
+  // Fetch unread notification count
+  const fetchNotificationCount = useCallback(async () => {
+    try {
+      const summary = await notificationService.getSummary();
+      if (summary && typeof summary.unreadCount === "number") {
+        setUnreadNotifications(summary.unreadCount);
+      }
+    } catch {
+      // Non-blocking for header
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotificationCount();
+  }, [fetchNotificationCount]);
+
+  // 30-Second Active-Tab Auto-Refresh for notification badge
+  useAutoRefresh(fetchNotificationCount, 30000);
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
@@ -115,7 +143,7 @@ export default function AppHeader() {
     <header className="relative flex w-full items-center justify-between gap-3 sm:gap-4 py-1.5 sm:py-2 px-1">
       {/* Left: App Logo & Desktop Search */}
       <div className="flex items-center gap-3 lg:gap-5 min-w-0">
-        {/* App Logo: Always display the complete TechAura logo with balanced height */}
+        {/* App Logo */}
         <Link
           to="/dashboard"
           className="flex items-center shrink-0 select-none group focus:outline-none py-0.5"
@@ -128,7 +156,7 @@ export default function AppHeader() {
           />
         </Link>
 
-        {/* Long / Big screens: Full Search Bar */}
+        {/* Big screens: Full Search Bar */}
         <div className="hidden md:block relative w-64 lg:w-80 xl:w-96">
           <svg
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"
@@ -142,7 +170,7 @@ export default function AppHeader() {
           </svg>
           <input
             type="text"
-            placeholder={dashboardHeaderData.searchPlaceholder}
+            placeholder="Search assets, employees, serials..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-[#DCE5E1] bg-white py-2 pl-10 pr-9 text-xs text-[#03312E] shadow-sm placeholder:text-[#94A3B8] focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 transition-all"
@@ -184,16 +212,18 @@ export default function AppHeader() {
           type="button"
           onClick={() => navigate("/notifications")}
           aria-label="Notifications"
-          title="Notifications"
-          className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-[#DCE5E1] bg-white text-[#64748B] shadow-sm hover:bg-[#F8FAFC] hover:text-[#1976D2] transition-colors"
+          title={`Notifications (${unreadNotifications} unread)`}
+          className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-[#DCE5E1] bg-white text-[#64748B] shadow-sm hover:bg-[#F8FAFC] hover:text-[#1976D2] transition-colors cursor-pointer"
         >
           <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-[10px] font-bold text-white">
-            {dashboardHeaderData.unreadNotificationCount}
-          </span>
+          {unreadNotifications > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-[#EF4444] text-[10px] font-bold text-white shadow-xs">
+              {unreadNotifications > 99 ? "99+" : unreadNotifications}
+            </span>
+          )}
         </button>
 
         {/* User Profile Dropdown */}
@@ -326,7 +356,7 @@ export default function AppHeader() {
             <input
               ref={mobileInputRef}
               type="text"
-              placeholder={dashboardHeaderData.searchPlaceholder}
+              placeholder="Search assets, employees, serials..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-[#DCE5E1] bg-[#F8FAFC] py-2 pl-9 pr-8 text-xs text-[#03312E] placeholder:text-[#94A3B8] focus:border-[#1976D2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 transition-all"
@@ -362,4 +392,3 @@ export default function AppHeader() {
     </header>
   );
 }
-

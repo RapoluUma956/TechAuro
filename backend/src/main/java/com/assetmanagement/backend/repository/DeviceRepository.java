@@ -14,7 +14,11 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     Optional<Device> findBySerialNumber(String serialNumber);
 
+    Optional<Device> findBySerialNumberIgnoreCase(String serialNumber);
+
     Optional<Device> findByHostname(String hostname);
+
+    Optional<Device> findByCurrentUserId(Long currentUserId);
 
     List<Device> findByDeviceStatus(String deviceStatus);
 

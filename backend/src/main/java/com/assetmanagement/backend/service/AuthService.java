@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public class AuthService {
 
     private static final String REFRESH_COOKIE_NAME = "refreshToken";
-    private static final String REFRESH_COOKIE_PATH = "/api/auth";
+    private static final String REFRESH_COOKIE_PATH = "/";
     private static final long REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
     // Minimum 12 characters, at least 1 uppercase, 1 lowercase, 1 digit, 1 special character

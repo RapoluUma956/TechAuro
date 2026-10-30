@@ -1,9 +1,12 @@
 package com.assetmanagement.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(
         name = "device_networks",
         indexes = {
@@ -26,6 +29,7 @@ public class DeviceNetwork {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_device_networks_device")
     )
+    @JsonIgnore
     private Device device;
 
     @Column(name = "interface_name", length = 100)
