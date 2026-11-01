@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.agent.model.AssetReport;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -18,7 +20,8 @@ import java.util.List;
 public class AgentSender {
 
     private static final String DEFAULT_PRIMARY_URL = "http://localhost:8080/api/agent/report";
-    private static final String DEFAULT_CURRENT_IP_URL = "http://1+92.168.254.135:8080/api/agent/report";
+    private static final String DEFAULT_CURRENT_IP_URL = "http://192.168.254.135:8080/api/agent/report";
+    private static final String DEFAULT_WIFI_IP_URL = "http://172.16.39.244:8080/api/agent/report";
     private static final String DEFAULT_FALLBACK_URL = "http://192.168.140.128:8080/api/agent/report";
 
     private final HttpClient httpClient;
@@ -27,7 +30,7 @@ public class AgentSender {
 
     public AgentSender() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(3))
                 .build();
 
         this.objectMapper = new ObjectMapper();
@@ -35,9 +38,24 @@ public class AgentSender {
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         this.serverUrls = new ArrayList<>();
+
+        // 1. Check environment variable or system property
         String configuredUrl = System.getenv("AGENT_SERVER_URL");
         if (configuredUrl == null || configuredUrl.isBlank()) {
             configuredUrl = System.getProperty("agent.server.url");
+        }
+
+        // 2. Check local server_url.txt file (beside the executable)
+        if (configuredUrl == null || configuredUrl.isBlank()) {
+            File configFile = new File("server_url.txt");
+            if (configFile.exists() && configFile.canRead()) {
+                try {
+                    String fileUrl = Files.readString(configFile.toPath()).trim();
+                    if (!fileUrl.isBlank()) {
+                        configuredUrl = fileUrl;
+                    }
+                } catch (Exception ignored) {}
+            }
         }
 
         if (configuredUrl != null && !configuredUrl.isBlank()) {
@@ -47,6 +65,14 @@ public class AgentSender {
         // Add localhost as default primary
         if (!serverUrls.contains(DEFAULT_PRIMARY_URL)) {
             serverUrls.add(DEFAULT_PRIMARY_URL);
+        }
+
+        // Add current configured WiFi network IPs
+        if (!serverUrls.contains(DEFAULT_CURRENT_IP_URL)) {
+            serverUrls.add(DEFAULT_CURRENT_IP_URL);
+        }
+        if (!serverUrls.contains(DEFAULT_WIFI_IP_URL)) {
+            serverUrls.add(DEFAULT_WIFI_IP_URL);
         }
 
         // Add detected machine IPs
@@ -71,10 +97,7 @@ public class AgentSender {
         } catch (Exception ignored) {
         }
 
-        // Add current WiFi IP & fallback
-        if (!serverUrls.contains(DEFAULT_CURRENT_IP_URL)) {
-            serverUrls.add(DEFAULT_CURRENT_IP_URL);
-        }
+        // Add fallback
         if (!serverUrls.contains(DEFAULT_FALLBACK_URL)) {
             serverUrls.add(DEFAULT_FALLBACK_URL);
         }
@@ -102,7 +125,7 @@ public class AgentSender {
                 try {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(targetUrl))
-                            .timeout(Duration.ofSeconds(60))
+                            .timeout(Duration.ofSeconds(15))
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(json))
                             .build();
@@ -132,7 +155,7 @@ public class AgentSender {
                     System.err.println("Trying next target URL if available...");
                 } catch (IOException e) {
                     System.err.println("I/O error communicating with " + targetUrl + ": " + e.getMessage());
-                    e.printStackTrace();
+                    System.err.println("Trying next target URL if available...");
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     System.err.println("Request interrupted during submission to " + targetUrl);

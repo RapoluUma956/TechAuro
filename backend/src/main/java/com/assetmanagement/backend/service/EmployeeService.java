@@ -31,6 +31,7 @@ public class EmployeeService {
     private final InstalledSoftwareRepository installedSoftwareRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DeviceHeartbeatMonitorService heartbeatMonitorService;
 
     public EmployeeService(
             UserRepository userRepository,
@@ -41,7 +42,8 @@ public class EmployeeService {
             DeviceNetworkRepository deviceNetworkRepository,
             InstalledSoftwareRepository installedSoftwareRepository,
             VulnerabilityRepository vulnerabilityRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            DeviceHeartbeatMonitorService heartbeatMonitorService) {
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
@@ -51,6 +53,7 @@ public class EmployeeService {
         this.installedSoftwareRepository = installedSoftwareRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.passwordEncoder = passwordEncoder;
+        this.heartbeatMonitorService = heartbeatMonitorService;
     }
 
     private static Double toDouble(BigDecimal val) {
@@ -77,6 +80,10 @@ public class EmployeeService {
         long totalEmployees = userRepository.count();
 
         List<Device> allDevices = deviceRepository.findAll();
+        for (Device d : allDevices) {
+            d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+        }
+
         long activeDevices = allDevices.stream()
                 .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()) || "ACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
                 .count();
@@ -139,12 +146,14 @@ public class EmployeeService {
                         ? device.getDeviceName()
                         : ((device.getBrand() != null ? device.getBrand() : "") + " " + (device.getModel() != null ? device.getModel() : "Laptop")).trim();
 
+                String effectiveConn = heartbeatMonitorService.resolveEffectiveStatus(device);
+
                 deviceDto = new EmployeeDeviceSummaryDto(
                         device.getDeviceId(),
                         devName,
                         device.getSerialNumber(),
                         device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
-                        device.getConnectionStatus() != null ? device.getConnectionStatus() : "OFFLINE",
+                        effectiveConn,
                         device.getWarrantyEndDate()
                 );
             }
@@ -262,7 +271,7 @@ public class EmployeeService {
                             d.getBrand() != null ? d.getBrand() : "Unknown",
                             d.getModel() != null ? d.getModel() : "Laptop",
                             d.getDeviceStatus() != null ? d.getDeviceStatus() : "ACTIVE",
-                            d.getConnectionStatus() != null ? d.getConnectionStatus() : "OFFLINE",
+                            heartbeatMonitorService.resolveEffectiveStatus(d),
                             os,
                             cpu,
                             "UNASSIGNED"
@@ -320,7 +329,7 @@ public class EmployeeService {
                 device.getBrand() != null ? device.getBrand() : "OEM",
                 device.getModel() != null ? device.getModel() : "Workstation",
                 device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
-                device.getConnectionStatus() != null ? device.getConnectionStatus() : "OFFLINE",
+                heartbeatMonitorService.resolveEffectiveStatus(device),
                 assignmentStatus,
                 assignable,
                 message
@@ -464,7 +473,7 @@ public class EmployeeService {
                     devName,
                     device.getSerialNumber(),
                     device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
-                    device.getConnectionStatus() != null ? device.getConnectionStatus() : "OFFLINE",
+                    heartbeatMonitorService.resolveEffectiveStatus(device),
                     os
             );
         }
@@ -618,7 +627,7 @@ public class EmployeeService {
                 device.getBrand(),
                 device.getModel(),
                 device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
-                device.getConnectionStatus() != null ? device.getConnectionStatus() : "OFFLINE",
+                heartbeatMonitorService.resolveEffectiveStatus(device),
                 device.getLastSeenAt(),
                 device.getWarrantyEndDate(),
                 device.getPurchaseDate(),

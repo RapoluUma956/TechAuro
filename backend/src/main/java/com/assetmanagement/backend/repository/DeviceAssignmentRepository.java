@@ -19,28 +19,56 @@ public interface DeviceAssignmentRepository
     List<DeviceAssignment> findByDevice_DeviceId(Long deviceId);
 
     @EntityGraph(attributePaths = {"device", "user"})
-    Optional<DeviceAssignment> findByDevice_DeviceIdAndStatus(
+    Optional<DeviceAssignment> findFirstByDevice_DeviceIdAndStatusOrderByAssignedAtDesc(
             Long deviceId,
             String status
     );
 
+    default Optional<DeviceAssignment> findByDevice_DeviceIdAndStatus(
+            Long deviceId,
+            String status
+    ) {
+        return findFirstByDevice_DeviceIdAndStatusOrderByAssignedAtDesc(deviceId, status);
+    }
+
     @EntityGraph(attributePaths = {"device", "user"})
-    Optional<DeviceAssignment> findByUser_UserIdAndStatus(
+    Optional<DeviceAssignment> findFirstByUser_UserIdAndStatusOrderByAssignedAtDesc(
             Long userId,
             String status
     );
 
+    default Optional<DeviceAssignment> findByUser_UserIdAndStatus(
+            Long userId,
+            String status
+    ) {
+        return findFirstByUser_UserIdAndStatusOrderByAssignedAtDesc(userId, status);
+    }
+
     @EntityGraph(attributePaths = {"device", "user"})
-    Optional<DeviceAssignment> findBySerialNumberAndStatus(
+    Optional<DeviceAssignment> findFirstBySerialNumberAndStatusOrderByAssignedAtDesc(
             String serialNumber,
             String status
     );
 
+    default Optional<DeviceAssignment> findBySerialNumberAndStatus(
+            String serialNumber,
+            String status
+    ) {
+        return findFirstBySerialNumberAndStatusOrderByAssignedAtDesc(serialNumber, status);
+    }
+
     @EntityGraph(attributePaths = {"device", "user"})
-    Optional<DeviceAssignment> findBySerialNumberIgnoreCaseAndStatus(
+    Optional<DeviceAssignment> findFirstBySerialNumberIgnoreCaseAndStatusOrderByAssignedAtDesc(
             String serialNumber,
             String status
     );
+
+    default Optional<DeviceAssignment> findBySerialNumberIgnoreCaseAndStatus(
+            String serialNumber,
+            String status
+    ) {
+        return findFirstBySerialNumberIgnoreCaseAndStatusOrderByAssignedAtDesc(serialNumber, status);
+    }
 
     @EntityGraph(attributePaths = {"device", "user"})
     List<DeviceAssignment> findBySerialNumber(String serialNumber);

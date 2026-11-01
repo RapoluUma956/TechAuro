@@ -14,38 +14,50 @@ import java.util.List;
 public class DeviceService {
 
     private final DeviceRepository deviceRepository;
+    private final DeviceHeartbeatMonitorService heartbeatMonitorService;
 
-    public DeviceService(DeviceRepository deviceRepository) {
+    public DeviceService(DeviceRepository deviceRepository, DeviceHeartbeatMonitorService heartbeatMonitorService) {
         this.deviceRepository = deviceRepository;
+        this.heartbeatMonitorService = heartbeatMonitorService;
     }
 
     public List<Device> getAllDevices() {
-        return deviceRepository.findAll();
+        List<Device> list = deviceRepository.findAll();
+        for (Device d : list) {
+            d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+        }
+        return list;
     }
 
     public List<Device> getUnassignedDevices() {
-        return deviceRepository.findAll().stream()
+        return getAllDevices().stream()
                 .filter(d -> d.getCurrentUserId() == null)
                 .toList();
     }
 
     public Device getDeviceById(Long deviceId) {
-        return deviceRepository.findById(deviceId)
+        Device d = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Device not found with id: " + deviceId));
+        d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+        return d;
     }
 
     public Device getDeviceBySerialNumber(String serialNumber) {
-        return deviceRepository.findBySerialNumberIgnoreCase(serialNumber)
+        Device d = deviceRepository.findBySerialNumberIgnoreCase(serialNumber)
                 .orElseGet(() -> deviceRepository.findBySerialNumber(serialNumber)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND, "Device not found with serial number: " + serialNumber)));
+        d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+        return d;
     }
 
     public Device getDeviceByAssetTag(String assetTag) {
-        return deviceRepository.findByAssetTag(assetTag)
+        Device d = deviceRepository.findByAssetTag(assetTag)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Device not found with asset tag: " + assetTag));
+        d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+        return d;
     }
 
     @Transactional

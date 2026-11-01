@@ -655,17 +655,36 @@ public class DashboardService {
     }
 
     private boolean computeIsOnline(Device device, int timeoutMinutes) {
-        if ("OFFLINE".equalsIgnoreCase(device.getConnectionStatus())) {
+        if (device == null) {
             return false;
         }
 
-        if (device.getRecordedAt() == null) {
+        LocalDateTime lastSeen = device.getRecordedAt() != null
+                ? device.getRecordedAt()
+                : (device.getLastSeenAt() != null ? device.getLastSeenAt() : device.getUpdatedAt());
+
+        if (lastSeen == null) {
             return false;
         }
 
-        long minutesAgo = Duration.between(
-                device.getRecordedAt(), LocalDateTime.now()).toMinutes();
+        long minutesAgo = Duration.between(lastSeen, LocalDateTime.now()).toMinutes();
+        return minutesAgo <= timeoutMinutes;
+    }
 
+    private boolean unused_computeIsOnline(Device device, int timeoutMinutes) {
+        if (device == null) {
+            return false;
+        }
+
+        LocalDateTime lastSeen = device.getRecordedAt() != null
+                ? device.getRecordedAt()
+                : (device.getLastSeenAt() != null ? device.getLastSeenAt() : device.getUpdatedAt());
+
+        if (lastSeen == null) {
+            return false;
+        }
+
+        long minutesAgo = Duration.between(lastSeen, LocalDateTime.now()).toMinutes();
         return minutesAgo <= timeoutMinutes;
     }
 
