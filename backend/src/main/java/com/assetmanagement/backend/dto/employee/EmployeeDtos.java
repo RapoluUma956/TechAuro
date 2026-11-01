@@ -100,7 +100,9 @@ public class EmployeeDtos {
             DeviceAssignmentModeRequest deviceAssignment,
             String serialNumber,
             Long deviceId,
-            String password
+            String password,
+            Long roleId,
+            String roleName
     ) {}
 
     public record CreateEmployeeResponse(
@@ -116,7 +118,8 @@ public class EmployeeDtos {
             String lastName,
             String email,
             String designation,
-            String status
+            String status,
+            String role
     ) {}
 
     public record AssignedDeviceSummaryDto(

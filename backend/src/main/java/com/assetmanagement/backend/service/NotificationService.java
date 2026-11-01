@@ -3,7 +3,11 @@ package com.assetmanagement.backend.service;
 import com.assetmanagement.backend.dto.notification.NotificationDtos.*;
 import com.assetmanagement.backend.entity.*;
 import com.assetmanagement.backend.repository.*;
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
 import org.springframework.http.HttpStatus;
+import java.util.Collections;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,6 +29,7 @@ public class NotificationService {
     private final LicenseRepository licenseRepository;
     private final DeviceAssignmentRepository deviceAssignmentRepository;
     private final UserRepository userRepository;
+    private final AuthorizationService authorizationService;
 
     public NotificationService(
             NotificationRepository notificationRepository,
@@ -32,13 +37,15 @@ public class NotificationService {
             VulnerabilityRepository vulnerabilityRepository,
             LicenseRepository licenseRepository,
             DeviceAssignmentRepository deviceAssignmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthorizationService authorizationService) {
         this.notificationRepository = notificationRepository;
         this.deviceRepository = deviceRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.licenseRepository = licenseRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
         this.userRepository = userRepository;
+        this.authorizationService = authorizationService;
     }
 
     /**
@@ -276,7 +283,21 @@ public class NotificationService {
             Boolean unreadOnly,
             String search) {
 
-        List<Notification> all = notificationRepository.findAllByOrderByCreatedAtDesc();
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("NOTIFICATIONS_VULNERABILITIES");
+        List<Notification> all;
+        long unreadCount;
+
+        if (scope.isAll()) {
+            all = notificationRepository.findAllByOrderByCreatedAtDesc();
+            unreadCount = notificationRepository.countByIsReadFalse();
+        } else if (scope.isEmpty()) {
+            return new NotificationPageResponse(Collections.emptyList(), Math.max(0, page), Math.max(1, size), 0, 1, true, 0L);
+        } else {
+            Set<Long> userIds = scope.employeeIds();
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            all = notificationRepository.findByUser_UserIdInOrDevice_DeviceIdInOrderByCreatedAtDesc(userIds, deviceIds != null ? deviceIds : Collections.emptyList());
+            unreadCount = all.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead())).count();
+        }
 
         String sevFilter = (severity != null && !severity.isBlank() && !"ALL".equalsIgnoreCase(severity))
                 ? severity.trim().toUpperCase() : null;
@@ -310,7 +331,6 @@ public class NotificationService {
                 .map(this::toDto)
                 .collect(Collectors.toList());
 
-        long unreadCount = notificationRepository.countByIsReadFalse();
 
         int totalElements = filtered.size();
         int safePage = Math.max(0, page);
@@ -335,6 +355,23 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public NotificationSummaryResponse getSummary() {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("NOTIFICATIONS_VULNERABILITIES");
+        if (!scope.isAll()) {
+            if (scope.isEmpty()) {
+                return new NotificationSummaryResponse(0, 0, 0, 0, 0, 0);
+            }
+            Set<Long> userIds = scope.employeeIds();
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            List<Notification> scoped = notificationRepository.findByUser_UserIdInOrDevice_DeviceIdInOrderByCreatedAtDesc(userIds, deviceIds != null ? deviceIds : Collections.emptyList());
+            long total = scoped.size();
+            long unread = scoped.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead())).count();
+            long critical = scoped.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead()) && "CRITICAL".equalsIgnoreCase(n.getSeverity())).count();
+            long high = scoped.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead()) && "HIGH".equalsIgnoreCase(n.getSeverity())).count();
+            long medium = scoped.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead()) && "MEDIUM".equalsIgnoreCase(n.getSeverity())).count();
+            long low = scoped.stream().filter(n -> !Boolean.TRUE.equals(n.getIsRead()) && "LOW".equalsIgnoreCase(n.getSeverity())).count();
+            return new NotificationSummaryResponse(total, unread, critical, high, medium, low);
+        }
+
         long total = notificationRepository.count();
         long unread = notificationRepository.countByIsReadFalse();
         long critical = notificationRepository.countBySeverityIgnoreCaseAndIsReadFalse("CRITICAL");
@@ -357,11 +394,23 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Notification not found with id: " + id));
+
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("NOTIFICATIONS_VULNERABILITIES");
+        if (!scope.isAll()) {
+            boolean userMatch = notification.getUser() != null && scope.canAccess(notification.getUser().getUserId());
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            boolean deviceMatch = notification.getDevice() != null && deviceIds != null && deviceIds.contains(notification.getDevice().getDeviceId());
+            if (!userMatch && !deviceMatch) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied: You are not authorized to view notification ID " + id);
+            }
+        }
+
         return toDto(notification);
     }
 
     @Transactional(readOnly = true)
     public List<NotificationDto> getNotificationsByUserId(Long userId) {
+        authorizationService.validateEmployeeAccess(userId, "NOTIFICATIONS_VULNERABILITIES", "READ");
         return notificationRepository.findByUser_UserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::toDto)
@@ -394,6 +443,7 @@ public class NotificationService {
 
     @Transactional
     public void deleteNotification(Long id) {
+        authorizationService.validateAccess("NOTIFICATIONS_VULNERABILITIES", "WRITE");
         if (!notificationRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found with id: " + id);
         }
@@ -402,6 +452,7 @@ public class NotificationService {
 
     @Transactional
     public NotificationDto createNotification(CreateNotificationRequest request) {
+        authorizationService.validateAccess("NOTIFICATIONS_VULNERABILITIES", "WRITE");
         Notification notif = new Notification();
         notif.setTitle(request.title());
         notif.setMessage(request.message());

@@ -3,8 +3,11 @@ package com.assetmanagement.backend.repository;
 import com.assetmanagement.backend.entity.DeviceAssignment;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,4 +84,15 @@ public interface DeviceAssignmentRepository
 
     @EntityGraph(attributePaths = {"device", "user"})
     List<DeviceAssignment> findByUser_UserIdOrderByAssignedAtDesc(Long userId);
+
+    @Query("SELECT DISTINCT da.device.deviceId FROM DeviceAssignment da WHERE da.user.userId IN :userIds AND da.status = :status")
+    List<Long> findDeviceIdsByUser_UserIdInAndStatus(@Param("userIds") Collection<Long> userIds, @Param("status") String status);
+
+    @EntityGraph(attributePaths = {"device", "user"})
+    @Query("SELECT da FROM DeviceAssignment da WHERE da.user.userId IN :userIds AND da.status = :status")
+    List<DeviceAssignment> findByUser_UserIdInAndStatus(@Param("userIds") Collection<Long> userIds, @Param("status") String status);
+
+    @EntityGraph(attributePaths = {"device", "user"})
+    @Query("SELECT da FROM DeviceAssignment da WHERE da.user.userId IN :userIds")
+    List<DeviceAssignment> findByUser_UserIdIn(@Param("userIds") Collection<Long> userIds);
 }

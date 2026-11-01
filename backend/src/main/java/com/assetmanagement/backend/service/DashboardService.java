@@ -4,6 +4,24 @@ package com.assetmanagement.backend.service;
 import com.assetmanagement.backend.dto.dashboard.*;
 import com.assetmanagement.backend.entity.*;
 import com.assetmanagement.backend.repository.*;
+import com.assetmanagement.backend.entity.User;
+import com.assetmanagement.backend.repository.UserRepository;
+import com.assetmanagement.backend.entity.Accessory;
+import com.assetmanagement.backend.repository.AccessoryRepository;
+import com.assetmanagement.backend.entity.AccessoryAssignment;
+import com.assetmanagement.backend.repository.AccessoryAssignmentRepository;
+import com.assetmanagement.backend.entity.LicenseAssignment;
+import com.assetmanagement.backend.repository.LicenseAssignmentRepository;
+import com.assetmanagement.backend.entity.DeviceNetwork;
+import com.assetmanagement.backend.repository.DeviceNetworkRepository;
+import com.assetmanagement.backend.entity.InstalledSoftware;
+import com.assetmanagement.backend.repository.InstalledSoftwareRepository;
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.PageRequest;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +39,14 @@ public class DashboardService {
     private final DeviceAssignmentRepository deviceAssignmentRepository;
     private final NotificationRepository notificationRepository;
     private final HealthThresholdRepository healthThresholdRepository;
+    private final UserRepository userRepository;
+    private final AccessoryRepository accessoryRepository;
+    private final AccessoryAssignmentRepository accessoryAssignmentRepository;
+    private final LicenseAssignmentRepository licenseAssignmentRepository;
+    private final DeviceNetworkRepository deviceNetworkRepository;
+    private final InstalledSoftwareRepository installedSoftwareRepository;
+    private final AuthorizationService authorizationService;
+    private final DeviceHeartbeatMonitorService heartbeatMonitorService;
 
     public DashboardService(
             DeviceRepository deviceRepository,
@@ -28,13 +54,29 @@ public class DashboardService {
             LicenseRepository licenseRepository,
             DeviceAssignmentRepository deviceAssignmentRepository,
             NotificationRepository notificationRepository,
-            HealthThresholdRepository healthThresholdRepository) {
+            HealthThresholdRepository healthThresholdRepository,
+            UserRepository userRepository,
+            AccessoryRepository accessoryRepository,
+            AccessoryAssignmentRepository accessoryAssignmentRepository,
+            LicenseAssignmentRepository licenseAssignmentRepository,
+            DeviceNetworkRepository deviceNetworkRepository,
+            InstalledSoftwareRepository installedSoftwareRepository,
+            AuthorizationService authorizationService,
+            DeviceHeartbeatMonitorService heartbeatMonitorService) {
         this.deviceRepository = deviceRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.licenseRepository = licenseRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
         this.notificationRepository = notificationRepository;
         this.healthThresholdRepository = healthThresholdRepository;
+        this.userRepository = userRepository;
+        this.accessoryRepository = accessoryRepository;
+        this.accessoryAssignmentRepository = accessoryAssignmentRepository;
+        this.licenseAssignmentRepository = licenseAssignmentRepository;
+        this.deviceNetworkRepository = deviceNetworkRepository;
+        this.installedSoftwareRepository = installedSoftwareRepository;
+        this.authorizationService = authorizationService;
+        this.heartbeatMonitorService = heartbeatMonitorService;
     }
 
     // =========================================================
@@ -42,10 +84,35 @@ public class DashboardService {
     // =========================================================
     @Transactional(readOnly = true)
     public DashboardSummaryResponse getSummary() {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("DASHBOARD");
         HealthThreshold thresholds = getOrCreateThresholds();
-        List<Device> devices = deviceRepository.findAll();
-        List<Vulnerability> vulnerabilities = vulnerabilityRepository.findAll();
-        List<License> licenses = licenseRepository.findAll();
+        List<Device> devices;
+        List<Vulnerability> vulnerabilities;
+        List<License> licenses;
+
+        if (scope.isAll()) {
+            devices = deviceRepository.findAll();
+            vulnerabilities = vulnerabilityRepository.findAll();
+            licenses = licenseRepository.findAll();
+        } else if (scope.isEmpty()) {
+            devices = Collections.emptyList();
+            vulnerabilities = Collections.emptyList();
+            licenses = Collections.emptyList();
+        } else {
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            devices = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : deviceRepository.findByDeviceIdIn(deviceIds);
+            vulnerabilities = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : vulnerabilityRepository.findByDevice_DeviceIdIn(deviceIds);
+            licenses = licenseAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE")
+                    .stream()
+                    .map(LicenseAssignment::getLicense)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+        }
 
         long totalAssets = devices.size();
         long onlineAssets = 0;
@@ -208,10 +275,35 @@ public class DashboardService {
     // =========================================================
     @Transactional(readOnly = true)
     public DashboardAlertsResponse getRecentAlerts(int limit) {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("DASHBOARD");
         HealthThreshold thresholds = getOrCreateThresholds();
-        List<Device> devices = deviceRepository.findAll();
-        List<Vulnerability> vulnerabilities = vulnerabilityRepository.findAll();
-        List<License> licenses = licenseRepository.findAll();
+        List<Device> devices;
+        List<Vulnerability> vulnerabilities;
+        List<License> licenses;
+
+        if (scope.isAll()) {
+            devices = deviceRepository.findAll();
+            vulnerabilities = vulnerabilityRepository.findAll();
+            licenses = licenseRepository.findAll();
+        } else if (scope.isEmpty()) {
+            devices = Collections.emptyList();
+            vulnerabilities = Collections.emptyList();
+            licenses = Collections.emptyList();
+        } else {
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            devices = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : deviceRepository.findByDeviceIdIn(deviceIds);
+            vulnerabilities = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : vulnerabilityRepository.findByDevice_DeviceIdIn(deviceIds);
+            licenses = licenseAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE")
+                    .stream()
+                    .map(LicenseAssignment::getLicense)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+        }
 
         ZoneId zoneId = ZoneId.systemDefault();
         LocalDate today = LocalDate.now();
@@ -417,11 +509,29 @@ public class DashboardService {
             String sortBy,
             String sortDir) {
 
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("DASHBOARD");
         HealthThreshold thresholds = getOrCreateThresholds();
 
-        List<Device> devices = deviceRepository.findAll();
-        List<Vulnerability> vulnerabilities = vulnerabilityRepository.findAll();
-        List<DeviceAssignment> assignments = deviceAssignmentRepository.findAll();
+        List<Device> devices;
+        List<Vulnerability> vulnerabilities;
+        List<DeviceAssignment> assignments;
+
+        if (scope.isAll()) {
+            devices = deviceRepository.findAll();
+            vulnerabilities = vulnerabilityRepository.findAll();
+            assignments = deviceAssignmentRepository.findAll();
+        } else if (scope.isEmpty()) {
+            return new AttentionAssetsResponse(Collections.emptyList(), new PaginationDto(page, size, 0, 1));
+        } else {
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            devices = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : deviceRepository.findByDeviceIdIn(deviceIds);
+            vulnerabilities = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : vulnerabilityRepository.findByDevice_DeviceIdIn(deviceIds);
+            assignments = deviceAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+        }
 
         ZoneId zoneId = ZoneId.systemDefault();
         LocalDate today = LocalDate.now();
@@ -811,4 +921,390 @@ public class DashboardService {
                     Comparator.nullsLast(Comparator.naturalOrder()));
         };
     }
+
+    // =========================================================
+    // ADMIN DASHBOARD SUMMARY
+    // =========================================================
+    @Transactional(readOnly = true)
+    public AdminDashboardSummaryResponse getAdminSummary() {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("DASHBOARD");
+        if (!scope.isAll()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Access Denied: Admin dashboard summary requires ALL data scope.");
+        }
+
+        long totalEmployees = userRepository.count();
+        List<Device> allDevices = deviceRepository.findAll();
+        long totalDevices = allDevices.size();
+        long assignedDevices = allDevices.stream().filter(d -> d.getCurrentUserId() != null).count();
+        long inRepairDevices = allDevices.stream().filter(d -> "REPAIR".equalsIgnoreCase(d.getDeviceStatus())).count();
+        long unassignedDevices = Math.max(0, totalDevices - assignedDevices - inRepairDevices);
+
+        List<Accessory> accessories = accessoryRepository.findAll();
+        long totalAccessories = accessories.stream().mapToLong(a -> a.getTotalQuantity() != null ? a.getTotalQuantity() : 0).sum();
+        long assignedAccessories = accessoryAssignmentRepository.countByStatus("ACTIVE");
+        long availableAccessories = Math.max(0, totalAccessories - assignedAccessories);
+
+        List<License> licenses = licenseRepository.findAll();
+        long totalLicenses = licenses.size();
+        long assignedLicenses = licenseAssignmentRepository.countByStatus("ACTIVE");
+        Long totalSeats = licenseRepository.sumTotalSeats();
+        long availableLicenses = Math.max(0, (totalSeats != null ? totalSeats : 0) - assignedLicenses);
+        LocalDate today = LocalDate.now();
+        long licensesExpiringSoon = licenseRepository.countExpiringSoon(today, today.plusDays(30));
+
+        DashboardSummaryResponse fullSummary = getSummary();
+
+        List<AdminDashboardSummaryResponse.DashboardAlertItem> globalAlerts = notificationRepository
+                .findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5))
+                .getContent().stream()
+                .map(n -> new AdminDashboardSummaryResponse.DashboardAlertItem(
+                        n.getNotificationId(),
+                        n.getTitle(),
+                        n.getMessage(),
+                        n.getSeverity(),
+                        n.getNotificationType(),
+                        n.getCreatedAt()
+                ))
+                .toList();
+
+        return new AdminDashboardSummaryResponse(
+                totalEmployees,
+                totalDevices,
+                assignedDevices,
+                unassignedDevices,
+                inRepairDevices,
+                totalAccessories,
+                assignedAccessories,
+                availableAccessories,
+                totalLicenses,
+                assignedLicenses,
+                availableLicenses,
+                licensesExpiringSoon,
+                fullSummary.assetHealth(),
+                fullSummary.vulnerabilityOverview(),
+                fullSummary.lastUpdatedAt(),
+                globalAlerts
+        );
+    }
+
+    // =========================================================
+    // EMPLOYEE DASHBOARD (MY SUMMARY)
+    // =========================================================
+    @Transactional(readOnly = true)
+    public EmployeeDashboardSummaryResponse getMySummary() {
+        User currentUser = authorizationService.requireCurrentUser();
+
+        // 1. Profile
+        String fullName = java.util.stream.Stream.of(currentUser.getFirstName(), currentUser.getLastName())
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.joining(" "))
+                .trim();
+        if (fullName.isBlank()) fullName = currentUser.getFirstName();
+
+        EmployeeDashboardSummaryResponse.EmployeeProfileDto profileDto = new EmployeeDashboardSummaryResponse.EmployeeProfileDto(
+                currentUser.getUserId(),
+                currentUser.getEmployeeCode(),
+                fullName,
+                currentUser.getEmail(),
+                currentUser.getDesignation() != null ? currentUser.getDesignation() : "Employee",
+                currentUser.getAccountStatus() != null ? currentUser.getAccountStatus() : "ACTIVE",
+                currentUser.getDateOfJoining()
+        );
+
+        // 2. Assigned Device
+        DeviceAssignment da = deviceAssignmentRepository.findByUser_UserIdAndStatus(currentUser.getUserId(), "ACTIVE").orElse(null);
+        Device device = da != null ? da.getDevice() : deviceRepository.findByCurrentUserId(currentUser.getUserId()).orElse(null);
+
+        EmployeeDashboardSummaryResponse.AssignedLaptopDto laptopDto = null;
+        EmployeeDashboardSummaryResponse.CpuInfoDto cpuDto = null;
+        EmployeeDashboardSummaryResponse.RamInfoDto ramDto = null;
+        EmployeeDashboardSummaryResponse.SsdInfoDto ssdDto = null;
+        EmployeeDashboardSummaryResponse.BatteryInfoDto batteryDto = null;
+        List<EmployeeDashboardSummaryResponse.NetworkInfoDto> networkList = Collections.emptyList();
+        int softwareCount = 0;
+        List<Vulnerability> vulns = Collections.emptyList();
+
+        if (device != null) {
+            String effConn = heartbeatMonitorService.resolveEffectiveStatus(device);
+            String devName = (device.getDeviceName() != null && !device.getDeviceName().isBlank())
+                    ? device.getDeviceName()
+                    : ((device.getBrand() != null ? device.getBrand() : "") + " " + (device.getModel() != null ? device.getModel() : "Laptop")).trim();
+
+            laptopDto = new EmployeeDashboardSummaryResponse.AssignedLaptopDto(
+                    device.getDeviceId(),
+                    device.getAssetTag(),
+                    device.getSerialNumber(),
+                    devName,
+                    device.getBrand(),
+                    device.getModel(),
+                    device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
+                    effConn,
+                    device.getOsName(),
+                    device.getLastSeenAt()
+            );
+
+            if (device.getCpuName() != null || device.getCpu() != null || device.getCpuUsagePercent() != null) {
+                cpuDto = new EmployeeDashboardSummaryResponse.CpuInfoDto(
+                        device.getCpuName() != null ? device.getCpuName() : device.getCpu(),
+                        device.getCpuCores(),
+                        device.getCpuThreads(),
+                        device.getCpuUsagePercent() != null ? device.getCpuUsagePercent().doubleValue() : null,
+                        device.getCpuTemperature() != null ? device.getCpuTemperature().doubleValue() : null
+                );
+            }
+
+            BigDecimal ramTotal = device.getRamTotalGb() != null ? device.getRamTotalGb() : device.getRamGb();
+            if (ramTotal != null) {
+                ramDto = new EmployeeDashboardSummaryResponse.RamInfoDto(
+                        ramTotal.doubleValue(),
+                        device.getRamUsedGb() != null ? device.getRamUsedGb().doubleValue() : null,
+                        device.getRamAvailableGb() != null ? device.getRamAvailableGb().doubleValue() : null,
+                        device.getRamUsagePercent() != null ? device.getRamUsagePercent().doubleValue() : null,
+                        device.getRamType()
+                );
+            }
+
+            BigDecimal storageTotal = device.getStorageTotalGb() != null ? device.getStorageTotalGb() : device.getSsdCapacityGb();
+            if (storageTotal != null) {
+                ssdDto = new EmployeeDashboardSummaryResponse.SsdInfoDto(
+                        storageTotal.doubleValue(),
+                        device.getStorageUsedGb() != null ? device.getStorageUsedGb().doubleValue() : (device.getSsdUsedGb() != null ? device.getSsdUsedGb().doubleValue() : null),
+                        device.getStorageAvailableGb() != null ? device.getStorageAvailableGb().doubleValue() : (device.getSsdAvailableGb() != null ? device.getSsdAvailableGb().doubleValue() : null),
+                        device.getStorageHealth() != null ? device.getStorageHealth() : device.getSsdHealth()
+                );
+            }
+
+            if (device.getBatteryPercentage() != null) {
+                batteryDto = new EmployeeDashboardSummaryResponse.BatteryInfoDto(
+                        device.getBatteryPercentage().intValue(),
+                        device.getBatteryHealthPercent() != null ? device.getBatteryHealthPercent().doubleValue() : null,
+                        device.getBatteryCharging(),
+                        device.getBatteryCycleCount()
+                );
+            }
+
+            networkList = deviceNetworkRepository.findByDevice_DeviceId(device.getDeviceId()).stream()
+                    .map(n -> new EmployeeDashboardSummaryResponse.NetworkInfoDto(
+                            n.getInterfaceName(),
+                            n.getMacAddress(),
+                            n.getIpv4Address(),
+                            n.getConnectionStatus()
+                    )).toList();
+
+            softwareCount = installedSoftwareRepository.findByDevice_DeviceId(device.getDeviceId()).size();
+            vulns = vulnerabilityRepository.findByDevice_DeviceId(device.getDeviceId());
+        }
+
+        // 3. Accessories
+        List<EmployeeDashboardSummaryResponse.AccessoryInfoDto> accessoriesList = accessoryAssignmentRepository.findByUser_UserId(currentUser.getUserId()).stream()
+                .filter(aa -> "ACTIVE".equalsIgnoreCase(aa.getStatus()) && aa.getAccessory() != null)
+                .map(aa -> {
+                    Accessory a = aa.getAccessory();
+                    return new EmployeeDashboardSummaryResponse.AccessoryInfoDto(
+                            a.getAccessoryId(),
+                            a.getAccessoryName() != null ? a.getAccessoryName() : a.getProductName(),
+                            a.getCategory(),
+                            a.getBrand(),
+                            a.getModel(),
+                            a.getSerialNumber()
+                    );
+                }).toList();
+
+        // 4. Licenses
+        List<EmployeeDashboardSummaryResponse.LicenseInfoDto> licenseList = licenseAssignmentRepository.findByUser_UserId(currentUser.getUserId()).stream()
+                .filter(la -> "ACTIVE".equalsIgnoreCase(la.getStatus()) && la.getLicense() != null)
+                .map(la -> {
+                    License l = la.getLicense();
+                    return new EmployeeDashboardSummaryResponse.LicenseInfoDto(
+                            l.getLicenseId(),
+                            l.getSoftwareName(),
+                            l.getPublisher(),
+                            l.getLicenseType(),
+                            l.getExpiryDate(),
+                            la.getStatus()
+                    );
+                }).toList();
+
+        // 5. Vulnerabilities Summary
+        long totalVulns = vulns.size();
+        long critVulns = vulns.stream().filter(v -> "CRITICAL".equalsIgnoreCase(v.getSeverity())).count();
+        long highVulns = vulns.stream().filter(v -> "HIGH".equalsIgnoreCase(v.getSeverity())).count();
+        long medVulns = vulns.stream().filter(v -> "MEDIUM".equalsIgnoreCase(v.getSeverity())).count();
+        long lowVulns = vulns.stream().filter(v -> "LOW".equalsIgnoreCase(v.getSeverity())).count();
+        List<EmployeeDashboardSummaryResponse.VulnerabilitySummaryDto.VulnerabilityItemDto> vulnItems = vulns.stream()
+                .map(v -> new EmployeeDashboardSummaryResponse.VulnerabilitySummaryDto.VulnerabilityItemDto(
+                        v.getVulnerabilityId(),
+                        v.getCveId(),
+                        v.getTitle() != null ? v.getTitle() : v.getDescription(),
+                        v.getSeverity(),
+                        v.getStatus()
+                )).toList();
+
+        EmployeeDashboardSummaryResponse.VulnerabilitySummaryDto vulnSummary = new EmployeeDashboardSummaryResponse.VulnerabilitySummaryDto(
+                totalVulns, critVulns, highVulns, medVulns, lowVulns, vulnItems
+        );
+
+        // 6. Notifications
+        List<Long> devIdList = device != null ? List.of(device.getDeviceId()) : Collections.emptyList();
+        List<EmployeeDashboardSummaryResponse.NotificationInfoDto> notificationsList = notificationRepository
+                .findByUser_UserIdInOrDevice_DeviceIdInOrderByCreatedAtDesc(List.of(currentUser.getUserId()), devIdList)
+                .stream().limit(10)
+                .map(n -> new EmployeeDashboardSummaryResponse.NotificationInfoDto(
+                        n.getNotificationId(),
+                        n.getTitle(),
+                        n.getMessage(),
+                        n.getSeverity(),
+                        n.getCreatedAt()
+                )).toList();
+
+        return new EmployeeDashboardSummaryResponse(
+                profileDto,
+                laptopDto,
+                cpuDto,
+                ramDto,
+                ssdDto,
+                batteryDto,
+                networkList,
+                accessoriesList,
+                licenseList,
+                softwareCount,
+                vulnSummary,
+                notificationsList
+        );
+    }
+
+    // =========================================================
+    // IT MANAGER DASHBOARD SUMMARY
+    // =========================================================
+    @Transactional(readOnly = true)
+    public ManagerDashboardSummaryResponse getManagerSummary() {
+        authorizationService.validateAccess("DASHBOARD", "READ");
+        String scopeName = authorizationService.getEffectiveDataScope("DASHBOARD");
+        if ("OWN".equalsIgnoreCase(scopeName)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Access Denied: Manager dashboard summary is not accessible with OWN data scope.");
+        }
+
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("DASHBOARD");
+        Set<Long> userIds;
+        List<Device> devices;
+        Set<Long> deviceIds;
+
+        if (scope.isAll()) {
+            userIds = userRepository.findAll().stream().map(User::getUserId).collect(Collectors.toSet());
+            devices = deviceRepository.findAll();
+            deviceIds = devices.stream().map(Device::getDeviceId).collect(Collectors.toSet());
+        } else if (scope.isEmpty()) {
+            return new ManagerDashboardSummaryResponse(
+                    0, 0,
+                    new DashboardSummaryResponse.AssetHealthDto(
+                            new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(0, 0),
+                            new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(0, 0),
+                            new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(0, 0),
+                            new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(0, 0)
+                    ),
+                    0.0, 0.0, 0, 0,
+                    new DashboardSummaryResponse.VulnerabilityOverviewDto(0, 0, 0, 0, 0),
+                    Collections.emptyList()
+            );
+        } else {
+            userIds = scope.employeeIds();
+            deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            devices = (deviceIds == null || deviceIds.isEmpty())
+                    ? Collections.emptyList()
+                    : deviceRepository.findByDeviceIdIn(deviceIds);
+        }
+
+        long assignedEmployeeCount = (userIds != null) ? userIds.size() : 0;
+        long assignedDeviceCount = devices.size();
+
+        HealthThreshold thresholds = getOrCreateThresholds();
+        List<Vulnerability> vulnerabilities = (deviceIds == null || deviceIds.isEmpty())
+                ? Collections.emptyList()
+                : vulnerabilityRepository.findByDevice_DeviceIdIn(deviceIds);
+
+        Map<Long, List<Vulnerability>> openVulnsByDevice = vulnerabilities.stream()
+                .filter(this::isOpenVulnerability)
+                .filter(v -> v.getDevice() != null)
+                .collect(Collectors.groupingBy(v -> v.getDevice().getDeviceId()));
+
+        long healthy = 0, warning = 0, critical = 0, unknown = 0;
+        LocalDate today = LocalDate.now();
+
+        for (Device d : devices) {
+            boolean isOnline = computeIsOnline(d, thresholds.getOfflineTimeoutMinutes());
+            List<Vulnerability> devVulns = openVulnsByDevice.getOrDefault(d.getDeviceId(), Collections.emptyList());
+            String health = computeDeviceHealth(d, isOnline, devVulns, thresholds, today);
+            switch (health) {
+                case "CRITICAL" -> critical++;
+                case "WARNING" -> warning++;
+                case "HEALTHY" -> healthy++;
+                default -> unknown++;
+            }
+        }
+
+        int hPct = assignedDeviceCount > 0 ? (int) Math.round((healthy * 100.0) / assignedDeviceCount) : 0;
+        int wPct = assignedDeviceCount > 0 ? (int) Math.round((warning * 100.0) / assignedDeviceCount) : 0;
+        int cPct = assignedDeviceCount > 0 ? (int) Math.round((critical * 100.0) / assignedDeviceCount) : 0;
+        int uPct = assignedDeviceCount > 0 ? Math.max(0, 100 - hPct - wPct - cPct) : 0;
+
+        DashboardSummaryResponse.AssetHealthDto healthDto = new DashboardSummaryResponse.AssetHealthDto(
+                new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(healthy, hPct),
+                new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(warning, wPct),
+                new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(critical, cPct),
+                new DashboardSummaryResponse.AssetHealthDto.HealthItemDto(unknown, uPct)
+        );
+
+        double avgCpu = devices.stream()
+                .filter(d -> d.getCpuUsagePercent() != null)
+                .mapToDouble(d -> d.getCpuUsagePercent().doubleValue())
+                .average()
+                .orElse(0.0);
+
+        double avgRam = devices.stream()
+                .filter(d -> d.getRamUsagePercent() != null)
+                .mapToDouble(d -> d.getRamUsagePercent().doubleValue())
+                .average()
+                .orElse(0.0);
+
+        long assignedAccessoriesCount = (userIds != null && !userIds.isEmpty())
+                ? accessoryAssignmentRepository.findByUser_UserIdInAndStatus(userIds, "ACTIVE").size()
+                : 0;
+
+        long licenseAllocationsCount = (userIds != null && !userIds.isEmpty())
+                ? licenseAssignmentRepository.findByUser_UserIdInAndStatus(userIds, "ACTIVE").size()
+                : 0;
+
+        List<Vulnerability> openVulns = vulnerabilities.stream().filter(this::isOpenVulnerability).toList();
+        long totalOpenVulns = openVulns.size();
+        long critVulns = openVulns.stream().filter(v -> "CRITICAL".equalsIgnoreCase(v.getSeverity())).count();
+        long highVulns = openVulns.stream().filter(v -> "HIGH".equalsIgnoreCase(v.getSeverity())).count();
+        long medVulns = openVulns.stream().filter(v -> "MEDIUM".equalsIgnoreCase(v.getSeverity())).count();
+        long lowVulns = openVulns.stream().filter(v -> "LOW".equalsIgnoreCase(v.getSeverity())).count();
+        DashboardSummaryResponse.VulnerabilityOverviewDto vulnOverview = new DashboardSummaryResponse.VulnerabilityOverviewDto(
+                totalOpenVulns, critVulns, highVulns, medVulns, lowVulns
+        );
+
+        List<AdminDashboardSummaryResponse.DashboardAlertItem> alerts = (userIds != null && !userIds.isEmpty())
+                ? notificationRepository.findByUser_UserIdInOrDevice_DeviceIdInOrderByCreatedAtDesc(userIds, deviceIds != null ? deviceIds : Collections.emptyList())
+                        .stream().limit(5)
+                        .map(n -> new AdminDashboardSummaryResponse.DashboardAlertItem(
+                                n.getNotificationId(), n.getTitle(), n.getMessage(), n.getSeverity(), n.getNotificationType(), n.getCreatedAt()
+                        )).toList()
+                : Collections.emptyList();
+
+        return new ManagerDashboardSummaryResponse(
+                assignedEmployeeCount,
+                assignedDeviceCount,
+                healthDto,
+                Math.round(avgCpu * 10.0) / 10.0,
+                Math.round(avgRam * 10.0) / 10.0,
+                assignedAccessoriesCount,
+                licenseAllocationsCount,
+                vulnOverview,
+                alerts
+        );
+    }
+
 }

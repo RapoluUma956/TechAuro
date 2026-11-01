@@ -12,5 +12,20 @@ public record UserAuthDto(
         String designation,
         String status,
         List<String> roles,
-        Map<String, Object> permissions
-) {}
+        Map<String, Object> permissions,
+        Map<String, String> dataScopes
+) {
+    public UserAuthDto(
+            Long id,
+            String employeeCode,
+            String firstName,
+            String lastName,
+            String email,
+            String designation,
+            String status,
+            List<String> roles,
+            Map<String, Object> permissions
+    ) {
+        this(id, employeeCode, firstName, lastName, email, designation, status, roles, permissions, Map.of());
+    }
+}

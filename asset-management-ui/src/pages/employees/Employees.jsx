@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { employeeService } from "../../services/employeeService";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import { usePermission } from "../../hooks/usePermission";
 import {
   EmployeeHeader,
   EmployeeMetricCards,
@@ -24,6 +25,8 @@ const DEFAULT_ROLES = [
 
 export default function Employees() {
   const navigate = useNavigate();
+  const { canWrite } = usePermission();
+  const canWriteEmployees = canWrite("EMPLOYEES_DEVICES");
 
   // Metrics state
   const [metrics, setMetrics] = useState({
@@ -244,7 +247,7 @@ export default function Employees() {
         </div>
       )}
 
-      <EmployeeHeader onAddEmployee={() => setIsAddModalOpen(true)} />
+      <EmployeeHeader onAddEmployee={canWriteEmployees ? () => setIsAddModalOpen(true) : null} />
 
       {/* Metric Cards connected to GET /api/v1/employees/metrics */}
       <EmployeeMetricCards

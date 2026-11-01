@@ -50,6 +50,12 @@ public class EmployeeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.createEmployee(request));
     }
 
+    // 4.5. Current Authenticated Employee Profile
+    @GetMapping("/me")
+    public ResponseEntity<EmployeeProfileResponse> getMyProfile() {
+        return ResponseEntity.ok(employeeService.getCurrentEmployeeProfile());
+    }
+
     // 5. Employee Profile Details
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeProfileResponse> getEmployeeProfile(@PathVariable Long id) {

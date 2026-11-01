@@ -162,9 +162,11 @@ export default function AccessoryTable({
               <th scope="col" className="py-3.5 px-4 text-center">
                 In Repair
               </th>
-              <th scope="col" className="py-3.5 px-4 text-right pr-6">
-                Actions
-              </th>
+              {(onAssignAccessory || onQuickAddQuantity || onEditAccessory || onDeleteAccessory) && (
+                <th scope="col" className="py-3.5 px-4 text-right pr-6">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EBF0EE]">
@@ -192,9 +194,11 @@ export default function AccessoryTable({
                   <td className="py-4 px-4">
                     <div className="mx-auto h-4 w-8 rounded bg-slate-100" />
                   </td>
-                  <td className="py-4 px-4 pr-6">
-                    <div className="ml-auto h-4 w-16 rounded bg-slate-100" />
-                  </td>
+                  {(onAssignAccessory || onQuickAddQuantity || onEditAccessory || onDeleteAccessory) && (
+                    <td className="py-4 px-4 pr-6">
+                      <div className="ml-auto h-4 w-16 rounded bg-slate-100" />
+                    </td>
+                  )}
                 </tr>
               ))
             ) : accessories.length === 0 ? (
@@ -270,65 +274,73 @@ export default function AccessoryTable({
                         {repair}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-right pr-6">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => onAssignAccessory && onAssignAccessory(item)}
-                          title={unassigned > 0 ? "Assign to Employee" : "No Available Units"}
-                          disabled={unassigned <= 0}
-                          className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#00C896] hover:bg-[#E8F8F2] hover:text-[#00C896] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <UserPlusIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onQuickAddQuantity && onQuickAddQuantity(item)}
-                          title="Add Stock Units"
-                          className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#1976D2] hover:bg-[#E3F2FD] hover:text-[#1976D2]"
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onEditAccessory && onEditAccessory(item)}
-                          title="Edit Accessory"
-                          className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#03312E] hover:bg-[#F8FAF9] hover:text-[#03312E]"
-                        >
-                          <EditIcon className="h-4 w-4" />
-                        </button>
-                        {deleteConfirmId === item.accessoryId ? (
-                          <div className="flex items-center gap-1">
+                    {(onAssignAccessory || onQuickAddQuantity || onEditAccessory || onDeleteAccessory) && (
+                      <td className="py-4 px-4 text-right pr-6">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {onAssignAccessory && (
                             <button
                               type="button"
-                              onClick={() => {
-                                onDeleteAccessory && onDeleteAccessory(item.accessoryId);
-                                setDeleteConfirmId(null);
-                              }}
-                              className="cursor-pointer rounded-lg bg-[#EF4444] px-2 py-1 text-xs font-bold text-white hover:bg-[#DC2626]"
+                              onClick={() => onAssignAccessory(item)}
+                              title={unassigned > 0 ? "Assign to Employee" : "No Available Units"}
+                              disabled={unassigned <= 0}
+                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#00C896] hover:bg-[#E8F8F2] hover:text-[#00C896] disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              Confirm
+                              <UserPlusIcon className="h-4 w-4" />
                             </button>
+                          )}
+                          {onQuickAddQuantity && (
                             <button
                               type="button"
-                              onClick={() => setDeleteConfirmId(null)}
-                              className="cursor-pointer rounded-lg bg-slate-200 px-2 py-1 text-xs text-[#64748B] hover:bg-slate-300"
+                              onClick={() => onQuickAddQuantity(item)}
+                              title="Add Stock Units"
+                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#1976D2] hover:bg-[#E3F2FD] hover:text-[#1976D2]"
                             >
-                              ✕
+                              <PlusIcon className="h-4 w-4" />
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirmId(item.accessoryId)}
-                            title="Delete Accessory"
-                            className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-red-300 hover:bg-[#FEECEB] hover:text-[#EF4444]"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                          )}
+                          {onEditAccessory && (
+                            <button
+                              type="button"
+                              onClick={() => onEditAccessory(item)}
+                              title="Edit Accessory"
+                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#03312E] hover:bg-[#F8FAF9] hover:text-[#03312E]"
+                            >
+                              <EditIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                          {onDeleteAccessory && (deleteConfirmId === item.accessoryId ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onDeleteAccessory(item.accessoryId);
+                                  setDeleteConfirmId(null);
+                                }}
+                                className="cursor-pointer rounded-lg bg-[#EF4444] px-2 py-1 text-xs font-bold text-white hover:bg-[#DC2626]"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="cursor-pointer rounded-lg bg-slate-200 px-2 py-1 text-xs text-[#64748B] hover:bg-slate-300"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(item.accessoryId)}
+                              title="Delete Accessory"
+                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-red-300 hover:bg-[#FEECEB] hover:text-[#EF4444]"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })

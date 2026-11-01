@@ -3,7 +3,11 @@ package com.assetmanagement.backend.service;
 import com.assetmanagement.backend.entity.Device;
 import com.assetmanagement.backend.repository.DeviceRepository;
 
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
 import org.springframework.http.HttpStatus;
+import java.util.Collections;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,14 +19,26 @@ public class DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final DeviceHeartbeatMonitorService heartbeatMonitorService;
+    private final AuthorizationService authorizationService;
 
-    public DeviceService(DeviceRepository deviceRepository, DeviceHeartbeatMonitorService heartbeatMonitorService) {
+    public DeviceService(DeviceRepository deviceRepository, DeviceHeartbeatMonitorService heartbeatMonitorService,
+            AuthorizationService authorizationService) {
         this.deviceRepository = deviceRepository;
         this.heartbeatMonitorService = heartbeatMonitorService;
+        this.authorizationService = authorizationService;
     }
 
     public List<Device> getAllDevices() {
-        List<Device> list = deviceRepository.findAll();
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("EMPLOYEES_DEVICES");
+        List<Device> list;
+        if (scope.isAll()) {
+            list = deviceRepository.findAll();
+        } else if (scope.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            list = (deviceIds == null || deviceIds.isEmpty()) ? Collections.emptyList() : deviceRepository.findByDeviceIdIn(deviceIds);
+        }
         for (Device d : list) {
             d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
         }
@@ -30,12 +46,14 @@ public class DeviceService {
     }
 
     public List<Device> getUnassignedDevices() {
+        authorizationService.validateAccess("EMPLOYEES_DEVICES", "WRITE");
         return getAllDevices().stream()
                 .filter(d -> d.getCurrentUserId() == null)
                 .toList();
     }
 
     public Device getDeviceById(Long deviceId) {
+        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "READ");
         Device d = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Device not found with id: " + deviceId));
@@ -48,6 +66,7 @@ public class DeviceService {
                 .orElseGet(() -> deviceRepository.findBySerialNumber(serialNumber)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND, "Device not found with serial number: " + serialNumber)));
+        authorizationService.validateDeviceAccess(d.getDeviceId(), "EMPLOYEES_DEVICES", "READ");
         d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
         return d;
     }
@@ -56,12 +75,14 @@ public class DeviceService {
         Device d = deviceRepository.findByAssetTag(assetTag)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Device not found with asset tag: " + assetTag));
+        authorizationService.validateDeviceAccess(d.getDeviceId(), "EMPLOYEES_DEVICES", "READ");
         d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
         return d;
     }
 
     @Transactional
     public Device createDevice(Device device) {
+        authorizationService.validateAccess("EMPLOYEES_DEVICES", "WRITE");
         if (device.getSerialNumber() == null || device.getSerialNumber().isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Serial number is required");
@@ -135,6 +156,7 @@ public class DeviceService {
 
     @Transactional
     public Device updateDevice(Long deviceId, Device updatedDevice) {
+        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "WRITE");
         Device existingDevice = getDeviceById(deviceId);
 
         existingDevice.setAssetTag(updatedDevice.getAssetTag());
@@ -150,6 +172,7 @@ public class DeviceService {
 
     @Transactional
     public void deleteDevice(Long deviceId) {
+        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "WRITE");
         Device device = getDeviceById(deviceId);
         deviceRepository.delete(device);
     }

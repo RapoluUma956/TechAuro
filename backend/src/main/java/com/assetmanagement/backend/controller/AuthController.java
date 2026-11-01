@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping({"/api/v1/auth", "/api/auth"})
 public class AuthController {
@@ -101,6 +103,15 @@ public class AuthController {
         User currentUser = extractUserFromToken(authHeader);
         UserAuthDto data = authService.getMe(currentUser);
         return ResponseEntity.ok(ApiResponse.success("User retrieved successfully", data));
+    }
+
+    // 7) GET /api/auth/me/permissions
+    @GetMapping("/me/permissions")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getMyPermissions(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        User currentUser = extractUserFromToken(authHeader);
+        Map<String, Object> data = authService.getMyPermissions(currentUser);
+        return ResponseEntity.ok(ApiResponse.success("User permissions retrieved successfully", data));
     }
 
     private User extractUserFromToken(String authHeader) {

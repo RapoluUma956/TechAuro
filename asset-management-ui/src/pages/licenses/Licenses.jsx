@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { licenseService } from "../../services/licenseService";
+import { usePermission } from "../../hooks/usePermission";
 import {
   LicenseHeader,
   LicenseMetricCards,
@@ -12,6 +13,9 @@ import {
 } from "../../components/licenses";
 
 export default function Licenses() {
+  const { canWrite } = usePermission();
+  const canWriteLicenses = canWrite("LICENSE_MANAGEMENT");
+
   // 1. Metric Cards State
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -243,7 +247,7 @@ export default function Licenses() {
       )}
 
       {/* Page Header */}
-      <LicenseHeader onAddLicense={() => setIsAddModalOpen(true)} />
+      <LicenseHeader onAddLicense={canWriteLicenses ? () => setIsAddModalOpen(true) : null} />
 
       {/* 5 Summary Metric Cards */}
       <LicenseMetricCards metrics={summary} loading={summaryLoading} />
@@ -290,9 +294,9 @@ export default function Licenses() {
         totalPages={totalPages}
         onPageChange={setPage}
         onViewLicense={(lic) => setViewingLicenseId(lic.licenseId)}
-        onEditLicense={(lic) => setEditingLicense(lic)}
-        onAssignLicense={(lic) => setAssigningLicense(lic)}
-        onDeleteLicense={(lic) => setDeletingLicense(lic)}
+        onEditLicense={canWriteLicenses ? (lic) => setEditingLicense(lic) : null}
+        onAssignLicense={canWriteLicenses ? (lic) => setAssigningLicense(lic) : null}
+        onDeleteLicense={canWriteLicenses ? (lic) => setDeletingLicense(lic) : null}
       />
 
       {/* Add / Edit License Modal */}

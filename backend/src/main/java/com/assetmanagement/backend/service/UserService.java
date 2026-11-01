@@ -25,6 +25,7 @@ public class UserService {
     private final DeviceNetworkRepository deviceNetworkRepository;
     private final InstalledSoftwareRepository installedSoftwareRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final UserRoleRepository userRoleRepository;
 
     public UserService(
             UserRepository userRepository,
@@ -33,7 +34,8 @@ public class UserService {
             DeviceAssignmentRepository deviceAssignmentRepository,
             DeviceNetworkRepository deviceNetworkRepository,
             InstalledSoftwareRepository installedSoftwareRepository,
-            VulnerabilityRepository vulnerabilityRepository) {
+            VulnerabilityRepository vulnerabilityRepository,
+            UserRoleRepository userRoleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.deviceRepository = deviceRepository;
@@ -41,6 +43,7 @@ public class UserService {
         this.deviceNetworkRepository = deviceNetworkRepository;
         this.installedSoftwareRepository = installedSoftwareRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
+        this.userRoleRepository = userRoleRepository;
     }
 
     @Transactional(readOnly = true)
@@ -205,6 +208,9 @@ public class UserService {
         if (!assignments.isEmpty()) {
             deviceAssignmentRepository.deleteAll(assignments);
         }
+
+        // Delete user roles for this user so foreign key constraint is satisfied
+        userRoleRepository.deleteByUser(user);
 
         userRepository.delete(user);
     }

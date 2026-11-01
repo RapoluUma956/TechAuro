@@ -48,6 +48,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CsrfService csrfService;
+    private final RbacService rbacService;
 
     public AuthService(
             UserRepository userRepository,
@@ -55,13 +56,15 @@ public class AuthService {
             UserRoleRepository userRoleRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            CsrfService csrfService) {
+            CsrfService csrfService,
+            RbacService rbacService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.csrfService = csrfService;
+        this.rbacService = rbacService;
     }
 
     public CsrfResponseData getCsrfToken() {
@@ -200,6 +203,16 @@ public class AuthService {
         return toUserAuthDto(currentUser, roles);
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> getMyPermissions(User currentUser) {
+        return rbacService.getEffectivePermissions(currentUser);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, String> getMyDataScopes(User currentUser) {
+        return rbacService.getEffectiveDataScopes(currentUser);
+    }
+
     public List<String> getUserRoles(User user) {
         List<UserRole> userRoles = userRoleRepository.findByUser(user);
         if (userRoles == null || userRoles.isEmpty()) {
@@ -212,6 +225,8 @@ public class AuthService {
     }
 
     public UserAuthDto toUserAuthDto(User user, List<String> roles) {
+        Map<String, Object> permissions = rbacService.getEffectivePermissions(user);
+        Map<String, String> dataScopes = rbacService.getEffectiveDataScopes(user);
         return new UserAuthDto(
                 user.getUserId(),
                 user.getEmployeeCode(),
@@ -221,7 +236,8 @@ public class AuthService {
                 user.getDesignation(),
                 user.getAccountStatus(),
                 roles,
-                Collections.emptyMap()
+                permissions,
+                dataScopes
         );
     }
 

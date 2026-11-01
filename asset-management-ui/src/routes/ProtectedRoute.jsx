@@ -1,8 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { usePermission } from "../hooks/usePermission";
+import Unauthorized from "../pages/error/Unauthorized.jsx";
 
-export default function ProtectedRoute() {
+export default function ProtectedRoute({ moduleCode, moduleName }) {
   const { isAuthenticated, passwordChangeRequired, loading } = useAuth();
+  const { canRead } = usePermission();
 
   if (loading) {
     return (
@@ -23,6 +26,11 @@ export default function ProtectedRoute() {
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check RBAC permission for route if module is specified
+  if (moduleCode && !canRead(moduleCode)) {
+    return <Unauthorized moduleName={moduleName || moduleCode} />;
   }
 
   return <Outlet />;

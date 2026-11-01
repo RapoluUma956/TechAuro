@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { accessoryService } from "../../services/accessoryService";
+import { usePermission } from "../../hooks/usePermission";
 import {
   AccessoryHeader,
   AccessoriesMetricCards,
@@ -12,6 +13,9 @@ import {
 } from "../../components/accessories";
 
 export default function Accessories() {
+  const { canWrite } = usePermission();
+  const canWriteAccessories = canWrite("ACCESSORIES");
+
   // Summary state
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -314,7 +318,7 @@ export default function Accessories() {
       )}
 
       {/* Page Header */}
-      <AccessoryHeader onAddAccessory={() => setIsAddModalOpen(true)} />
+      <AccessoryHeader onAddAccessory={canWriteAccessories ? () => setIsAddModalOpen(true) : null} />
 
       {/* Top Metrics Summary Cards */}
       <AccessoriesMetricCards metrics={summary} loading={summaryLoading} />
@@ -339,13 +343,13 @@ export default function Accessories() {
           setAccessoryPage(0);
         }}
         categories={categories}
-        onEditAccessory={(acc) => setEditingAccessory(acc)}
-        onDeleteAccessory={handleDeleteAccessory}
-        onQuickAddQuantity={(acc) => setQuickAddAccessory(acc)}
-        onAssignAccessory={(acc) => {
+        onEditAccessory={canWriteAccessories ? (acc) => setEditingAccessory(acc) : null}
+        onDeleteAccessory={canWriteAccessories ? handleDeleteAccessory : null}
+        onQuickAddQuantity={canWriteAccessories ? (acc) => setQuickAddAccessory(acc) : null}
+        onAssignAccessory={canWriteAccessories ? (acc) => {
           setAssigningItem(acc);
           setIsAssigningLaptop(false);
-        }}
+        } : null}
       />
 
       <LaptopTable
@@ -367,10 +371,10 @@ export default function Accessories() {
           setLaptopPage(0);
         }}
         onRefresh={fetchLaptopConfigs}
-        onAssignLaptop={(dev) => {
+        onAssignLaptop={canWriteAccessories ? (dev) => {
           setAssigningItem(dev);
           setIsAssigningLaptop(true);
-        }}
+        } : null}
       />
 
       {/* Add Accessory Modal */}

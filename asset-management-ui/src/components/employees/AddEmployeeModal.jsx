@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
 import { employeeService } from "../../services/employeeService";
+import { roleService } from "../../services/roleService";
 
 export default function AddEmployeeModal({
   isOpen,
@@ -16,12 +17,14 @@ export default function AddEmployeeModal({
     email: "",
     phone: "",
     designation: roles[0] || "Software Engineer",
+    roleId: "",
     dateOfJoining: new Date().toISOString().split("T")[0],
     deviceMode: "select", // "select" | "manual" | "none"
     selectedSerialNumber: "",
     manualSerialNumber: "",
   });
 
+  const [availableRoles, setAvailableRoles] = useState([]);
   const [availableDevices, setAvailableDevices] = useState([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +49,7 @@ export default function AddEmployeeModal({
         email: "",
         phone: "",
         designation: roles[0] || "Software Engineer",
+        roleId: "",
         dateOfJoining: new Date().toISOString().split("T")[0],
         deviceMode: "select",
         selectedSerialNumber: "",
@@ -60,6 +64,24 @@ export default function AddEmployeeModal({
         device: null,
         message: "",
       });
+
+      // Fetch dynamic roles from backend
+      roleService
+        .getRoles()
+        .then((rolesList) => {
+          const validRoles = Array.isArray(rolesList) ? rolesList : [];
+          setAvailableRoles(validRoles);
+          const defaultRole = validRoles.find((r) => r.roleName === "EMPLOYEE") || validRoles[0];
+          if (defaultRole) {
+            setFormData((prev) => ({
+              ...prev,
+              roleId: String(defaultRole.id),
+            }));
+          }
+        })
+        .catch(() => {
+          setAvailableRoles([]);
+        });
 
       // Fetch available devices from backend
       setLoadingDevices(true);
@@ -223,6 +245,7 @@ export default function AddEmployeeModal({
       email: formData.email.trim(),
       phone: (formData.phone || "").trim(),
       designation: (formData.designation || "").trim(),
+      roleId: formData.roleId ? Number(formData.roleId) : null,
       dateOfJoining: formData.dateOfJoining || null,
       deviceAssignment,
     };
@@ -350,11 +373,11 @@ export default function AddEmployeeModal({
           </div>
         </div>
 
-        {/* Row 3: Role & Phone */}
+        {/* Row 3: Designation & Assigned Role */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-xs font-semibold text-[#03312E]">
-              Designation / Role
+              Designation / Job Title
             </label>
             <input
               type="text"
@@ -368,6 +391,27 @@ export default function AddEmployeeModal({
 
           <div>
             <label className="block text-xs font-semibold text-[#03312E]">
+              Assigned Role <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="roleId"
+              value={formData.roleId || ""}
+              onChange={handleChange}
+              className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] bg-white py-2.5 px-3.5 text-sm transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 font-medium"
+            >
+              {availableRoles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.roleName} {r.isSystemRole ? "(System)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Row 4: Phone & Date of Joining */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-semibold text-[#03312E]">
               Phone Number
             </label>
             <input
@@ -379,10 +423,6 @@ export default function AddEmployeeModal({
               className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] py-2.5 px-3.5 text-sm transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20"
             />
           </div>
-        </div>
-
-        {/* Row 4: Date of Joining */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-xs font-semibold text-[#03312E]">
               Date of Joining

@@ -3,6 +3,8 @@ package com.assetmanagement.backend.service;
 import com.assetmanagement.backend.dto.employee.EmployeeDtos.*;
 import com.assetmanagement.backend.entity.*;
 import com.assetmanagement.backend.repository.*;
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,9 @@ public class EmployeeService {
     private final VulnerabilityRepository vulnerabilityRepository;
     private final PasswordEncoder passwordEncoder;
     private final DeviceHeartbeatMonitorService heartbeatMonitorService;
+    private final UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
+    private final AuthorizationService authorizationService;
 
     public EmployeeService(
             UserRepository userRepository,
@@ -43,7 +48,10 @@ public class EmployeeService {
             InstalledSoftwareRepository installedSoftwareRepository,
             VulnerabilityRepository vulnerabilityRepository,
             PasswordEncoder passwordEncoder,
-            DeviceHeartbeatMonitorService heartbeatMonitorService) {
+            DeviceHeartbeatMonitorService heartbeatMonitorService,
+            UserRoleRepository userRoleRepository,
+            RoleRepository roleRepository,
+            AuthorizationService authorizationService) {
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
@@ -54,6 +62,9 @@ public class EmployeeService {
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.passwordEncoder = passwordEncoder;
         this.heartbeatMonitorService = heartbeatMonitorService;
+        this.userRoleRepository = userRoleRepository;
+        this.roleRepository = roleRepository;
+        this.authorizationService = authorizationService;
     }
 
     private static Double toDouble(BigDecimal val) {
@@ -77,26 +88,67 @@ public class EmployeeService {
     // =========================================================
     @Transactional(readOnly = true)
     public EmployeeMetricsResponse getEmployeeMetrics() {
-        long totalEmployees = userRepository.count();
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("EMPLOYEES_DEVICES");
+        if (scope.isAll()) {
+            long totalEmployees = userRepository.count();
 
-        List<Device> allDevices = deviceRepository.findAll();
-        for (Device d : allDevices) {
+            List<Device> allDevices = deviceRepository.findAll();
+            for (Device d : allDevices) {
+                d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
+            }
+
+            long activeDevices = allDevices.stream()
+                    .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()) || "ACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
+                    .count();
+
+            long inRepair = allDevices.stream()
+                    .filter(d -> "REPAIR".equalsIgnoreCase(d.getDeviceStatus()) || "IN_REPAIR".equalsIgnoreCase(d.getDeviceStatus()))
+                    .count();
+
+            long inactiveDevices = allDevices.stream()
+                    .filter(d -> "OFFLINE".equalsIgnoreCase(d.getConnectionStatus()) || "INACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
+                    .count();
+
+            return new EmployeeMetricsResponse(totalEmployees, activeDevices, inRepair, inactiveDevices);
+        }
+
+        if (scope.isEmpty()) {
+            return new EmployeeMetricsResponse(0L, 0L, 0L, 0L);
+        }
+
+        Set<Long> userIds = scope.employeeIds();
+        long totalEmployees = userIds.size();
+
+        Set<Long> deviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+        List<Device> devices = (deviceIds == null || deviceIds.isEmpty())
+                ? Collections.emptyList()
+                : deviceRepository.findByDeviceIdIn(deviceIds);
+        for (Device d : devices) {
             d.setConnectionStatus(heartbeatMonitorService.resolveEffectiveStatus(d));
         }
 
-        long activeDevices = allDevices.stream()
+        long activeDevices = devices.stream()
                 .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()) || "ACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
                 .count();
 
-        long inRepair = allDevices.stream()
+        long inRepair = devices.stream()
                 .filter(d -> "REPAIR".equalsIgnoreCase(d.getDeviceStatus()) || "IN_REPAIR".equalsIgnoreCase(d.getDeviceStatus()))
                 .count();
 
-        long inactiveDevices = allDevices.stream()
+        long inactiveDevices = devices.stream()
                 .filter(d -> "OFFLINE".equalsIgnoreCase(d.getConnectionStatus()) || "INACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
                 .count();
 
         return new EmployeeMetricsResponse(totalEmployees, activeDevices, inRepair, inactiveDevices);
+    }
+
+    // =========================================================
+    // 1.5. CURRENT LOGGED IN EMPLOYEE PROFILE
+    // =========================================================
+    @Transactional(readOnly = true)
+    public EmployeeProfileResponse getCurrentEmployeeProfile() {
+        User currentUser = authorizationService.requireCurrentUser();
+        return getEmployeeProfile(currentUser.getUserId());
     }
 
     // =========================================================
@@ -112,7 +164,15 @@ public class EmployeeService {
             String sortBy,
             String sortDir) {
 
-        List<User> users = userRepository.findAll();
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("EMPLOYEES_DEVICES");
+        List<User> users;
+        if (scope.isAll()) {
+            users = userRepository.findAll();
+        } else if (scope.isEmpty()) {
+            return new EmployeeListResponse(Collections.emptyList(), 0, size > 0 ? size : 10, 0, 1, true);
+        } else {
+            users = userRepository.findByUserIdIn(scope.employeeIds());
+        }
         Map<Long, DeviceAssignment> activeAssignmentsByUser = deviceAssignmentRepository.findByStatus("ACTIVE")
                 .stream()
                 .filter(da -> da.getUser() != null)
@@ -158,6 +218,11 @@ public class EmployeeService {
                 );
             }
 
+            List<UserRole> userRoles = userRoleRepository.findByUser(user);
+            String assignedRoleName = (userRoles != null && !userRoles.isEmpty())
+                    ? userRoles.get(0).getRole().getRoleName()
+                    : "EMPLOYEE";
+
             EmployeeSummaryDto dto = new EmployeeSummaryDto(
                     user.getUserId(),
                     user.getEmployeeCode(),
@@ -167,7 +232,7 @@ public class EmployeeService {
                     user.getEmail(),
                     user.getPhone(),
                     user.getDesignation() != null ? user.getDesignation() : "Employee",
-                    user.getDesignation() != null ? user.getDesignation() : "Employee",
+                    assignedRoleName,
                     user.getAccountStatus() != null ? user.getAccountStatus() : "ACTIVE",
                     deviceDto
             );
@@ -341,6 +406,8 @@ public class EmployeeService {
     // =========================================================
     @Transactional
     public CreateEmployeeResponse createEmployee(CreateEmployeeRequest request) {
+        authorizationService.validateAccess("EMPLOYEES_DEVICES", "WRITE");
+
         if (userRepository.existsByEmployeeCode(request.employeeCode())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee code already exists: " + request.employeeCode());
         }
@@ -435,6 +502,26 @@ public class EmployeeService {
             }
         }
 
+        // Role Assignment for newly created employee
+        Role assignedRole = null;
+        if (request.roleId() != null) {
+            assignedRole = roleRepository.findById(request.roleId()).orElse(null);
+        } else if (request.roleName() != null && !request.roleName().isBlank()) {
+            assignedRole = roleRepository.findByRoleNameIgnoreCase(request.roleName().trim()).orElse(null);
+        }
+        if (assignedRole == null) {
+            assignedRole = roleRepository.findByRoleName("EMPLOYEE").orElse(null);
+        }
+        if (assignedRole != null) {
+            UserRole userRole = new UserRole();
+            userRole.setUser(savedUser);
+            userRole.setRole(assignedRole);
+            userRole.setAssignedAt(LocalDateTime.now());
+            userRoleRepository.save(userRole);
+        }
+
+        String finalRoleName = assignedRole != null ? assignedRole.getRoleName() : "EMPLOYEE";
+
         EmployeeCreatedDto empDto = new EmployeeCreatedDto(
                 savedUser.getUserId(),
                 savedUser.getEmployeeCode(),
@@ -442,7 +529,8 @@ public class EmployeeService {
                 savedUser.getLastName(),
                 savedUser.getEmail(),
                 savedUser.getDesignation(),
-                savedUser.getAccountStatus()
+                savedUser.getAccountStatus(),
+                finalRoleName
         );
 
         return new CreateEmployeeResponse("Employee created successfully", empDto, assignedDeviceDto);
@@ -453,6 +541,7 @@ public class EmployeeService {
     // =========================================================
     @Transactional(readOnly = true)
     public EmployeeProfileResponse getEmployeeProfile(Long employeeId) {
+        authorizationService.validateEmployeeAccess(employeeId, "EMPLOYEES_DEVICES", "READ");
         User user = getUserOrThrow(employeeId);
 
         DeviceAssignment activeDa = deviceAssignmentRepository.findByUser_UserIdAndStatus(user.getUserId(), "ACTIVE")
@@ -529,6 +618,7 @@ public class EmployeeService {
     // =========================================================
     @Transactional(readOnly = true)
     public EmployeeDeviceDetailsResponse getEmployeeDevice(Long employeeId) {
+        authorizationService.validateEmployeeAccess(employeeId, "EMPLOYEES_DEVICES", "READ");
         User user = getUserOrThrow(employeeId);
 
         DeviceAssignment activeDa = deviceAssignmentRepository.findByUser_UserIdAndStatus(user.getUserId(), "ACTIVE")
@@ -650,6 +740,7 @@ public class EmployeeService {
     // =========================================================
     @Transactional(readOnly = true)
     public DeviceHistoryResponse getDeviceHistory(Long deviceId, int page, int size) {
+        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "READ");
         List<DeviceAssignment> assignments = deviceAssignmentRepository.findByDevice_DeviceIdOrderByAssignedAtDesc(deviceId);
 
         List<DeviceHistoryEventDto> content = assignments.stream().map(a -> {
@@ -687,6 +778,7 @@ public class EmployeeService {
             int page,
             int size) {
 
+        authorizationService.validateEmployeeAccess(employeeId, "ACCESSORIES", "READ");
         User user = getUserOrThrow(employeeId);
         List<AccessoryAssignment> assignments = accessoryAssignmentRepository.findByUser_UserId(user.getUserId());
 
@@ -757,6 +849,7 @@ public class EmployeeService {
             int page,
             int size) {
 
+        authorizationService.validateEmployeeAccess(employeeId, "EMPLOYEES_DEVICES", "READ");
         User user = getUserOrThrow(employeeId);
         DeviceAssignment activeDa = deviceAssignmentRepository.findByUser_UserIdAndStatus(user.getUserId(), "ACTIVE").orElse(null);
         Device device = activeDa != null ? activeDa.getDevice() : deviceRepository.findByCurrentUserId(user.getUserId()).orElse(null);
@@ -820,6 +913,7 @@ public class EmployeeService {
             int page,
             int size) {
 
+        authorizationService.validateEmployeeAccess(employeeId, "NOTIFICATIONS_VULNERABILITIES", "READ");
         User user = getUserOrThrow(employeeId);
         DeviceAssignment activeDa = deviceAssignmentRepository.findByUser_UserIdAndStatus(user.getUserId(), "ACTIVE").orElse(null);
         Device device = activeDa != null ? activeDa.getDevice() : deviceRepository.findByCurrentUserId(user.getUserId()).orElse(null);
@@ -899,6 +993,7 @@ public class EmployeeService {
             int page,
             int size) {
 
+        authorizationService.validateEmployeeAccess(employeeId, "LICENSE_MANAGEMENT", "READ");
         User user = getUserOrThrow(employeeId);
         List<LicenseAssignment> assignments = licenseAssignmentRepository.findByUser_UserId(user.getUserId());
 
@@ -958,6 +1053,7 @@ public class EmployeeService {
     // =========================================================
     @Transactional
     public ReassignDeviceResponse reassignDevice(Long employeeId, ReassignDeviceRequest request) {
+        authorizationService.validateEmployeeAccess(employeeId, "EMPLOYEES_DEVICES", "WRITE");
         User user = getUserOrThrow(employeeId);
 
         if ((request.serialNumber() == null || request.serialNumber().isBlank()) && request.deviceId() == null) {
@@ -1031,6 +1127,7 @@ public class EmployeeService {
     // =========================================================
     @Transactional
     public UnassignDeviceResponse unassignDevice(Long employeeId) {
+        authorizationService.validateEmployeeAccess(employeeId, "EMPLOYEES_DEVICES", "WRITE");
         User user = getUserOrThrow(employeeId);
 
         List<DeviceAssignment> userActive = deviceAssignmentRepository.findByUser_UserId(user.getUserId())

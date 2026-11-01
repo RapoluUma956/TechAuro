@@ -12,6 +12,7 @@ import {
 } from "../../components/employees/detail";
 import { Modal, Button } from "../../components/common";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import { usePermission } from "../../hooks/usePermission";
 
 function formatUptime(seconds) {
   if (!seconds && seconds !== 0) return "—";
@@ -27,6 +28,8 @@ export default function EmployeeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { canWrite } = usePermission();
+  const canWriteEmployees = canWrite("EMPLOYEES_DEVICES");
 
   // Tab state synced with search param ?tab=
   const initialTab = searchParams.get("tab") || "device";
@@ -685,29 +688,31 @@ export default function EmployeeDetail() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleOpenAssignModal}
-            className="flex items-center gap-1.5"
-          >
-            {headerDevice
-              ? "Reassign / Change Device"
-              : "Assign Device by Serial #"}
-          </Button>
-
-          {headerDevice && (
+        {canWriteEmployees && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
-              onClick={handleUnassignDevice}
-              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              onClick={handleOpenAssignModal}
+              className="flex items-center gap-1.5"
             >
-              Unassign Device
+              {headerDevice
+                ? "Reassign / Change Device"
+                : "Assign Device by Serial #"}
             </Button>
-          )}
-        </div>
+
+            {headerDevice && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnassignDevice}
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              >
+                Unassign Device
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. Main Tab Navigation Bar */}
