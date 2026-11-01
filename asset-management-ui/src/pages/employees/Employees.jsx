@@ -85,10 +85,12 @@ export default function Employees() {
   }, []);
 
   // Fetch paginated employee list from backend
-  const fetchEmployees = useCallback(async () => {
+  const fetchEmployees = useCallback(async (isBackground = false) => {
     try {
-      setLoading(true);
-      setError("");
+      if (!isBackground) {
+        setLoading(true);
+        setError("");
+      }
       const params = {
         page: currentPage - 1,
         size: PAGE_SIZE,
@@ -129,12 +131,16 @@ export default function Employees() {
       }
     } catch (err) {
       console.error("Failed to fetch employees:", err);
-      setError(
-        err.message || "Failed to load employees from the backend server."
-      );
+      if (!isBackground) {
+        setError(
+          err.message || "Failed to load employees from the backend server."
+        );
+      }
       setEmployees([]);
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   }, [
     currentPage,
@@ -155,7 +161,7 @@ export default function Employees() {
   useAutoRefresh(
     useCallback(() => {
       fetchMetrics();
-      fetchEmployees();
+      fetchEmployees(true);
     }, [fetchMetrics, fetchEmployees]),
     30000
   );

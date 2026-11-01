@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { employeeService } from "../../services/employeeService";
 import {
@@ -45,6 +45,21 @@ export default function EmployeeDetail() {
   const [licensesData, setLicensesData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
 
+  // Keep reference to profile to avoid hook recreation loops
+  const profileRef = useRef(profile);
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
+  // Check if active tab already has populated data (prevents full unmount/flicker)
+  const hasActiveTabData = Boolean(
+    (activeTab === "device" && deviceData) ||
+    (activeTab === "accessories" && accessoriesData?.length > 0) ||
+    (activeTab === "software" && softwareData?.length > 0) ||
+    (activeTab === "vulnerabilities" && vulnerabilitiesData?.length > 0) ||
+    (activeTab === "licences" && licensesData?.length > 0)
+  );
+
   // Device assignment / reassignment modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignSerialNumber, setAssignSerialNumber] = useState("");
@@ -87,13 +102,16 @@ export default function EmployeeDetail() {
 
   // 2. Fetch Active Tab Data
   const fetchActiveTabData = useCallback(async (isBackground = false) => {
-    if (!profile) return;
-    if (!isBackground) {
+    const currentProfile = profileRef.current;
+    if (!currentProfile && !id) return;
+
+    // Only show tab-level spinner if there is no data at all yet
+    if (!isBackground && !hasActiveTabData) {
       setTabLoading(true);
     }
 
     try {
-      const empId = profile.employeeId || id;
+      const empId = currentProfile?.employeeId || id;
 
       if (activeTab === "device") {
         const devRes = await employeeService.getEmployeeDevice(empId);
@@ -297,23 +315,116 @@ export default function EmployeeDetail() {
         setTabLoading(false);
       }
     }
-  }, [profile, id, activeTab]);
+  }, [id, activeTab, hasActiveTabData]);
 
+  // Initial load or tab change (tab switches only load without full page refresh)
   useEffect(() => {
     fetchActiveTabData();
-  }, [fetchActiveTabData]);
+  }, [id, activeTab]);
 
-  // 30-Second Active-Tab Auto-Refresh for live telemetry and hardware metrics
+  // 30-Second Background Sync for Profile & Inactive Data
   useAutoRefresh(
-    useCallback(
-      (isBackground) => {
-        fetchProfile(isBackground);
-        fetchActiveTabData(isBackground);
-      },
-      [fetchProfile, fetchActiveTabData]
-    ),
+    useCallback(() => {
+      fetchProfile(true);
+      fetchActiveTabData(true);
+    }, [fetchProfile, fetchActiveTabData]),
     30000
   );
+
+  // 5-Second Live Telemetry Streamer for Device Metrics (Battery, CPU, RAM, Connection Status)
+  // Dynamically updates individual metric numbers and progress bars in place without page or tab reloads
+  useEffect(() => {
+    if (activeTab !== "device") return;
+
+    const empId = profileRef.current?.employeeId || id;
+    if (!empId) return;
+
+    let isMounted = true;
+
+    const streamLiveTelemetry = async () => {
+      // Pause streaming if browser tab is hidden to save resources
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      try {
+        const devRes = await employeeService.getEmployeeDevice(empId);
+        const dev = devRes?.device;
+        if (!dev || !isMounted) return;
+
+        const isOnline = dev.connectionStatus === "ONLINE";
+        const hasTelemetry = Boolean(dev.cpu?.processorModel || dev.memory?.totalGB || dev.lastSeenAt);
+
+        setDeviceData((prev) => {
+          if (!prev?.device) return prev;
+
+          const updatedDevice = {
+            ...prev.device,
+            status: isOnline ? "Active" : (dev.connectionStatus || "Offline"),
+            lastSeen: dev.lastSeenAt,
+            mdmStatus: dev.agent?.version
+              ? `Enrolled (${dev.agent.version})`
+              : (isOnline ? "Enrolled" : "Awaiting Agent"),
+            encryptionStatus: dev.security?.bitLockerProtection === "ON"
+              ? "BitLocker Encrypted"
+              : (isOnline ? "Standard" : "—"),
+          };
+
+          const updatedRawDb = {
+            ...(prev.rawDbDevice || {}),
+            connection_status: dev.connectionStatus || "OFFLINE",
+            cpu_usage_percent: dev.cpu?.utilizationPercent ?? prev.rawDbDevice?.cpu_usage_percent,
+            cpu_temperature: dev.cpu?.temperatureCelsius ?? prev.rawDbDevice?.cpu_temperature,
+            cpu_frequency_mhz: dev.cpu?.frequencyMHz ?? prev.rawDbDevice?.cpu_frequency_mhz,
+            ram_usage_percent: dev.memory?.utilizationPercent ?? prev.rawDbDevice?.ram_usage_percent,
+            ram_used_gb: dev.memory?.usedGB ?? prev.rawDbDevice?.ram_used_gb,
+            ram_available_gb: dev.memory?.availableGB ?? prev.rawDbDevice?.ram_available_gb,
+            battery_percentage: dev.battery?.percentage ?? prev.rawDbDevice?.battery_percentage,
+            battery_charging: dev.battery?.charging ?? prev.rawDbDevice?.battery_charging,
+            battery_health_percent: dev.battery?.healthPercent ?? prev.rawDbDevice?.battery_health_percent,
+            battery_cycle_count: dev.battery?.cycleCount ?? prev.rawDbDevice?.battery_cycle_count,
+            power_source: dev.battery?.powerSource || prev.rawDbDevice?.power_source,
+            uptime_seconds: dev.agent?.uptimeSeconds ?? prev.rawDbDevice?.uptime_seconds,
+            process_count: dev.processCount ?? prev.rawDbDevice?.process_count,
+            thread_count: dev.threadCount ?? prev.rawDbDevice?.thread_count,
+            last_seen_at: dev.lastSeenAt,
+            has_telemetry: hasTelemetry,
+          };
+
+          const updatedAdapters = dev.networkAdapters
+            ? dev.networkAdapters.map((net, idx) => ({
+                id: net.networkId || idx + 1,
+                interface: net.name || net.interfaceName || `Adapter ${idx + 1}`,
+                name: net.name || net.interfaceName || "Network Controller",
+                macAddress: net.macAddress || "—",
+                ipv4: net.ipv4Address || "—",
+                ipv6: net.ipv6Address || "N/A",
+                status:
+                  net.status === "CONNECTED" || net.connectionStatus === "UP"
+                    ? "Connected"
+                    : net.status || "Disconnected",
+                type: net.interfaceType || "Physical",
+              }))
+            : prev.networkAdapters;
+
+          return {
+            ...prev,
+            device: updatedDevice,
+            rawDbDevice: updatedRawDb,
+            networkAdapters: updatedAdapters,
+          };
+        });
+      } catch (err) {
+        console.warn("Live telemetry background stream warning:", err);
+      }
+    };
+
+    const timer = setInterval(streamLiveTelemetry, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [activeTab, id]);
 
   // Open Assign / Reassign Device modal
   const handleOpenAssignModal = async () => {
@@ -608,7 +719,7 @@ export default function EmployeeDetail() {
 
       {/* 3. Tab Contents with Loading State */}
       <div className="min-h-[420px]">
-        {tabLoading ? (
+        {tabLoading && !hasActiveTabData ? (
           <div className="rounded-2xl border border-[#DCE5E1] bg-white p-12 text-center text-sm text-gray-500 space-y-3">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent" />
             <p>Loading tab information...</p>

@@ -141,11 +141,11 @@ export default function DeviceDetailsTab({
               <div className="pt-1 space-y-1">
                 <div className="flex justify-between text-[11px]">
                   <span className="text-[#64748B]">CPU Utilization</span>
-                  <span className="font-bold text-[#1976D2]">{db.cpu_usage_percent != null ? `${db.cpu_usage_percent}%` : "—"}</span>
+                  <span className="font-bold text-[#1976D2] transition-all duration-300">{db.cpu_usage_percent != null ? `${db.cpu_usage_percent}%` : "—"}</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                   <div
-                    className="h-full rounded-full bg-[#1976D2]"
+                    className="h-full rounded-full bg-[#1976D2] transition-all duration-700 ease-out"
                     style={{ width: `${Math.min(db.cpu_usage_percent || 0, 100)}%` }}
                   />
                 </div>
@@ -217,7 +217,7 @@ export default function DeviceDetailsTab({
               <div className="pt-1 space-y-1">
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                   <div
-                    className="h-full rounded-full bg-[#1976D2]"
+                    className="h-full rounded-full bg-[#1976D2] transition-all duration-700 ease-out"
                     style={{ width: `${Math.min(db.ram_usage_percent || 0, 100)}%` }}
                   />
                 </div>
@@ -286,11 +286,10 @@ export default function DeviceDetailsTab({
                   <div
                     className="h-full rounded-full bg-[#1976D2]"
                     style={{
-                      width: `${
-                        db.ssd_used_gb && db.ssd_capacity_gb
+                      width: `${db.ssd_used_gb && db.ssd_capacity_gb
                           ? Math.min((db.ssd_used_gb / db.ssd_capacity_gb) * 100, 100)
                           : 0
-                      }%`,
+                        }%`,
                     }}
                   />
                 </div>
@@ -434,11 +433,19 @@ export default function DeviceDetailsTab({
                   <line x1="22" y1="11" x2="22" y2="13" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#03312E]">
-                Battery Information
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-[#03312E]">
+                  Battery Information
+                </h3>
+                {!isOffline && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 border border-emerald-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                  </span>
+                )}
+              </div>
             </div>
-            <span className="font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 transition-all duration-500">
               {db.battery_percentage != null ? `${db.battery_percentage}% Charged` : "—"}
             </span>
           </div>
@@ -446,28 +453,28 @@ export default function DeviceDetailsTab({
           <div className="space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">State:</span>
-              <span className="font-bold text-[#03312E]">
+              <span className="font-bold text-[#03312E] transition-all duration-300">
                 {db.battery_charging != null ? (db.battery_charging ? "Charging (Plugged In)" : "On Battery") : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Health Condition:</span>
-              <span className="font-bold text-emerald-700">
+              <span className="font-bold text-emerald-700 transition-all duration-300">
                 {db.battery_health_percent != null ? `${db.battery_health_percent}% Optimal` : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Cycle Count:</span>
-              <span className="font-bold text-[#03312E]">
+              <span className="font-bold text-[#03312E] transition-all duration-300">
                 {db.battery_cycle_count != null ? `${db.battery_cycle_count} cycles` : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Power Source:</span>
-              <span className="font-bold text-[#03312E] truncate max-w-[180px]" title={db.power_source || "—"}>
+              <span className="font-bold text-[#03312E] truncate max-w-[180px] transition-all duration-300" title={db.power_source || "—"}>
                 {db.power_source || "—"}
               </span>
             </div>
@@ -476,7 +483,7 @@ export default function DeviceDetailsTab({
             <div className="pt-1">
               <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                 <div
-                  className="h-full rounded-full bg-emerald-500"
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(db.battery_percentage || 0, 100)}%` }}
                 />
               </div>
@@ -648,16 +655,14 @@ export default function DeviceDetailsTab({
                       </span>
                     </div>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isConnected
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${isConnected
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : "bg-slate-100 text-slate-600 border border-slate-200"
-                      }`}
+                        }`}
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                        }`}
+                        className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                          }`}
                       />
                       {adapter.status || "Connected"}
                     </span>
