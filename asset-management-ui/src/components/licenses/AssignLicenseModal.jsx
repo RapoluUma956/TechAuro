@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
 import { StackIcon } from "./LicenseIcons";
-import { licenseService } from "../../services/licenseService";
-import { initialEmployeesData } from "../../data/employeesData";
+import { employeeService } from "../../services/employeeService";
 
 export default function AssignLicenseModal({
   isOpen,
@@ -30,39 +29,26 @@ export default function AssignLicenseModal({
       setAssignmentDate(new Date().toISOString().split("T")[0]);
       setNotes("");
 
-      licenseService
-        .getEmployeesForAssignment()
+      employeeService
+        .getEmployees({ size: 100 })
         .then((res) => {
-          if (isMounted && Array.isArray(res) && res.length > 0) {
-            setEmployees(
-              res.map((u) => ({
-                userId: u.userId,
-                name: [u.firstName, u.lastName].filter(Boolean).join(" ") || `Employee #${u.userId}`,
-                code: u.employeeCode || `EMP-${u.userId}`,
-                role: u.designation || "Staff",
-              }))
-            );
-          } else if (isMounted) {
-            setEmployees(
-              initialEmployeesData.map((e) => ({
-                userId: e.id,
-                name: e.employeeName,
-                code: e.employeeId,
-                role: e.role,
-              }))
-            );
-          }
+          if (!isMounted) return;
+          const list = res?.content || (Array.isArray(res) ? res : []);
+          setEmployees(
+            list.map((u) => ({
+              userId: u.employeeId || u.userId || u.id,
+              name:
+                u.fullName ||
+                [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                `Employee #${u.employeeId}`,
+              code: u.employeeCode || `EMP-${u.employeeId}`,
+              role: u.designation || u.role || "Staff",
+            }))
+          );
         })
         .catch(() => {
           if (isMounted) {
-            setEmployees(
-              initialEmployeesData.map((e) => ({
-                userId: e.id,
-                name: e.employeeName,
-                code: e.employeeId,
-                role: e.role,
-              }))
-            );
+            setEmployees([]);
           }
         })
         .finally(() => {
@@ -76,7 +62,7 @@ export default function AssignLicenseModal({
 
   if (!isOpen || !license) return null;
 
-  const totalSeats = license.totalQuantity ?? license.totalLicenses ?? 0;
+  const totalSeats = license.totalQuantity ?? 0;
   const assignedSeats = license.assignedQuantity ?? 0;
   const availableSeats = license.availableQuantity ?? Math.max(0, totalSeats - assignedSeats);
 
@@ -90,23 +76,23 @@ export default function AssignLicenseModal({
     }
 
     if (availableSeats <= 0) {
-      setErrorMessage("No seats are currently available for this license.");
+      setErrorMessage("No available seats left for this license.");
       return;
     }
 
-    const payload = {
-      userId: Number(selectedUserId),
-      assignedAt: assignmentDate,
-      notes: notes.trim() || null,
-    };
-
-    const selectedEmp = employees.find(
-      (emp) => String(emp.userId) === String(selectedUserId)
-    );
+    const selectedEmp = employees.find((emp) => String(emp.userId) === String(selectedUserId));
 
     try {
       setSubmitting(true);
-      await onAssign(license.licenseId, payload, selectedEmp ? selectedEmp.name : "Employee");
+      await onAssign(
+        license.licenseId,
+        {
+          userId: Number(selectedUserId),
+          assignedDate: assignmentDate,
+          notes: notes.trim(),
+        },
+        selectedEmp ? selectedEmp.name : "Employee"
+      );
       onClose();
     } catch (err) {
       setErrorMessage(err.message || "Failed to assign license seat.");
@@ -119,7 +105,7 @@ export default function AssignLicenseModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Assign License"
+      title="Assign License Seat"
       size="md"
       footer={
         <div className="flex w-full items-center justify-end gap-3">
@@ -130,26 +116,26 @@ export default function AssignLicenseModal({
             type="button"
             onClick={handleSubmit}
             disabled={submitting || availableSeats <= 0}
-            className="cursor-pointer rounded-xl bg-[#03312E] px-6 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-[#02211F] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-xl bg-[#03312E] px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-[#02211F] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Assigning..." : "Assign License"}
+            {submitting ? "Assigning..." : "Confirm Seat Assignment"}
           </button>
         </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Top Summary Card matching Wireframe reference */}
+        {/* Top License Summary Banner */}
         <div className="flex items-center gap-3.5 rounded-xl border border-[#DCE5E1] bg-[#F0F8FF] p-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#D6EBFF] text-[#1976D2]">
             <StackIcon className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <h4 className="truncate text-base font-bold text-[#03312E]">
+            <h4 className="truncate text-sm font-bold text-[#03312E] sm:text-base">
               {license.licenseName}
             </h4>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-4 text-xs text-[#5C7370]">
-              <span>Software: <strong className="text-[#03312E]">{license.softwareName || "—"}</strong></span>
-              <span>Publisher: <strong className="text-[#03312E]">{license.publisher || "—"}</strong></span>
+              <span>Software: <strong className="text-[#03312E]">{license.softwareName}</strong></span>
+              <span>Publisher: <strong className="text-[#03312E]">{license.publisher}</strong></span>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 text-xs font-semibold text-[#03312E]">
               <span>Total Seats: <strong>{totalSeats}</strong></span>
@@ -159,21 +145,21 @@ export default function AssignLicenseModal({
           </div>
         </div>
 
-        {/* Error Notification */}
+        {/* Error notification */}
         {errorMessage && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
-            ⚠️ {errorMessage}
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+            {errorMessage}
           </div>
         )}
 
-        {/* Available seats warning */}
+        {/* Available Seats Warning */}
         {availableSeats <= 0 && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800">
-            ⚠️ No seats available. All {totalSeats} seats are currently assigned.
+            ⚠️ This license has reached maximum allocation (0 seats remaining). You must purchase additional seats or release an existing assignment before assigning.
           </div>
         )}
 
-        {/* Employee Dropdown */}
+        {/* Employee Select */}
         <div>
           <label className="block text-xs font-semibold text-[#03312E]">
             Employee <span className="text-red-500">*</span>
@@ -183,8 +169,8 @@ export default function AssignLicenseModal({
               required
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
-              disabled={loadingEmployees || availableSeats <= 0}
-              className="w-full appearance-none rounded-xl border border-[#DCE5E1] bg-white py-2.5 pl-3.5 pr-10 text-sm text-[#03312E] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-50"
+              disabled={loadingEmployees}
+              className="w-full appearance-none rounded-xl border border-[#DCE5E1] bg-white py-2.5 pl-3.5 pr-10 text-sm text-[#03312E] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20"
             >
               <option value="">
                 {loadingEmployees ? "Loading employee directory..." : "Select employee"}
@@ -217,23 +203,21 @@ export default function AssignLicenseModal({
             required
             value={assignmentDate}
             onChange={(e) => setAssignmentDate(e.target.value)}
-            disabled={availableSeats <= 0}
-            className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] bg-white py-2.5 px-3.5 text-sm text-[#03312E] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-50"
+            className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] bg-white py-2.5 px-3.5 text-sm text-[#03312E] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20"
           />
         </div>
 
-        {/* Notes */}
+        {/* Notes Textarea */}
         <div>
           <label className="block text-xs font-semibold text-[#03312E]">
             Notes
           </label>
           <textarea
             rows={3}
-            placeholder="Additional notes (optional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            disabled={availableSeats <= 0}
-            className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] bg-white p-3 text-sm text-[#03312E] placeholder-[#94A3B8] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 disabled:cursor-not-allowed disabled:bg-slate-50"
+            placeholder="Usage context, seat justification, or department bill code"
+            className="mt-1.5 w-full rounded-xl border border-[#DCE5E1] bg-white p-3 text-sm text-[#03312E] placeholder-[#94A3B8] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20"
           />
         </div>
       </form>

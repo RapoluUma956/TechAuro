@@ -11,6 +11,8 @@ import com.assetmanagement.backend.repository.DeviceAssignmentRepository;
 import com.assetmanagement.backend.repository.DeviceRepository;
 import com.assetmanagement.backend.entity.User;
 import com.assetmanagement.backend.repository.UserRepository;
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,24 +32,40 @@ public class AccessoryService {
     private final DeviceRepository deviceRepository;
     private final DeviceAssignmentRepository deviceAssignmentRepository;
     private final UserRepository userRepository;
+    private final AuthorizationService authorizationService;
 
     public AccessoryService(
             AccessoryRepository accessoryRepository,
             AccessoryAssignmentRepository accessoryAssignmentRepository,
             DeviceRepository deviceRepository,
             DeviceAssignmentRepository deviceAssignmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthorizationService authorizationService) {
         this.accessoryRepository = accessoryRepository;
         this.accessoryAssignmentRepository = accessoryAssignmentRepository;
         this.deviceRepository = deviceRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
         this.userRepository = userRepository;
+        this.authorizationService = authorizationService;
     }
 
     // ==================== DASHBOARD SUMMARY ====================
 
     @Transactional(readOnly = true)
     public AccessorySummaryResponse getSummary() {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("ACCESSORIES");
+        if (!scope.isAll()) {
+            if (scope.isEmpty()) {
+                return new AccessorySummaryResponse(0, 0, 0, 0);
+            }
+            List<AccessoryAssignment> userAssignments = accessoryAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+            long scopedAccessoryUnits = userAssignments.stream().mapToLong(aa -> aa.getQuantity() != null ? aa.getQuantity() : 1).sum();
+            List<Long> scopedDeviceIds = deviceAssignmentRepository.findDeviceIdsByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+            long scopedDeviceCount = scopedDeviceIds != null ? scopedDeviceIds.size() : 0;
+            long totalAssigned = scopedAccessoryUnits + scopedDeviceCount;
+            return new AccessorySummaryResponse(totalAssigned, totalAssigned, 0, 0);
+        }
+
         List<Accessory> accessories = accessoryRepository.findAll();
         List<Device> devices = deviceRepository.findAll();
         List<AccessoryAssignment> activeAccessoryAssignments = accessoryAssignmentRepository.findByStatus("ACTIVE");
@@ -121,8 +139,22 @@ public class AccessoryService {
 
     @Transactional(readOnly = true)
     public AccessoryPageResponse getAccessoriesPage(int page, int size, String search, String category) {
-        List<Accessory> all = accessoryRepository.findAll();
-        List<AccessoryAssignment> activeAssignments = accessoryAssignmentRepository.findByStatus("ACTIVE");
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("ACCESSORIES");
+        List<Accessory> all;
+        List<AccessoryAssignment> activeAssignments;
+        if (scope.isAll()) {
+            all = accessoryRepository.findAll();
+            activeAssignments = accessoryAssignmentRepository.findByStatus("ACTIVE");
+        } else if (scope.isEmpty()) {
+            return new AccessoryPageResponse(Collections.emptyList(), 0, size <= 0 ? 10 : size, 0, 1);
+        } else {
+            activeAssignments = accessoryAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+            Set<Long> assignedAccessoryIds = activeAssignments.stream().filter(aa -> aa.getAccessory() != null).map(aa -> aa.getAccessory().getAccessoryId()).collect(Collectors.toSet());
+            if (assignedAccessoryIds.isEmpty()) {
+                return new AccessoryPageResponse(Collections.emptyList(), 0, size <= 0 ? 10 : size, 0, 1);
+            }
+            all = accessoryRepository.findAllById(assignedAccessoryIds);
+        }
 
         Map<Long, Integer> assignedMap = activeAssignments.stream()
                 .filter(aa -> aa.getAccessory() != null)
@@ -201,6 +233,7 @@ public class AccessoryService {
 
     @Transactional
     public CreateAccessoryResponse createOrAddAccessory(CreateAccessoryRequest req) {
+        authorizationService.validateAccess("ACCESSORIES", "WRITE");
         if (req.getAccessoryName() == null || req.getAccessoryName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Accessory name is required");
         }
@@ -303,7 +336,16 @@ public class AccessoryService {
     public LaptopConfigurationPageResponse getLaptopConfigurations(
             String brand, String ram, String ssd, String search, int page, int size) {
 
-        List<Device> allDevices = deviceRepository.findAll();
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("ACCESSORIES");
+        List<Device> allDevices;
+        if (scope.isAll()) {
+            allDevices = deviceRepository.findAll();
+        } else if (scope.isEmpty()) {
+            return new LaptopConfigurationPageResponse(Collections.emptyList(), 0, size <= 0 ? 10 : size, 0, 1);
+        } else {
+            Set<Long> scopedDeviceIds = authorizationService.resolveAuthorizedDeviceIds(scope);
+            allDevices = (scopedDeviceIds == null || scopedDeviceIds.isEmpty()) ? Collections.emptyList() : deviceRepository.findByDeviceIdIn(scopedDeviceIds);
+        }
         List<DeviceAssignment> activeAssignments = deviceAssignmentRepository.findByStatus("ACTIVE");
 
         Map<Long, DeviceAssignment> assignmentMap = new HashMap<>();
@@ -428,6 +470,7 @@ public class AccessoryService {
 
     @Transactional
     public BulkAddLaptopResponse bulkAddLaptops(BulkAddLaptopRequest req) {
+        authorizationService.validateAccess("ACCESSORIES", "WRITE");
         if (req.getBrand() == null || req.getBrand().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand is required");
         }
@@ -535,6 +578,7 @@ public class AccessoryService {
 
     @Transactional(readOnly = true)
     public LaptopDeviceItemDto getLaptopById(Long deviceId) {
+        authorizationService.validateDeviceAccess(deviceId, "ACCESSORIES", "READ");
         Device d = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Laptop not found with id: " + deviceId));
 
@@ -588,6 +632,13 @@ public class AccessoryService {
 
     @Transactional(readOnly = true)
     public Accessory getAccessoryById(Long id) {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("ACCESSORIES");
+        if (!scope.isAll()) {
+            List<AccessoryAssignment> userAccs = accessoryAssignmentRepository.findByAccessory_AccessoryIdAndUser_UserIdIn(id, scope.employeeIds());
+            if (userAccs.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied: You are not authorized to view accessory ID " + id);
+            }
+        }
         return accessoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Accessory not found with id: " + id));
@@ -600,11 +651,13 @@ public class AccessoryService {
 
     @Transactional
     public Accessory createAccessory(Accessory accessory) {
+        authorizationService.validateAccess("ACCESSORIES", "WRITE");
         return accessoryRepository.save(accessory);
     }
 
     @Transactional
     public Accessory updateAccessory(Long id, Accessory updated) {
+        authorizationService.validateAccess("ACCESSORIES", "WRITE");
         Accessory existing = getAccessoryById(id);
         if (updated.getCategory() != null) existing.setCategory(updated.getCategory());
         if (updated.getSubCategory() != null) existing.setSubCategory(updated.getSubCategory());
@@ -626,6 +679,7 @@ public class AccessoryService {
 
     @Transactional
     public void deleteAccessory(Long id) {
+        authorizationService.validateAccess("ACCESSORIES", "WRITE");
         Accessory existing = getAccessoryById(id);
         accessoryRepository.delete(existing);
     }
@@ -634,6 +688,11 @@ public class AccessoryService {
 
     @Transactional
     public AssignAccessoryResponse assignAccessory(Long accessoryId, AssignAccessoryRequest req) {
+        if (req != null && req.getUserId() != null) {
+            authorizationService.validateEmployeeAccess(req.getUserId(), "ACCESSORIES", "WRITE");
+        } else {
+            authorizationService.validateAccess("ACCESSORIES", "WRITE");
+        }
         Accessory acc = getAccessoryById(accessoryId);
         int qty = (req.getQuantity() != null && req.getQuantity() > 0) ? req.getQuantity() : 1;
 
@@ -680,6 +739,11 @@ public class AccessoryService {
 
     @Transactional
     public AssignAccessoryResponse assignLaptop(Long deviceId, AssignAccessoryRequest req) {
+        if (req != null && req.getUserId() != null) {
+            authorizationService.validateEmployeeAccess(req.getUserId(), "ACCESSORIES", "WRITE");
+        } else {
+            authorizationService.validateAccess("ACCESSORIES", "WRITE");
+        }
         Device dev = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Laptop device not found with ID " + deviceId));
 
@@ -701,6 +765,7 @@ public class AccessoryService {
         DeviceAssignment da = new DeviceAssignment();
         da.setDevice(dev);
         da.setUser(user);
+        da.setSerialNumber(dev.getSerialNumber());
         da.setStatus("ACTIVE");
         if (req.getAssignedDate() != null) {
             da.setAssignedAt(req.getAssignedDate().atStartOfDay());

@@ -21,7 +21,7 @@ import java.net.http.HttpResponse;
 import org.example.agent.model.AssetReport;
 
 public class AgentSender {
-    private static final String SERVER_URL = "http://192.168.140.128:8080/api/agent/report";
+    private static final String SERVER_URL = "http://192.168.140.127:8080/api/agent/report";
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 

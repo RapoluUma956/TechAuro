@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createTheme } from "@mui/material/styles";
 
 import {
@@ -9,6 +9,7 @@ import {
 
 import navigation from "./navigation.jsx";
 import AppHeader from "./AppHeader.jsx";
+import { usePermission } from "../../hooks/usePermission";
 
 // App Logo Icon
 const AppLogo = () => (
@@ -85,6 +86,15 @@ const techAuraTheme = createTheme({
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { canRead } = usePermission();
+
+  // Filter navigation items dynamically based on RBAC permissions
+  const filteredNavigation = useMemo(() => {
+    return navigation.filter((item) => {
+      if (!item.permissionCode) return true;
+      return canRead(item.permissionCode);
+    });
+  }, [canRead]);
 
   // Persist sidebar collapsed state across page reloads
   const [initialSidebarCollapsed] = useState(() => {
@@ -111,15 +121,12 @@ export default function AppLayout() {
   const handleToggle = useCallback(() => {
     const btn = document.querySelector('button[aria-label*="navigation menu"]');
     const label = btn?.getAttribute("aria-label") || "";
-    // If the button says "Collapse navigation menu", clicking it will collapse it (true).
-    // If the button says "Expand navigation menu", clicking it will expand it (false).
     if (label.includes("Collapse")) {
       localStorage.setItem("asset_management_sidebar_collapsed", "true");
     } else if (label.includes("Expand")) {
       localStorage.setItem("asset_management_sidebar_collapsed", "false");
     }
 
-    // Confirm after transition completes (350ms)
     setTimeout(() => {
       const drawers = document.querySelectorAll(".MuiDrawer-paper");
       const visibleDrawer = Array.from(drawers).find((d) => d.offsetWidth > 0);
@@ -145,7 +152,7 @@ export default function AppLayout() {
   return (
     <AppLayoutProvider
       theme={techAuraTheme}
-      navigation={navigation}
+      navigation={filteredNavigation}
       router={router}
       branding={branding}
     >

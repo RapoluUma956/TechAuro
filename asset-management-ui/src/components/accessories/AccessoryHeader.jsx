@@ -8,13 +8,15 @@ export default function AccessoryHeader({ onAddAccessory }) {
       title="Accessories & Hardware"
       subtitle="Track peripheral inventory, stocks, warranty details, and hardware asset allocation"
       actions={
-        <Button
-          variant="primary"
-          icon={<PlusIcon className="h-4 w-4" />}
-          onClick={onAddAccessory}
-        >
-          Add Accessory
-        </Button>
+        onAddAccessory ? (
+          <Button
+            variant="primary"
+            icon={<PlusIcon className="h-4 w-4" />}
+            onClick={onAddAccessory}
+          >
+            Add Accessory
+          </Button>
+        ) : null
       }
     />
   );

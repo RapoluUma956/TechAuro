@@ -21,6 +21,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import com.assetmanagement.backend.security.AuthorizationService;
+import com.assetmanagement.backend.security.AuthorizedScope;
 
 @Service
 public class LicenseService {
@@ -28,20 +31,44 @@ public class LicenseService {
     private final LicenseRepository licenseRepository;
     private final LicenseAssignmentRepository licenseAssignmentRepository;
     private final UserRepository userRepository;
+    private final AuthorizationService authorizationService;
 
     public LicenseService(
             LicenseRepository licenseRepository,
             LicenseAssignmentRepository licenseAssignmentRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            AuthorizationService authorizationService
     ) {
         this.licenseRepository = licenseRepository;
         this.licenseAssignmentRepository = licenseAssignmentRepository;
         this.userRepository = userRepository;
+        this.authorizationService = authorizationService;
     }
 
     // ==================== 1. SUMMARY METRICS ====================
     @Transactional(readOnly = true)
     public LicenseSummaryResponse getSummary() {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("LICENSE_MANAGEMENT");
+        if (!scope.isAll()) {
+            if (scope.isEmpty()) {
+                return new LicenseSummaryResponse(0, 0, 0, 0, 0);
+            }
+            List<LicenseAssignment> scopedAssignments = licenseAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+            long assignedSeats = scopedAssignments.size();
+            long totalLicenses = scopedAssignments.stream()
+                    .filter(la -> la.getLicense() != null)
+                    .map(la -> la.getLicense().getLicenseId())
+                    .distinct()
+                    .count();
+            LocalDate today = LocalDate.now();
+            LocalDate soonDate = today.plusDays(30);
+            long expiringSoonCount = scopedAssignments.stream()
+                    .filter(la -> la.getLicense() != null && la.getLicense().getExpiryDate() != null)
+                    .filter(la -> !la.getLicense().getExpiryDate().isBefore(today) && !la.getLicense().getExpiryDate().isAfter(soonDate))
+                    .count();
+            return new LicenseSummaryResponse(totalLicenses, assignedSeats, assignedSeats, 0L, expiringSoonCount);
+        }
+
         long totalLicenses = licenseRepository.count();
         Long totalSeatsLong = licenseRepository.sumTotalSeats();
         long totalSeats = totalSeatsLong != null ? totalSeatsLong : 0L;
@@ -72,10 +99,32 @@ public class LicenseService {
             String status,
             String expiry
     ) {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("LICENSE_MANAGEMENT");
+        final Set<Long> allowedLicenseIds;
+        if (!scope.isAll()) {
+            if (scope.isEmpty()) {
+                return new LicensePageResponse(Collections.emptyList(), 0, size, 0, 1);
+            }
+            List<LicenseAssignment> scopedAssignments = licenseAssignmentRepository.findByUser_UserIdInAndStatus(scope.employeeIds(), "ACTIVE");
+            Set<Long> ids = scopedAssignments.stream()
+                    .filter(la -> la.getLicense() != null)
+                    .map(la -> la.getLicense().getLicenseId())
+                    .collect(Collectors.toSet());
+            if (ids.isEmpty()) {
+                return new LicensePageResponse(Collections.emptyList(), 0, size, 0, 1);
+            }
+            allowedLicenseIds = ids;
+        } else {
+            allowedLicenseIds = null;
+        }
+
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "createdAt", "licenseId"));
 
         Specification<License> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (allowedLicenseIds != null) {
+                predicates.add(root.get("licenseId").in(allowedLicenseIds));
+            }
 
             // Search query across licenseName, softwareName, and publisher
             if (search != null && !search.trim().isEmpty()) {
@@ -142,6 +191,14 @@ public class LicenseService {
     // ==================== 3. GET LICENSE BY ID WITH ASSIGNMENTS ====================
     @Transactional(readOnly = true)
     public LicenseDetailResponse getLicenseDetail(Long id) {
+        AuthorizedScope scope = authorizationService.getAuthorizedScope("LICENSE_MANAGEMENT");
+        if (!scope.isAll()) {
+            List<LicenseAssignment> userAssignments = licenseAssignmentRepository.findByLicense_LicenseIdAndUser_UserIdIn(id, scope.employeeIds());
+            if (userAssignments.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access Denied: You are not authorized to view license ID " + id);
+            }
+        }
+
         License license = licenseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "License not found with id: " + id));
@@ -150,7 +207,9 @@ public class LicenseService {
         int totalQuantity = license.getTotalQuantity() != null ? license.getTotalQuantity() : 0;
         int availableQuantity = Math.max(0, totalQuantity - assignedQuantity);
 
-        List<LicenseAssignment> assignments = licenseAssignmentRepository.findByLicense_LicenseIdOrderByAssignedAtDesc(id);
+        List<LicenseAssignment> assignments = scope.isAll()
+                ? licenseAssignmentRepository.findByLicense_LicenseIdOrderByAssignedAtDesc(id)
+                : licenseAssignmentRepository.findByLicense_LicenseIdAndUser_UserIdInOrderByAssignedAtDesc(id, scope.employeeIds());
         List<LicenseAssignmentDto> assignmentDtos = assignments.stream()
                 .map(this::toAssignmentDto)
                 .toList();
@@ -181,6 +240,7 @@ public class LicenseService {
     // ==================== 4. CREATE LICENSE ====================
     @Transactional
     public LicenseItemDto createLicense(CreateLicenseRequest request) {
+        authorizationService.validateAccess("LICENSE_MANAGEMENT", "WRITE");
         if (request.totalQuantity() == null || request.totalQuantity() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Total quantity must be a positive integer.");
         }
@@ -213,6 +273,7 @@ public class LicenseService {
     // ==================== 5. UPDATE LICENSE ====================
     @Transactional
     public LicenseItemDto updateLicense(Long id, UpdateLicenseRequest request) {
+        authorizationService.validateAccess("LICENSE_MANAGEMENT", "WRITE");
         License existing = licenseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "License not found with id: " + id));
@@ -272,6 +333,7 @@ public class LicenseService {
     // ==================== 6. DELETE LICENSE ====================
     @Transactional
     public void deleteLicense(Long id) {
+        authorizationService.validateAccess("LICENSE_MANAGEMENT", "WRITE");
         License existing = licenseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "License not found with id: " + id));
@@ -296,6 +358,11 @@ public class LicenseService {
     // ==================== 7. ASSIGN LICENSE ====================
     @Transactional
     public LicenseAssignmentDto assignLicense(Long licenseId, AssignLicenseRequest request) {
+        if (request != null && request.userId() != null) {
+            authorizationService.validateEmployeeAccess(request.userId(), "LICENSE_MANAGEMENT", "WRITE");
+        } else {
+            authorizationService.validateAccess("LICENSE_MANAGEMENT", "WRITE");
+        }
         License license = licenseRepository.findById(licenseId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "License not found with id: " + licenseId));
@@ -350,6 +417,8 @@ public class LicenseService {
         LicenseAssignment assignment = licenseAssignmentRepository.findByAssignmentIdAndLicense_LicenseId(request.assignmentId(), licenseId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Assignment not found with id: " + request.assignmentId() + " for this license"));
+
+        authorizationService.validateEmployeeAccess(assignment.getUser().getUserId(), "LICENSE_MANAGEMENT", "WRITE");
 
         if (!"ACTIVE".equalsIgnoreCase(assignment.getStatus())) {
             throw new ResponseStatusException(

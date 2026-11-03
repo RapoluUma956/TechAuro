@@ -23,11 +23,20 @@ public class Permission {
     @Column(name = "permission_name", nullable = false, unique = true, length = 100)
     private String permissionName;
 
+    @Column(name = "permission_code", length = 100)
+    private String permissionCode;
+
+    @Column(name = "module_name", length = 100)
+    private String moduleName;
+
     @Column(name = "description", length = 255)
     private String description;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
 
     // Getters and Setters
@@ -48,6 +57,22 @@ public class Permission {
         this.permissionName = permissionName;
     }
 
+    public String getPermissionCode() {
+        return permissionCode != null ? permissionCode : permissionName;
+    }
+
+    public void setPermissionCode(String permissionCode) {
+        this.permissionCode = permissionCode;
+    }
+
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public void setModuleName(String moduleName) {
+        this.moduleName = moduleName;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -64,9 +89,26 @@ public class Permission {
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (permissionCode == null) {
+            permissionCode = permissionName;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

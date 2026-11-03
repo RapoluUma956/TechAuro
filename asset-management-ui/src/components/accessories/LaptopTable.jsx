@@ -16,6 +16,7 @@ export default function LaptopTable({
   onBrandChange,
   onRefresh,
   onAssignLaptop,
+  onViewDeviceHistory,
 }) {
   const [expandedKeys, setExpandedKeys] = useState({});
 
@@ -273,27 +274,56 @@ export default function LaptopTable({
                         </span>
                       </td>
                       <td className="py-4 px-4 text-right pr-6">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpand(rowKey);
-                          }}
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#03312E] transition-colors hover:border-[#1976D2] hover:bg-[#E3F2FD] hover:text-[#1976D2]"
-                        >
-                          <span>{item.devices?.length || item.total} units</span>
-                          <svg
-                            className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const targetDev = item.devices?.[0];
+                              if (targetDev && onViewDeviceHistory) {
+                                onViewDeviceHistory({
+                                  ...targetDev,
+                                  brand: item.brand,
+                                  model: item.model,
+                                  ram: item.ram,
+                                  ssd: item.ssd,
+                                });
+                              } else {
+                                toggleExpand(rowKey);
+                              }
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#BBDEFB] bg-[#E3F2FD] px-2.5 py-1.5 text-xs font-bold text-[#1976D2] transition-colors hover:bg-[#1976D2] hover:text-white shadow-2xs"
+                            title="View assignment history for this laptop model"
                           >
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </button>
+                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            <span>Device History</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(rowKey);
+                            }}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#03312E] transition-colors hover:border-[#1976D2] hover:bg-[#E3F2FD] hover:text-[#1976D2]"
+                          >
+                            <span>{item.devices?.length || item.total} units</span>
+                            <svg
+                              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
 
@@ -321,6 +351,7 @@ export default function LaptopTable({
                                       <th className="py-2.5 px-3">Warranty Expiry</th>
                                       <th className="py-2.5 px-3">Assignment Status</th>
                                       <th className="py-2.5 px-3">Hardware Health</th>
+                                      <th className="py-2.5 px-3 text-right">Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-[#EBF0EE]">
@@ -379,6 +410,38 @@ export default function LaptopTable({
                                             {dev.deviceStatus || "ACTIVE"}
                                           </span>
                                         </td>
+                                          <td className="py-2.5 px-3 text-right">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onViewDeviceHistory &&
+                                                  onViewDeviceHistory({
+                                                    ...dev,
+                                                    brand: item.brand,
+                                                    model: item.model,
+                                                    ram: item.ram,
+                                                    ssd: item.ssd,
+                                                  });
+                                              }}
+                                              className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#BBDEFB] bg-[#E3F2FD] px-2 py-0.5 text-[11px] font-semibold text-[#1976D2] transition-colors hover:bg-[#1976D2] hover:text-white"
+                                              title="View who this device was assigned to"
+                                            >
+                                              <svg
+                                                className="h-3 w-3"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                              >
+                                                <circle cx="12" cy="12" r="10" />
+                                                <polyline points="12 6 12 12 16 14" />
+                                              </svg>
+                                              <span>History</span>
+                                            </button>
+                                          </td>
                                       </tr>
                                     ))}
                                   </tbody>

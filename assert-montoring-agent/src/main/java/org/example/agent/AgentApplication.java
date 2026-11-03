@@ -10,6 +10,10 @@ import org.example.agent.model.SecurityInfo;
 import org.example.agent.model.StorageInfo;
 import org.example.agent.model.SoftwareInfo;
 import org.example.agent.sender.AgentSender;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class AgentApplication {
@@ -17,6 +21,22 @@ public class AgentApplication {
     private static final long MONITORING_INTERVAL = 30_000;
 
     public static void main(String[] args) {
+
+        // When running in background without console window, write output to agent.log
+        try {
+            File logFile = new File("agent.log");
+            if (logFile.exists() && logFile.length() > 5 * 1024 * 1024) {
+                File oldLog = new File("agent.log.old");
+                if (oldLog.exists()) {
+                    oldLog.delete();
+                }
+                logFile.renameTo(oldLog);
+            }
+            PrintStream logStream = new PrintStream(new FileOutputStream(new File("agent.log"), true), true, StandardCharsets.UTF_8);
+            System.setOut(logStream);
+            System.setErr(logStream);
+        } catch (Exception ignored) {
+        }
 
         System.out.println();
         System.out.println("==============================================");

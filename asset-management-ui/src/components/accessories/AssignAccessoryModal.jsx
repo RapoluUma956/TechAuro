@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
-import { userService } from "../../services/userService";
-import { initialEmployeesData } from "../../data/employeesData";
+import { employeeService } from "../../services/employeeService";
 import { AccessoryPackageIcon, LaptopIcon } from "./AccessoryIcons";
 
 export default function AssignAccessoryModal({
@@ -22,7 +21,7 @@ export default function AssignAccessoryModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Load employees from server with fallback to initialEmployeesData
+  // Load employees from server
   useEffect(() => {
     let isMounted = true;
     if (isOpen) {
@@ -33,39 +32,26 @@ export default function AssignAccessoryModal({
       setAssignedDate(new Date().toISOString().split("T")[0]);
       setNotes("");
 
-      userService
-        .getAllUsers()
+      employeeService
+        .getEmployees({ size: 100 })
         .then((res) => {
-          if (isMounted && Array.isArray(res) && res.length > 0) {
-            setEmployees(
-              res.map((u) => ({
-                userId: u.userId,
-                name: [u.firstName, u.lastName].filter(Boolean).join(" ") || `Employee #${u.userId}`,
-                code: u.employeeCode || `EMP-${u.userId}`,
-                role: u.designation || "Staff",
-              }))
-            );
-          } else if (isMounted) {
-            setEmployees(
-              initialEmployeesData.map((e) => ({
-                userId: e.id,
-                name: e.employeeName,
-                code: e.employeeId,
-                role: e.role,
-              }))
-            );
-          }
+          if (!isMounted) return;
+          const list = res?.content || (Array.isArray(res) ? res : []);
+          setEmployees(
+            list.map((u) => ({
+              userId: u.employeeId || u.userId || u.id,
+              name:
+                u.fullName ||
+                [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                `Employee #${u.employeeId}`,
+              code: u.employeeCode || `EMP-${u.employeeId}`,
+              role: u.designation || u.role || "Staff",
+            }))
+          );
         })
         .catch(() => {
           if (isMounted) {
-            setEmployees(
-              initialEmployeesData.map((e) => ({
-                userId: e.id,
-                name: e.employeeName,
-                code: e.employeeId,
-                role: e.role,
-              }))
-            );
+            setEmployees([]);
           }
         })
         .finally(() => {
@@ -151,7 +137,7 @@ export default function AssignAccessoryModal({
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Top Summary Banner matching License assignment mockup */}
+        {/* Top Summary Banner */}
         <div className="flex items-center gap-3.5 rounded-xl border border-[#DCE5E1] bg-[#F0F8FF] p-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#D6EBFF] text-[#1976D2]">
             {isLaptop ? (

@@ -1,9 +1,12 @@
 package com.assetmanagement.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(
         name = "installed_software",
         uniqueConstraints = {
@@ -38,6 +41,7 @@ public class InstalledSoftware {
             name = "device_id",
             nullable = false
     )
+    @JsonIgnore
     private Device device;
 
     @Column(

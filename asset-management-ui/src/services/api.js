@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
 
 let currentAccessToken = null;
 let currentCsrfToken = null;
@@ -14,6 +14,50 @@ export class ApiError extends Error {
     this.status = status;
     this.errors = errors;
     this.data = data;
+  }
+}
+
+/**
+ * Returns a polite, professional error message suitable for end-user display.
+ * Replaces raw technical exceptions, network traces, and unhelpful error strings.
+ */
+function getProfessionalErrorMessage(status, serverMessage) {
+  if (
+    serverMessage &&
+    typeof serverMessage === "string" &&
+    !serverMessage.toLowerCase().includes("exception") &&
+    !serverMessage.toLowerCase().includes("stacktrace") &&
+    !serverMessage.toLowerCase().includes("failed to fetch") &&
+    !serverMessage.toLowerCase().includes("sql") &&
+    !serverMessage.toLowerCase().includes("internal server error") &&
+    !serverMessage.toLowerCase().includes("nullpointer")
+  ) {
+    return serverMessage;
+  }
+
+  switch (status) {
+    case 0:
+      return "Unable to connect to the server. Please check your network connection or verify that services are running.";
+    case 400:
+      return "The request contains invalid parameters. Please check your input and try again.";
+    case 401:
+      return "Your session has expired or authentication is required. Please log in again.";
+    case 403:
+      return "You do not have administrative permission to perform this action.";
+    case 404:
+      return "The requested record or resource could not be found.";
+    case 409:
+      return "A conflict occurred with an existing asset, user, or record.";
+    case 422:
+      return "Unable to process the request due to data validation constraints.";
+    case 500:
+      return "The server encountered an unexpected situation. Please try again in a few moments.";
+    case 502:
+    case 503:
+    case 504:
+      return "The application service is temporarily unavailable. Please try again shortly.";
+    default:
+      return "An unexpected issue occurred while communicating with the server. Please try again.";
   }
 }
 
@@ -62,11 +106,33 @@ async function executeFetch(endpoint, options = {}, tokenOverride = null) {
     headers["X-CSRF-TOKEN"] = currentCsrfToken;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-    credentials: "include", // Ensure cookies are sent (for HttpOnly refreshToken)
-  });
+  let url = `${API_BASE_URL}${endpoint}`;
+  if (options.params && typeof options.params === "object") {
+    const searchParams = new URLSearchParams();
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        searchParams.append(key, value);
+      }
+    });
+    const qs = searchParams.toString();
+    if (qs) {
+      url += (url.includes("?") ? "&" : "?") + qs;
+    }
+  }
+
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include", // Ensure cookies are sent (for HttpOnly refreshToken)
+    });
+  } catch (err) {
+    throw new ApiError(
+      0,
+      "Unable to connect to the server. Please check your network connection or verify that services are active."
+    );
+  }
 
   if (response.status === 204) {
     return null;
@@ -75,16 +141,21 @@ async function executeFetch(endpoint, options = {}, tokenOverride = null) {
   let body = null;
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
-    body = await response.json();
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
   } else {
     const text = await response.text();
     body = text ? { message: text } : null;
   }
 
   if (!response.ok) {
-    const errorMsg = body?.message || `Request failed with status ${response.status}`;
+    const rawMsg = body?.message || "";
+    const professionalMsg = getProfessionalErrorMessage(response.status, rawMsg);
     const fieldErrors = body?.errors || [];
-    throw new ApiError(response.status, errorMsg, fieldErrors, body?.data);
+    throw new ApiError(response.status, professionalMsg, fieldErrors, body?.data);
   }
 
   return body;
@@ -166,6 +237,12 @@ export const api = {
     request(endpoint, {
       ...options,
       method: "PUT",
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    }),
+  patch: (endpoint, data, options) =>
+    request(endpoint, {
+      ...options,
+      method: "PATCH",
       body: data !== undefined ? JSON.stringify(data) : undefined,
     }),
   delete: (endpoint, options) =>

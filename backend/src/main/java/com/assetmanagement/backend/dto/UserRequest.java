@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record UserRequest(
-
         @NotBlank
         @Size(max = 50)
         String employeeCode,
@@ -31,5 +30,36 @@ public record UserRequest(
         @Size(max = 100)
         String designation,
 
-        LocalDate dateOfJoining
-) {}
+        LocalDate dateOfJoining,
+
+        String serialNumber,
+
+        Long deviceId
+) {
+        public UserRequest(
+                String employeeCode,
+                String firstName,
+                String lastName,
+                String email,
+                String phone,
+                String password,
+                String designation,
+                LocalDate dateOfJoining
+        ) {
+                this(employeeCode, firstName, lastName, email, phone, password, designation, dateOfJoining, null, null);
+        }
+
+        public UserRequest(
+                String employeeCode,
+                String firstName,
+                String lastName,
+                String email,
+                String phone,
+                String password,
+                String designation,
+                LocalDate dateOfJoining,
+                String serialNumber
+        ) {
+                this(employeeCode, firstName, lastName, email, phone, password, designation, dateOfJoining, serialNumber, null);
+        }
+}

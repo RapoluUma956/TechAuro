@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping({"/api/v1/dashboard", "/api/dashboard"})
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -16,10 +16,28 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    // 1) GET /api/dashboard/summary
+    // 1) GET /api/dashboard/summary (Auto-delegates or scopes according to effective data scope)
     @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryResponse> getSummary() {
         return ResponseEntity.ok(dashboardService.getSummary());
+    }
+
+    // 1.1) GET /api/dashboard/admin-summary (Organization-wide metrics)
+    @GetMapping("/admin-summary")
+    public ResponseEntity<AdminDashboardSummaryResponse> getAdminSummary() {
+        return ResponseEntity.ok(dashboardService.getAdminSummary());
+    }
+
+    // 1.2) GET /api/dashboard/my-summary (Logged-in employee profile, laptop, telemetry, accessories, licenses)
+    @GetMapping("/my-summary")
+    public ResponseEntity<EmployeeDashboardSummaryResponse> getMySummary() {
+        return ResponseEntity.ok(dashboardService.getMySummary());
+    }
+
+    // 1.3) GET /api/dashboard/manager-summary (Managed team devices, health, licenses, alerts)
+    @GetMapping("/manager-summary")
+    public ResponseEntity<ManagerDashboardSummaryResponse> getManagerSummary() {
+        return ResponseEntity.ok(dashboardService.getManagerSummary());
     }
 
     // 2) GET /api/dashboard/recent-alerts?limit=5

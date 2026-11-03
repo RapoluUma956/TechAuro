@@ -511,7 +511,7 @@ public class DeviceCollector {
             );
 
             report.setDeviceName(
-                    cleanValue(model != null && !model.isBlank() ? model : manufacturer)
+                    cleanValue(determineSystemName(model, manufacturer))
             );
 
             report.setSerialNumber(
@@ -607,6 +607,24 @@ public class DeviceCollector {
 
         return "AUTO-" +
                 serialNumber.trim();
+    }
+
+    private String determineSystemName(String model, String manufacturer) {
+        String systemName = null;
+        try {
+            systemName = java.net.InetAddress.getLocalHost().getHostName();
+        } catch (Exception ignored) {
+        }
+        if (systemName == null || systemName.isBlank()) {
+            systemName = System.getenv("COMPUTERNAME");
+        }
+        if (systemName == null || systemName.isBlank()) {
+            systemName = System.getenv("HOSTNAME");
+        }
+        if (systemName == null || systemName.isBlank()) {
+            systemName = model != null && !model.isBlank() ? model : manufacturer;
+        }
+        return systemName;
     }
 
 }

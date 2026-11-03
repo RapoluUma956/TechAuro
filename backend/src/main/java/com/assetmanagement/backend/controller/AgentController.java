@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/agent")
+@RequestMapping({"/api/agent", "/api/v1/agent"})
 @CrossOrigin(originPatterns = "*")
 public class AgentController {
 

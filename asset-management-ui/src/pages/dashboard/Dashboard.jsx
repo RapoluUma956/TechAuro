@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { dashboardService } from "../../services/dashboardService";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 import {
   DashboardHeader,
   DashboardMetricCards,
@@ -22,10 +23,10 @@ export default function Dashboard() {
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
 
   // Fetch summary and recent alerts from Spring Boot backend
-  const fetchDashboardData = useCallback(async (isManualRefresh = false) => {
+  const fetchDashboardData = useCallback(async (isManualRefresh = false, isBackground = false) => {
     if (isManualRefresh) {
       setRefreshing(true);
-    } else {
+    } else if (!isBackground) {
       setLoading(true);
     }
     setError(null);
@@ -52,6 +53,14 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData(false);
   }, [fetchDashboardData]);
+
+  // 30-Second Active-Tab Auto-Refresh
+  useAutoRefresh(
+    useCallback(() => {
+      fetchDashboardData(false, true);
+    }, [fetchDashboardData]),
+    30000
+  );
 
   const handleManualRefresh = () => {
     fetchDashboardData(true);
@@ -164,39 +173,46 @@ export default function Dashboard() {
     ],
   };
 
+  const vulnOverview = summary?.vulnerabilityOverview;
+  const vCrit = vulnOverview?.critical ?? 0;
+  const vHigh = vulnOverview?.high ?? 0;
+  const vLow = vulnOverview?.low ?? 0;
+  const vMedRaw = vulnOverview?.medium ?? 0;
+  const vTotal = vulnOverview?.total ?? (vCrit + vHigh + vMedRaw + vLow);
+  const vMed = vMedRaw + Math.max(0, vTotal - (vCrit + vHigh + vMedRaw + vLow));
+
   // 4) Vulnerabilities Donut Card Data
   const vulnerabilitiesBySeverityData = {
     title: "Open Vulnerabilities by Severity",
-    total: summary?.vulnerabilityOverview?.total ?? 0,
+    total: vTotal,
     centerLabel: "Total",
     segments: [
       {
         id: "critical",
         label: "Critical",
-        count: summary?.vulnerabilityOverview?.critical ?? 0,
+        count: vCrit,
         color: "var(--color-red)",
       },
       {
         id: "high",
         label: "High",
-        count: summary?.vulnerabilityOverview?.high ?? 0,
+        count: vHigh,
         color: "var(--color-orange)",
       },
       {
         id: "medium",
         label: "Medium",
-        count: summary?.vulnerabilityOverview?.medium ?? 0,
+        count: vMed,
         color: "var(--color-yellow)",
       },
       {
         id: "low",
         label: "Low",
-        count: summary?.vulnerabilityOverview?.low ?? 0,
+        count: vLow,
         color: "var(--color-blue)",
       },
     ],
   };
-
   // 5) License Expiry Donut Card Data
   const licenseExpiryOverviewData = {
     title: "License Expiry Overview",

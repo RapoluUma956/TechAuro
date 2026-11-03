@@ -263,10 +263,10 @@ export default function ThresholdSettingsModal({ isOpen, onClose, onThresholdsUp
                 {/* Offline Timeout */}
                 <div>
                   <label className="block text-xs font-bold text-[#03312E]">
-                    Offline Timeout (Minutes)
+                    Offline Inactivity Threshold (Minutes)
                   </label>
                   <p className="mb-1 text-[11px] text-[#64748B]">
-                    Flag device as offline if not seen for
+                    Flag device as offline when telemetry inactivity exceeds
                   </p>
                   <div className="relative">
                     <input
