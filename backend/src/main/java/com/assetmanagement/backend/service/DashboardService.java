@@ -732,6 +732,13 @@ public class DashboardService {
 
         thresholds = healthThresholdRepository.save(thresholds);
 
+        // Immediately trigger background heartbeat sweep so all devices immediately adopt the updated offline timeout threshold
+        try {
+            heartbeatMonitorService.sweepDeviceHeartbeats();
+        } catch (Exception sweepErr) {
+            // sweep will also run periodically every 15 seconds
+        }
+
         ZoneId zoneId = ZoneId.systemDefault();
 
         OffsetDateTime updated = thresholds.getUpdatedAt()
@@ -768,17 +775,7 @@ public class DashboardService {
         if (device == null) {
             return false;
         }
-
-        LocalDateTime lastSeen = device.getRecordedAt() != null
-                ? device.getRecordedAt()
-                : (device.getLastSeenAt() != null ? device.getLastSeenAt() : device.getUpdatedAt());
-
-        if (lastSeen == null) {
-            return false;
-        }
-
-        long minutesAgo = Duration.between(lastSeen, LocalDateTime.now()).toMinutes();
-        return minutesAgo <= timeoutMinutes;
+        return "ONLINE".equalsIgnoreCase(heartbeatMonitorService.resolveEffectiveStatus(device, timeoutMinutes));
     }
 
     private boolean unused_computeIsOnline(Device device, int timeoutMinutes) {

@@ -98,7 +98,7 @@ public class EmployeeService {
             }
 
             long activeDevices = allDevices.stream()
-                    .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()) || "ACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
+                    .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()))
                     .count();
 
             long inRepair = allDevices.stream()
@@ -128,7 +128,7 @@ public class EmployeeService {
         }
 
         long activeDevices = devices.stream()
-                .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()) || "ACTIVE".equalsIgnoreCase(d.getDeviceStatus()))
+                .filter(d -> "ONLINE".equalsIgnoreCase(d.getConnectionStatus()))
                 .count();
 
         long inRepair = devices.stream()
@@ -703,8 +703,10 @@ public class EmployeeService {
                 ))
                 .toList();
 
+        String effectiveConn = heartbeatMonitorService.resolveEffectiveStatus(device);
+
         DeviceAgentDto agentDto = new DeviceAgentDto(
-                device.getConnectionStatus() != null ? device.getConnectionStatus() : "OFFLINE",
+                effectiveConn,
                 device.getAgentVersion(),
                 device.getLastSeenAt()
         );
@@ -717,7 +719,7 @@ public class EmployeeService {
                 device.getBrand(),
                 device.getModel(),
                 device.getDeviceStatus() != null ? device.getDeviceStatus() : "ACTIVE",
-                heartbeatMonitorService.resolveEffectiveStatus(device),
+                effectiveConn,
                 device.getLastSeenAt(),
                 device.getWarrantyEndDate(),
                 device.getPurchaseDate(),
@@ -741,23 +743,33 @@ public class EmployeeService {
     @Transactional(readOnly = true)
     public DeviceHistoryResponse getDeviceHistory(Long deviceId, int page, int size) {
         authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "READ");
-        List<DeviceAssignment> assignments = deviceAssignmentRepository.findByDevice_DeviceIdOrderByAssignedAtDesc(deviceId);
+        List<DeviceAssignment> assignments = deviceAssignmentRepository.findByDevice_DeviceIdOrderByAssignedAtAsc(deviceId);
 
         List<DeviceHistoryEventDto> content = assignments.stream().map(a -> {
-            String empCode = a.getUser() != null ? a.getUser().getEmployeeCode() : "N/A";
-            String empName = a.getUser() != null
-                    ? ((a.getUser().getFirstName() != null ? a.getUser().getFirstName() : "") + " " + (a.getUser().getLastName() != null ? a.getUser().getLastName() : "")).trim()
+            User u = a.getUser();
+            String empCode = u != null ? u.getEmployeeCode() : "N/A";
+            String empName = u != null
+                    ? ((u.getFirstName() != null ? u.getFirstName() : "") + " " + (u.getLastName() != null ? u.getLastName() : "")).trim()
                     : "Employee";
+            String email = u != null ? u.getEmail() : null;
+            String designation = u != null ? u.getDesignation() : null;
 
-            String eventType = "ACTIVE".equalsIgnoreCase(a.getStatus()) ? "DEVICE_ASSIGNED" : "DEVICE_RETURNED";
-            String desc = "ACTIVE".equalsIgnoreCase(a.getStatus()) ? "Device assigned to employee" : "Device unassigned / returned to inventory";
+            String status = a.getStatus() != null ? a.getStatus() : (a.getReturnedAt() == null ? "ACTIVE" : "RETURNED");
+            String eventType = "ACTIVE".equalsIgnoreCase(status) ? "DEVICE_ASSIGNED" : "DEVICE_RETURNED";
+            String desc = "ACTIVE".equalsIgnoreCase(status) ? "Device currently assigned to employee" : "Device unassigned / returned to inventory";
 
             return new DeviceHistoryEventDto(
                     a.getAssignmentId(),
+                    a.getAssignmentId(),
                     eventType,
                     a.getAssignedAt(),
+                    a.getAssignedAt(),
+                    a.getReturnedAt(),
+                    status,
                     empCode,
                     empName,
+                    email,
+                    designation,
                     desc,
                     "IT Administrator"
             );

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StatusBadge } from "../../common";
+import { StatusBadge, DeviceHistoryModal } from "../../common";
 import DeviceHistorySection from "./DeviceHistorySection";
 
 function formatUptime(seconds) {
@@ -38,6 +38,7 @@ export default function DeviceDetailsTab({
   rawDbDevice,
 }) {
   const [copiedField, setCopiedField] = useState("");
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   if (!device) {
     return (
@@ -71,7 +72,7 @@ export default function DeviceDetailsTab({
           <div>
             <p className="font-bold text-amber-900">Device is currently Offline</p>
             <p className="text-amber-700 mt-0.5">
-              Live hardware telemetry, metrics, and software will automatically stream once the monitoring agent begins reporting for serial number <span className="font-mono font-bold text-amber-900">{db.serial_number || db.serialNumber || "—"}</span>.
+              Telemetry reporting has exceeded the configured offline threshold. Live hardware metrics will automatically stream once the monitoring agent reports for serial number <span className="font-mono font-bold text-amber-900">{db.serial_number || db.serialNumber || "—"}</span>.
             </p>
           </div>
         </div>
@@ -312,7 +313,29 @@ export default function DeviceDetailsTab({
                 Device ID, tag, serial number, warranty date, last seen, status, etc.
               </p>
             </div>
-            <StatusBadge status={db.connection_status === "OFFLINE" ? "Offline" : (db.asset_status || device.status || "Active")} />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsHistoryModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#1976D2] hover:bg-[#E3F2FD] hover:border-[#1976D2] transition-colors cursor-pointer shadow-2xs"
+                title="View who this device was assigned to"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>Assignment History ({deviceHistory?.ownership?.length || 0})</span>
+              </button>
+              <StatusBadge status={db.connection_status === "OFFLINE" ? "Offline" : (db.asset_status || device.status || "Active")} />
+            </div>
           </div>
 
           {/* Grid of Device Details as requested in wireframe */}
@@ -722,6 +745,20 @@ export default function DeviceDetailsTab({
       <DeviceHistorySection
         deviceHistory={deviceHistory}
         deviceId={db.asset_id || device.deviceId}
+      />
+
+      {/* Pop-up Device Assignment History Modal */}
+      <DeviceHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        deviceId={db.device_id || device.deviceId}
+        device={{
+          deviceName: db.device_name || device.deviceName,
+          brand: db.brand,
+          model: db.model,
+          serialNumber: db.serial_number || device.serialNumber,
+          assetTag: db.asset_id || device.assetTag,
+        }}
       />
     </div>
   );

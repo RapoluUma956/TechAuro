@@ -232,12 +232,25 @@ export default function EmployeeDetailHeader({
                 <p className="mt-0.5 truncate text-sm font-bold text-[#03312E]" title={device.deviceName}>
                   {device.deviceName}
                 </p>
-                <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-[#64748B]">
-                  <span className="rounded bg-[#E2E8F0] px-1.5 py-0.2 text-[#1E293B] font-semibold">
-                    SN: {device.serialNumber || device.deviceId}
-                  </span>
-                  <span>•</span>
-                  <span className="truncate">{device.os}</span>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-[#64748B]">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-[#E2E8F0] px-1.5 py-0.2 text-[#1E293B] font-semibold">
+                      SN: {device.serialNumber || device.deviceId}
+                    </span>
+                    <span>•</span>
+                    <span className="truncate">{device.os}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("device-history-section");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="cursor-pointer font-sans text-xs font-bold text-[#1976D2] hover:underline"
+                    title="View complete assignment history"
+                  >
+                    View History →
+                  </button>
                 </div>
               </div>
             </div>

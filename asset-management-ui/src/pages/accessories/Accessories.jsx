@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { accessoryService } from "../../services/accessoryService";
 import { usePermission } from "../../hooks/usePermission";
+import { DeviceHistoryModal } from "../../components/common";
 import {
   AccessoryHeader,
   AccessoriesMetricCards,
@@ -49,6 +50,7 @@ export default function Accessories() {
   const [quickAddAccessory, setQuickAddAccessory] = useState(null);
   const [assigningItem, setAssigningItem] = useState(null);
   const [isAssigningLaptop, setIsAssigningLaptop] = useState(false);
+  const [historyDevice, setHistoryDevice] = useState(null);
 
   // Toast notification
   const [toast, setToast] = useState({ message: "", type: "success" });
@@ -409,6 +411,13 @@ export default function Accessories() {
         item={assigningItem}
         isLaptop={isAssigningLaptop}
         onAssign={handleAssign}
+      />
+      {/* Device History Modal */}
+      <DeviceHistoryModal
+        isOpen={!!historyDevice}
+        onClose={() => setHistoryDevice(null)}
+        deviceId={historyDevice?.deviceId}
+        device={historyDevice}
       />
     </div>
   );

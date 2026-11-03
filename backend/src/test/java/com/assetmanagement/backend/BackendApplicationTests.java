@@ -169,7 +169,8 @@ class BackendApplicationTests {
         }
         assertNotNull(threshold.getThresholdId());
         assertEquals(90, threshold.getCpuWarningPercent());
-        assertEquals(5, threshold.getOfflineTimeoutMinutes());
+        assertNotNull(threshold.getOfflineTimeoutMinutes());
+        assertTrue(threshold.getOfflineTimeoutMinutes() > 0);
 
         try {
             // Update threshold

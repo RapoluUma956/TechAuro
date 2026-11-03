@@ -229,20 +229,38 @@ export default function EmployeeDetail() {
             type: net.interfaceType || "Physical",
           }));
 
+          const historyList =
+            historyRes?.content ||
+            historyRes?.history ||
+            (Array.isArray(historyRes) ? historyRes : []);
+
           const mappedHistory = {
-            ownership: (historyRes?.history || []).map((h) => ({
-              id: h.historyId,
-              name: h.employeeName,
-              employeeId: h.employeeCode,
-              department: h.reason || "Hardware Assignment",
-              fromDate: h.assignedAt ? h.assignedAt.split("T")[0] : "—",
-              toDate: h.unassignedAt
-                ? h.unassignedAt.split("T")[0]
-                : h.status === "ACTIVE"
+            ownership: historyList.map((h) => {
+              const isActive = h.status === "ACTIVE" || !h.returnedAt;
+              const from = h.eventDate
+                ? h.eventDate.split("T")[0]
+                : h.assignedAt
+                ? h.assignedAt.split("T")[0]
+                : "—";
+              const to = isActive
                 ? "Present"
-                : "—",
-              reasonForChange: h.reason || "Device Assignment",
-            })),
+                : h.returnedAt
+                ? h.returnedAt.split("T")[0]
+                : "—";
+
+              return {
+                id: h.eventId || h.historyId || h.assignmentId,
+                name: h.employeeName || "Employee",
+                employeeName: h.employeeName || "Employee",
+                employeeId: h.employeeCode || "—",
+                employeeCode: h.employeeCode || "—",
+                assignedAt: h.assignedAt || h.eventDate,
+                returnedAt: h.returnedAt,
+                fromDate: from,
+                toDate: to,
+                status: h.status || (isActive ? "ACTIVE" : "RETURNED"),
+              };
+            }),
             maintenance: [],
           };
 

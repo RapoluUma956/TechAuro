@@ -268,11 +268,17 @@ public class EmployeeDtos {
     ) {}
 
     public record DeviceHistoryEventDto(
+            Long assignmentId,
             Long eventId,
             String eventType,
+            LocalDateTime assignedAt,
             LocalDateTime eventDate,
+            LocalDateTime returnedAt,
+            String status,
             String employeeCode,
             String employeeName,
+            String employeeEmail,
+            String designation,
             String description,
             String performedBy
     ) {}

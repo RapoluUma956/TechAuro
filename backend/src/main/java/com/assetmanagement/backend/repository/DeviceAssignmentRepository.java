@@ -83,6 +83,9 @@ public interface DeviceAssignmentRepository
     List<DeviceAssignment> findByDevice_DeviceIdOrderByAssignedAtDesc(Long deviceId);
 
     @EntityGraph(attributePaths = {"device", "user"})
+    List<DeviceAssignment> findByDevice_DeviceIdOrderByAssignedAtAsc(Long deviceId);
+
+    @EntityGraph(attributePaths = {"device", "user"})
     List<DeviceAssignment> findByUser_UserIdOrderByAssignedAtDesc(Long userId);
 
     @Query("SELECT DISTINCT da.device.deviceId FROM DeviceAssignment da WHERE da.user.userId IN :userIds AND da.status = :status")

@@ -20,9 +20,10 @@ import java.util.List;
 public class AgentSender {
 
     private static final String DEFAULT_PRIMARY_URL = "http://localhost:8080/api/agent/report";
-    private static final String DEFAULT_CURRENT_IP_URL = "http://192.168.254.135:8080/api/agent/report";
+    private static final String DEFAULT_CURRENT_IP_URL = "http://192.168.140.127:8080/api/agent/report";
     private static final String DEFAULT_WIFI_IP_URL = "http://172.16.39.244:8080/api/agent/report";
-    private static final String DEFAULT_FALLBACK_URL = "http://192.168.140.128:8080/api/agent/report";
+    private static final String DEFAULT_FALLBACK_URL = "http://192.168.254.135:8080/api/agent/report";
+    private static final String DEFAULT_OLD_FALLBACK_URL = "http://192.168.140.128:8080/api/agent/report";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -73,6 +74,12 @@ public class AgentSender {
         }
         if (!serverUrls.contains(DEFAULT_WIFI_IP_URL)) {
             serverUrls.add(DEFAULT_WIFI_IP_URL);
+        }
+        if (!serverUrls.contains(DEFAULT_FALLBACK_URL)) {
+            serverUrls.add(DEFAULT_FALLBACK_URL);
+        }
+        if (!serverUrls.contains(DEFAULT_OLD_FALLBACK_URL)) {
+            serverUrls.add(DEFAULT_OLD_FALLBACK_URL);
         }
 
         // Add detected machine IPs

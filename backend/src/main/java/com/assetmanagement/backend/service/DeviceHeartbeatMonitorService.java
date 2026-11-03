@@ -52,7 +52,7 @@ public class DeviceHeartbeatMonitorService {
 
     /**
      * Real-time calculation of effective connection status:
-     * Returns "ONLINE" if the device has transmitted telemetry within the threshold window,
+     * Returns "ONLINE" if the device has transmitted telemetry within the configured threshold window,
      * otherwise "OFFLINE".
      */
     public String resolveEffectiveStatus(Device device, int timeoutMinutes) {
@@ -68,8 +68,15 @@ public class DeviceHeartbeatMonitorService {
             return "OFFLINE";
         }
 
-        long minutesAgo = Duration.between(lastTelemetry, LocalDateTime.now()).toMinutes();
-        if (minutesAgo > timeoutMinutes) {
+        long secondsAgo = Duration.between(lastTelemetry, LocalDateTime.now()).getSeconds();
+        if (secondsAgo < 0) {
+            // Future timestamp / clock skew protection margin
+            return "ONLINE";
+        }
+
+        // Accurately compare elapsed seconds against configured timeout threshold in seconds
+        long thresholdSeconds = (long) timeoutMinutes * 60L;
+        if (secondsAgo >= thresholdSeconds) {
             return "OFFLINE";
         }
 
