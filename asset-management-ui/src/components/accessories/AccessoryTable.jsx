@@ -302,10 +302,11 @@ export default function AccessoryTable({
                             <button
                               type="button"
                               onClick={() => onEditAccessory(item)}
-                              title="Edit Accessory"
-                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-[#03312E] hover:bg-[#F8FAF9] hover:text-[#03312E]"
+                              title="Edit Accessory Details"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#BBDEFB] bg-[#E3F2FD] px-2 py-1 text-xs font-semibold text-[#1976D2] transition-colors hover:bg-[#1976D2] hover:text-white shadow-2xs"
                             >
-                              <EditIcon className="h-4 w-4" />
+                              <EditIcon className="h-3.5 w-3.5" />
+                              <span>Edit</span>
                             </button>
                           )}
                           {onDeleteAccessory && (deleteConfirmId === item.accessoryId ? (
@@ -316,16 +317,16 @@ export default function AccessoryTable({
                                   onDeleteAccessory(item.accessoryId);
                                   setDeleteConfirmId(null);
                                 }}
-                                className="cursor-pointer rounded-lg bg-[#EF4444] px-2 py-1 text-xs font-bold text-white hover:bg-[#DC2626]"
+                                className="cursor-pointer rounded-lg bg-[#EF4444] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#DC2626] shadow-2xs"
                               >
-                                Confirm
+                                Confirm Delete
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setDeleteConfirmId(null)}
-                                className="cursor-pointer rounded-lg bg-slate-200 px-2 py-1 text-xs text-[#64748B] hover:bg-slate-300"
+                                className="cursor-pointer rounded-lg bg-slate-200 px-2 py-1 text-xs font-medium text-[#64748B] hover:bg-slate-300"
                               >
-                                ✕
+                                Cancel
                               </button>
                             </div>
                           ) : (
@@ -333,9 +334,10 @@ export default function AccessoryTable({
                               type="button"
                               onClick={() => setDeleteConfirmId(item.accessoryId)}
                               title="Delete Accessory"
-                              className="cursor-pointer rounded-lg border border-[#DCE5E1] bg-white p-1.5 text-xs text-[#5C7370] transition-colors hover:border-red-300 hover:bg-[#FEECEB] hover:text-[#EF4444]"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white shadow-2xs"
                             >
-                              <TrashIcon className="h-4 w-4" />
+                              <TrashIcon className="h-3.5 w-3.5" />
+                              <span>Delete</span>
                             </button>
                           ))}
                         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Modal, Button } from "../common";
 import { employeeService } from "../../services/employeeService";
 import { roleService } from "../../services/roleService";
@@ -40,8 +40,11 @@ export default function AddEmployeeModal({
     message: "",
   });
 
+  const prevIsOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    // ONLY reset and initialize form data when transitioning from closed to open
+    if (isOpen && !prevIsOpenRef.current) {
       setFormData({
         firstName: "",
         lastName: "",
@@ -75,7 +78,7 @@ export default function AddEmployeeModal({
           if (defaultRole) {
             setFormData((prev) => ({
               ...prev,
-              roleId: String(defaultRole.id),
+              roleId: prev.roleId || String(defaultRole.id),
             }));
           }
         })
@@ -93,7 +96,7 @@ export default function AddEmployeeModal({
           if (list.length > 0) {
             setFormData((prev) => ({
               ...prev,
-              selectedSerialNumber: list[0].serialNumber || "",
+              selectedSerialNumber: prev.selectedSerialNumber || list[0].serialNumber || "",
             }));
           }
         })
@@ -104,6 +107,7 @@ export default function AddEmployeeModal({
           setLoadingDevices(false);
         });
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, nextId, roles]);
 
   // Debounced lookup for manual serial number
@@ -269,6 +273,7 @@ export default function AddEmployeeModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      closeOnBackdrop={false}
       title="Add New Employee"
       subtitle="Register staff member and link their assigned hardware device by unique Serial Number"
       size="lg"

@@ -35,19 +35,20 @@ export default function AddAccessoryModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Sync serial numbers array when units count changes
+  // Sync serial numbers array when units count changes safely
   useEffect(() => {
-    const unitCount = Math.max(1, parseInt(units, 10) || 1);
+    const parsed = parseInt(units, 10);
+    if (!parsed || parsed < 1) return;
     setSerialNumbers((prev) => {
+      if (prev.length === parsed) return prev;
       const next = [...prev];
-      if (next.length < unitCount) {
-        while (next.length < unitCount) {
+      if (next.length < parsed) {
+        while (next.length < parsed) {
           next.push("");
         }
-      } else if (next.length > unitCount) {
-        return next.slice(0, unitCount);
+        return next;
       }
-      return next;
+      return next.slice(0, parsed);
     });
   }, [units]);
 
@@ -179,6 +180,7 @@ export default function AddAccessoryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      closeOnBackdrop={false}
       title="Add New Accessory"
       subtitle="Choose the accessory type to preview and complete its corresponding registration form"
       size="lg"

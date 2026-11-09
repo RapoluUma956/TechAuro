@@ -5,6 +5,7 @@ org\example\agent\model\AssetReport.class
 org\example\agent\sender\AgentSender.class
 org\example\agent\collector\NetworkCollector.class
 org\example\agent\collector\SoftwareCollector.class
+org\example\agent\StartupManager.class
 org\example\agent\collector\CpuCollector.class
 org\example\agent\collector\MemoryCollector.class
 org\example\agent\model\SoftwareInfo.class
@@ -13,6 +14,7 @@ org\example\agent\collector\SecurityCollector.class
 org\example\agent\collector\StorageCollector.class
 org\example\agent\model\CpuInfo.class
 org\example\agent\model\StorageInfo.class
+org\example\agent\StartupManager$ShortcutInfo.class
 org\example\agent\AgentApplication.class
 org\example\agent\model\BiosInfo.class
 org\example\agent\model\SecurityInfo.class

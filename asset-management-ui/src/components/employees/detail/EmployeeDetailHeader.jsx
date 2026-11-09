@@ -17,6 +17,8 @@ export default function EmployeeDetailHeader({
   device,
   summaryCounts = {},
   onExport,
+  onEdit,
+  onDelete,
 }) {
   const navigate = useNavigate();
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -68,6 +70,54 @@ export default function EmployeeDetailHeader({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex items-center gap-1.5 text-xs text-[#03312E] hover:border-[#1976D2] hover:text-[#1976D2]"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit Details
+            </Button>
+          )}
+
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDelete}
+              className="flex items-center gap-1.5 text-xs text-red-600 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+              Delete
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"

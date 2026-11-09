@@ -1,7 +1,9 @@
 package com.assetmanagement.backend.service;
 
 import com.assetmanagement.backend.entity.Device;
+import com.assetmanagement.backend.entity.DeviceAssignment;
 import com.assetmanagement.backend.repository.DeviceRepository;
+import com.assetmanagement.backend.repository.DeviceAssignmentRepository;
 
 import com.assetmanagement.backend.security.AuthorizationService;
 import com.assetmanagement.backend.security.AuthorizedScope;
@@ -18,12 +20,17 @@ import java.util.List;
 public class DeviceService {
 
     private final DeviceRepository deviceRepository;
+    private final DeviceAssignmentRepository deviceAssignmentRepository;
     private final DeviceHeartbeatMonitorService heartbeatMonitorService;
     private final AuthorizationService authorizationService;
 
-    public DeviceService(DeviceRepository deviceRepository, DeviceHeartbeatMonitorService heartbeatMonitorService,
+    public DeviceService(
+            DeviceRepository deviceRepository,
+            DeviceAssignmentRepository deviceAssignmentRepository,
+            DeviceHeartbeatMonitorService heartbeatMonitorService,
             AuthorizationService authorizationService) {
         this.deviceRepository = deviceRepository;
+        this.deviceAssignmentRepository = deviceAssignmentRepository;
         this.heartbeatMonitorService = heartbeatMonitorService;
         this.authorizationService = authorizationService;
     }
@@ -154,26 +161,43 @@ public class DeviceService {
                 .orElseGet(() -> deviceRepository.save(device));
     }
 
+    private void validateDeviceWritePermission(Long deviceId) {
+        try {
+            authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "WRITE");
+        } catch (ResponseStatusException e) {
+            authorizationService.validateAccess("ACCESSORIES", "WRITE");
+        }
+    }
+
     @Transactional
     public Device updateDevice(Long deviceId, Device updatedDevice) {
-        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "WRITE");
+        validateDeviceWritePermission(deviceId);
         Device existingDevice = getDeviceById(deviceId);
 
-        existingDevice.setAssetTag(updatedDevice.getAssetTag());
-        existingDevice.setSerialNumber(updatedDevice.getSerialNumber());
-        existingDevice.setBrand(updatedDevice.getBrand());
-        existingDevice.setModel(updatedDevice.getModel());
-        existingDevice.setWarrantyStartDate(updatedDevice.getWarrantyStartDate());
-        existingDevice.setWarrantyEndDate(updatedDevice.getWarrantyEndDate());
-        existingDevice.setStatus(updatedDevice.getStatus());
+        if (updatedDevice.getAssetTag() != null) existingDevice.setAssetTag(updatedDevice.getAssetTag());
+        if (updatedDevice.getSerialNumber() != null) existingDevice.setSerialNumber(updatedDevice.getSerialNumber());
+        if (updatedDevice.getBrand() != null) existingDevice.setBrand(updatedDevice.getBrand());
+        if (updatedDevice.getModel() != null) existingDevice.setModel(updatedDevice.getModel());
+        if (updatedDevice.getWarrantyStartDate() != null) existingDevice.setWarrantyStartDate(updatedDevice.getWarrantyStartDate());
+        if (updatedDevice.getWarrantyEndDate() != null) existingDevice.setWarrantyEndDate(updatedDevice.getWarrantyEndDate());
+        if (updatedDevice.getWarrantyExpiryDate() != null) existingDevice.setWarrantyExpiryDate(updatedDevice.getWarrantyExpiryDate());
+        if (updatedDevice.getStatus() != null) existingDevice.setStatus(updatedDevice.getStatus());
+        if (updatedDevice.getDeviceStatus() != null) existingDevice.setDeviceStatus(updatedDevice.getDeviceStatus());
 
         return deviceRepository.save(existingDevice);
     }
 
     @Transactional
     public void deleteDevice(Long deviceId) {
-        authorizationService.validateDeviceAccess(deviceId, "EMPLOYEES_DEVICES", "WRITE");
+        validateDeviceWritePermission(deviceId);
         Device device = getDeviceById(deviceId);
+
+        // Delete device assignments first
+        List<DeviceAssignment> das = deviceAssignmentRepository.findByDevice_DeviceId(deviceId);
+        if (!das.isEmpty()) {
+            deviceAssignmentRepository.deleteAll(das);
+        }
+
         deviceRepository.delete(device);
     }
 }

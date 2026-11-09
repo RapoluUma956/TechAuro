@@ -10,6 +10,10 @@ import {
   VulnerabilitiesTab,
   LicensesTab,
 } from "../../components/employees/detail";
+import {
+  EditEmployeeModal,
+  DeleteEmployeeModal,
+} from "../../components/employees";
 import { Modal, Button } from "../../components/common";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
 import { usePermission } from "../../hooks/usePermission";
@@ -65,6 +69,8 @@ export default function EmployeeDetail() {
 
   // Device assignment / reassignment modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assignSerialNumber, setAssignSerialNumber] = useState("");
   const [reassignReason, setReassignReason] = useState("");
   const [availableDevices, setAvailableDevices] = useState([]);
@@ -155,6 +161,13 @@ export default function EmployeeDetail() {
             lastSeen: dev.lastSeenAt,
             brand: dev.manufacturer || "—",
             model: dev.model || "—",
+            biosManufacturer: dev.biosManufacturer || dev.bios?.manufacturer || dev.manufacturer || "—",
+            biosVersion: dev.biosVersion || dev.bios?.version || "—",
+            biosReleaseDate: dev.biosReleaseDate || dev.bios?.releaseDate || null,
+            bootTime: dev.bootTime || dev.systemState?.bootTime || null,
+            uptimeSeconds: dev.uptimeSeconds ?? dev.systemState?.uptimeSeconds ?? dev.agent?.uptimeSeconds ?? null,
+            processCount: dev.processCount ?? dev.systemState?.processCount ?? null,
+            threadCount: dev.threadCount ?? dev.systemState?.threadCount ?? null,
           };
 
           const mappedRawDb = {
@@ -202,11 +215,13 @@ export default function EmployeeDetail() {
             tpm_present: Boolean(dev.security?.tpmVersion),
             tpm_version: dev.security?.tpmVersion || null,
             secure_boot_enabled: dev.security?.secureBootEnabled ?? null,
-            bios_manufacturer: dev.manufacturer || null,
-            bios_version: dev.biosVersion || null,
-            uptime_seconds: dev.agent?.uptimeSeconds ?? null,
-            process_count: dev.processCount ?? null,
-            thread_count: dev.threadCount ?? null,
+            bios_manufacturer: dev.biosManufacturer || dev.bios?.manufacturer || dev.manufacturer || null,
+            bios_version: dev.biosVersion || dev.bios?.version || null,
+            bios_release_date: dev.biosReleaseDate || dev.bios?.releaseDate || null,
+            boot_time: dev.bootTime || dev.systemState?.bootTime || null,
+            uptime_seconds: dev.uptimeSeconds ?? dev.systemState?.uptimeSeconds ?? dev.agent?.uptimeSeconds ?? null,
+            process_count: dev.processCount ?? dev.systemState?.processCount ?? null,
+            thread_count: dev.threadCount ?? dev.systemState?.threadCount ?? null,
             warranty_expiry: dev.warrantyExpiryDate,
             purchase_date: dev.purchaseDate,
             last_seen_at: dev.lastSeenAt,
@@ -343,13 +358,14 @@ export default function EmployeeDetail() {
     fetchActiveTabData();
   }, [id, activeTab]);
 
-  // 30-Second Background Sync for Profile & Inactive Data
+  // 30-Second Background Sync for Profile & Inactive Data (paused when modals open)
   useAutoRefresh(
     useCallback(() => {
       fetchProfile(true);
       fetchActiveTabData(true);
     }, [fetchProfile, fetchActiveTabData]),
-    30000
+    30000,
+    !isAssignModalOpen && !isEditModalOpen && !isDeleteModalOpen
   );
 
   // 5-Second Live Telemetry Streamer for Device Metrics (Battery, CPU, RAM, Connection Status)
@@ -389,6 +405,13 @@ export default function EmployeeDetail() {
             encryptionStatus: dev.security?.bitLockerProtection === "ON"
               ? "BitLocker Encrypted"
               : (isOnline ? "Standard" : "—"),
+            biosManufacturer: dev.biosManufacturer || dev.bios?.manufacturer || prev.device?.biosManufacturer,
+            biosVersion: dev.biosVersion || dev.bios?.version || prev.device?.biosVersion,
+            biosReleaseDate: dev.biosReleaseDate || dev.bios?.releaseDate || prev.device?.biosReleaseDate,
+            bootTime: dev.bootTime || dev.systemState?.bootTime || prev.device?.bootTime,
+            uptimeSeconds: dev.uptimeSeconds ?? dev.systemState?.uptimeSeconds ?? dev.agent?.uptimeSeconds ?? prev.device?.uptimeSeconds,
+            processCount: dev.processCount ?? dev.systemState?.processCount ?? prev.device?.processCount,
+            threadCount: dev.threadCount ?? dev.systemState?.threadCount ?? prev.device?.threadCount,
           };
 
           const updatedRawDb = {
@@ -405,9 +428,13 @@ export default function EmployeeDetail() {
             battery_health_percent: dev.battery?.healthPercent ?? prev.rawDbDevice?.battery_health_percent,
             battery_cycle_count: dev.battery?.cycleCount ?? prev.rawDbDevice?.battery_cycle_count,
             power_source: dev.battery?.powerSource || prev.rawDbDevice?.power_source,
-            uptime_seconds: dev.agent?.uptimeSeconds ?? prev.rawDbDevice?.uptime_seconds,
-            process_count: dev.processCount ?? prev.rawDbDevice?.process_count,
-            thread_count: dev.threadCount ?? prev.rawDbDevice?.thread_count,
+            uptime_seconds: dev.uptimeSeconds ?? dev.systemState?.uptimeSeconds ?? dev.agent?.uptimeSeconds ?? prev.rawDbDevice?.uptime_seconds,
+            process_count: dev.processCount ?? dev.systemState?.processCount ?? prev.rawDbDevice?.process_count,
+            thread_count: dev.threadCount ?? dev.systemState?.threadCount ?? prev.rawDbDevice?.thread_count,
+            boot_time: dev.bootTime || dev.systemState?.bootTime || prev.rawDbDevice?.boot_time,
+            bios_manufacturer: dev.biosManufacturer || dev.bios?.manufacturer || prev.rawDbDevice?.bios_manufacturer,
+            bios_version: dev.biosVersion || dev.bios?.version || prev.rawDbDevice?.bios_version,
+            bios_release_date: dev.biosReleaseDate || dev.bios?.releaseDate || prev.rawDbDevice?.bios_release_date,
             last_seen_at: dev.lastSeenAt,
             has_telemetry: hasTelemetry,
           };
@@ -685,6 +712,8 @@ export default function EmployeeDetail() {
         device={headerDevice}
         summaryCounts={summaryCounts}
         onExport={handleExportSpecs}
+        onEdit={() => setIsEditModalOpen(true)}
+        onDelete={() => setIsDeleteModalOpen(true)}
       />
 
       {/* Device Assignment Quick Actions Bar */}
@@ -908,6 +937,33 @@ export default function EmployeeDetail() {
           )}
         </form>
       </Modal>
+
+      {/* Edit Employee Modal */}
+      <EditEmployeeModal
+        isOpen={isEditModalOpen}
+        employee={headerEmployee}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={async (employeeId, payload) => {
+          await employeeService.updateEmployee(employeeId, payload);
+          setIsEditModalOpen(false);
+          setToastMessage("Employee details updated successfully!");
+          await fetchProfile();
+          await fetchActiveTabData();
+          setTimeout(() => setToastMessage(""), 5000);
+        }}
+      />
+
+      {/* Delete Employee Modal */}
+      <DeleteEmployeeModal
+        isOpen={isDeleteModalOpen}
+        employee={headerEmployee}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={async (employeeId) => {
+          await employeeService.deleteEmployee(employeeId);
+          setIsDeleteModalOpen(false);
+          navigate("/employees", { replace: true });
+        }}
+      />
     </div>
   );
 }

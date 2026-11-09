@@ -1,6 +1,6 @@
 import React from "react";
 import { DataTable, StatusBadge, Button } from "../common";
-import { CalendarIcon } from "./EmployeeIcons";
+import { CalendarIcon, EditIcon, TrashIcon } from "./EmployeeIcons";
 
 function formatWarrantyDate(dateString) {
   if (!dateString) return "N/A";
@@ -36,6 +36,8 @@ export default function EmployeeTable({
   onPageChange,
   onRowClick,
   onClearFilters,
+  onEdit,
+  onDelete,
 }) {
   const columns = [
     {
@@ -136,6 +138,50 @@ export default function EmployeeTable({
         </div>
       ),
     },
+    ...(onEdit || onDelete
+      ? [
+          {
+            key: "actions",
+            header: "Actions",
+            align: "right",
+            render: (emp) => (
+              <div
+                className="flex items-center justify-end gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(emp);
+                    }}
+                    title="Edit Employee Details"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#BBDEFB] bg-[#E3F2FD] px-2.5 py-1 text-xs font-semibold text-[#1976D2] transition-colors hover:bg-[#1976D2] hover:text-white shadow-2xs"
+                  >
+                    <EditIcon className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(emp);
+                    }}
+                    title="Delete Employee"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white shadow-2xs"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

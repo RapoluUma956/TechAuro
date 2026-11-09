@@ -67,6 +67,7 @@ export default function EditAccessoryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      closeOnBackdrop={false}
       title="Edit Accessory"
       subtitle={`Update details and inventory levels for ${accessory.accessoryName || accessory.productName}`}
       size="md"

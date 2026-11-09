@@ -26,6 +26,16 @@ export const employeeService = {
     return api.post("/employees", payload);
   },
 
+  // 5.1. Update existing employee
+  updateEmployee(employeeId, payload) {
+    return api.put(`/employees/${employeeId}`, payload);
+  },
+
+  // 5.2. Delete employee
+  deleteEmployee(employeeId) {
+    return api.delete(`/employees/${employeeId}`);
+  },
+
   // 6. Get Employee Profile & summary counts
   getEmployeeById(employeeId) {
     return api.get(`/employees/${employeeId}`);

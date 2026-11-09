@@ -3,6 +3,13 @@
 This is the portable standalone version of the Asset Monitoring Agent.
 No Java installation or setup is required.
 
+## Automatic Windows Startup Registration:
+- On first launch, the agent automatically registers itself in the Windows Startup folder:
+  `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\AssetMonitoringAgent.lnk`
+- Whenever the employee boots/restarts Windows and logs in, the agent starts automatically in the background.
+- If the folder is moved to a new path, running the executable automatically updates the Startup shortcut to the new location.
+- If another instance is already running, launching the executable again safely exits to prevent duplicate processes.
+
 ## Background Execution:
 - When you double-click `AssetMonitoringAgent.exe`, it runs silently as a background process.
 - No terminal or command prompt window is displayed.
@@ -26,5 +33,6 @@ http://192.168.140.127:8080/api/agent/report
 - `AssetMonitoringAgent.exe`: Silent background application launcher
 - `server_url.txt`: Server endpoint configuration
 - `agent.log`: Live telemetry logs (auto-generated when running)
+- `README.txt`: Documentation and instructions
 - `app/`: Compiled application package and configurations
 - `runtime/`: Bundled lightweight Java runtime environment

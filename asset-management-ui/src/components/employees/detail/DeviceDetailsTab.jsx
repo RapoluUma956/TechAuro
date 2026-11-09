@@ -4,9 +4,11 @@ import DeviceHistorySection from "./DeviceHistorySection";
 
 function formatUptime(seconds) {
   if (!seconds && seconds !== 0) return "—";
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
+  const sec = Number(seconds);
+  if (isNaN(sec)) return String(seconds);
+  const days = Math.floor(sec / 86400);
+  const hours = Math.floor((sec % 86400) / 3600);
+  const mins = Math.floor((sec % 3600) / 60);
   if (days > 0) return `${days}d ${hours}h ${mins}m`;
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
@@ -14,13 +16,52 @@ function formatUptime(seconds) {
 
 function formatDateDisplay(dateVal) {
   if (!dateVal) return "—";
+  if (Array.isArray(dateVal)) {
+    const [year, month, day] = dateVal;
+    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
   try {
-    const d = new Date(dateVal);
+    const s = String(dateVal).replace(" ", "T");
+    const d = new Date(s);
     if (isNaN(d.getTime())) return String(dateVal);
     return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
+    });
+  } catch {
+    return String(dateVal);
+  }
+}
+
+function formatDateTimeDisplay(dateVal) {
+  if (!dateVal) return "—";
+  if (Array.isArray(dateVal)) {
+    const [year, month, day, hour = 0, min = 0, sec = 0] = dateVal;
+    return new Date(year, month - 1, day, hour, min, sec).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  try {
+    const s = String(dateVal).replace(" ", "T");
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(dateVal);
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   } catch {
     return String(dateVal);
@@ -585,44 +626,71 @@ export default function DeviceDetailsTab({
                 BIOS &amp; Sys Stats
               </h3>
             </div>
-            <span className="font-mono text-xs font-bold text-[#03312E] bg-[#F1F5F9] px-2 py-0.5 rounded">
-              {db.bios_version ? `v${db.bios_version}` : "—"}
+            <span
+              className="font-mono text-xs font-bold text-[#03312E] bg-[#F1F5F9] px-2 py-0.5 rounded"
+              title={db.bios_version || db.biosVersion || "—"}
+            >
+              {db.bios_version || db.biosVersion
+                ? (String(db.bios_version || db.biosVersion).startsWith("v")
+                    ? (db.bios_version || db.biosVersion)
+                    : `v${db.bios_version || db.biosVersion}`)
+                : "—"}
             </span>
           </div>
 
           <div className="space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">BIOS Vendor:</span>
-              <span className="font-bold text-[#03312E]">
-                {db.bios_manufacturer || (db.brand && db.brand !== "—" ? db.brand : "—")}
+              <span
+                className="font-bold text-[#03312E] truncate max-w-[170px]"
+                title={db.bios_manufacturer || db.biosManufacturer || (db.brand && db.brand !== "—" ? db.brand : "—")}
+              >
+                {db.bios_manufacturer || db.biosManufacturer || (db.brand && db.brand !== "—" ? db.brand : "—")}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[#64748B]">BIOS Version:</span>
+              <span
+                className="font-mono font-bold text-[#03312E] truncate max-w-[170px]"
+                title={db.bios_version || db.biosVersion || "—"}
+              >
+                {db.bios_version || db.biosVersion || "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Release Date:</span>
               <span className="font-mono text-[#03312E]">
-                {formatDateDisplay(db.bios_release_date)}
+                {formatDateDisplay(db.bios_release_date || db.biosReleaseDate)}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">System Uptime:</span>
               <span className="font-bold text-[#1976D2]">
-                {db.uptime_seconds != null ? formatUptime(db.uptime_seconds) : "—"}
+                {(db.uptime_seconds != null || db.uptimeSeconds != null)
+                  ? formatUptime(db.uptime_seconds ?? db.uptimeSeconds)
+                  : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Processes / Threads:</span>
               <span className="font-bold text-[#03312E]">
-                {(db.process_count != null && db.thread_count != null) ? `${db.process_count} / ${db.thread_count}` : "—"}
+                {((db.process_count != null || db.processCount != null) && (db.thread_count != null || db.threadCount != null))
+                  ? `${db.process_count ?? db.processCount} / ${db.thread_count ?? db.threadCount}`
+                  : "—"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[#64748B]">Boot Timestamp:</span>
-              <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[170px]" title={db.boot_time || "—"}>
-                {formatDateDisplay(db.boot_time)}
+              <span
+                className="font-mono text-[11px] text-[#64748B] truncate max-w-[170px]"
+                title={db.boot_time || db.bootTime || "—"}
+              >
+                {formatDateTimeDisplay(db.boot_time || db.bootTime)}
               </span>
             </div>
           </div>

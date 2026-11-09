@@ -9,6 +9,8 @@ import {
   EmployeeFilters,
   EmployeeTable,
   AddEmployeeModal,
+  EditEmployeeModal,
+  DeleteEmployeeModal,
 } from "../../components/employees";
 
 const DEFAULT_ROLES = [
@@ -59,6 +61,8 @@ export default function Employees() {
 
   // Modal & Notification state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [deletingEmployee, setDeletingEmployee] = useState(null);
   const [successToast, setSuccessToast] = useState("");
 
   // Debounce search query changes by 300ms
@@ -160,13 +164,14 @@ export default function Employees() {
     fetchMetrics();
   }, [fetchMetrics]);
 
-  // 30-Second Active-Tab Auto-Refresh
+  // 30-Second Active-Tab Auto-Refresh (paused when any modal is open)
   useAutoRefresh(
     useCallback(() => {
       fetchMetrics();
       fetchEmployees(true);
     }, [fetchMetrics, fetchEmployees]),
-    30000
+    30000,
+    !isAddModalOpen && !editingEmployee && !deletingEmployee
   );
 
   useEffect(() => {
@@ -225,6 +230,32 @@ export default function Employees() {
     }, 5000);
   };
 
+  const handleUpdateEmployee = async (employeeId, payload) => {
+    await employeeService.updateEmployee(employeeId, payload);
+    setEditingEmployee(null);
+    setSuccessToast(
+      `Employee ${payload.firstName} ${payload.lastName || ""} updated successfully!`
+    );
+    await fetchMetrics();
+    await fetchEmployees();
+
+    setTimeout(() => {
+      setSuccessToast("");
+    }, 5000);
+  };
+
+  const handleDeleteEmployee = async (employeeId) => {
+    await employeeService.deleteEmployee(employeeId);
+    setDeletingEmployee(null);
+    setSuccessToast("Employee deleted successfully.");
+    await fetchMetrics();
+    await fetchEmployees();
+
+    setTimeout(() => {
+      setSuccessToast("");
+    }, 5000);
+  };
+
   return (
     <div className="space-y-6 text-[#24211D]">
       {/* Success notification */}
@@ -247,7 +278,7 @@ export default function Employees() {
         </div>
       )}
 
-      <EmployeeHeader onAddEmployee={canWriteEmployees ? () => setIsAddModalOpen(true) : null} />
+      <EmployeeHeader onAddEmployee={() => setIsAddModalOpen(true)} />
 
       {/* Metric Cards connected to GET /api/v1/employees/metrics */}
       <EmployeeMetricCards
@@ -307,6 +338,8 @@ export default function Employees() {
           onPageChange={setCurrentPage}
           onRowClick={handleRowClick}
           onClearFilters={handleClearFilters}
+          onEdit={(emp) => setEditingEmployee(emp)}
+          onDelete={(emp) => setDeletingEmployee(emp)}
         />
       )}
 
@@ -317,6 +350,23 @@ export default function Employees() {
         onSave={handleAddEmployee}
         roles={roles}
         nextId={totalCount + 1}
+      />
+
+      {/* Edit Employee Modal */}
+      <EditEmployeeModal
+        isOpen={Boolean(editingEmployee)}
+        employee={editingEmployee}
+        onClose={() => setEditingEmployee(null)}
+        onSave={handleUpdateEmployee}
+        roles={roles}
+      />
+
+      {/* Delete Employee Modal */}
+      <DeleteEmployeeModal
+        isOpen={Boolean(deletingEmployee)}
+        employee={deletingEmployee}
+        onClose={() => setDeletingEmployee(null)}
+        onConfirm={handleDeleteEmployee}
       />
     </div>
   );

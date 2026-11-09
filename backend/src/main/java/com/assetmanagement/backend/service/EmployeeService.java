@@ -37,6 +37,9 @@ public class EmployeeService {
     private final UserRoleRepository userRoleRepository;
     private final RoleRepository roleRepository;
     private final AuthorizationService authorizationService;
+    private final NotificationRepository notificationRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final EmployeeAccessAssignmentRepository employeeAccessAssignmentRepository;
 
     public EmployeeService(
             UserRepository userRepository,
@@ -51,7 +54,10 @@ public class EmployeeService {
             DeviceHeartbeatMonitorService heartbeatMonitorService,
             UserRoleRepository userRoleRepository,
             RoleRepository roleRepository,
-            AuthorizationService authorizationService) {
+            AuthorizationService authorizationService,
+            NotificationRepository notificationRepository,
+            AuditLogRepository auditLogRepository,
+            EmployeeAccessAssignmentRepository employeeAccessAssignmentRepository) {
         this.userRepository = userRepository;
         this.deviceRepository = deviceRepository;
         this.deviceAssignmentRepository = deviceAssignmentRepository;
@@ -65,6 +71,9 @@ public class EmployeeService {
         this.userRoleRepository = userRoleRepository;
         this.roleRepository = roleRepository;
         this.authorizationService = authorizationService;
+        this.notificationRepository = notificationRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.employeeAccessAssignmentRepository = employeeAccessAssignmentRepository;
     }
 
     private static Double toDouble(BigDecimal val) {
@@ -537,6 +546,210 @@ public class EmployeeService {
     }
 
     // =========================================================
+    // 5. UPDATE EMPLOYEE
+    // =========================================================
+    @Transactional
+    public EmployeeProfileResponse updateEmployee(Long employeeId, UpdateEmployeeRequest request) {
+        authorizationService.validateAccess("EMPLOYEES_DEVICES", "WRITE");
+        User user = getUserOrThrow(employeeId);
+
+        // Check employeeCode collision
+        String newCode = request.employeeCode().trim();
+        if (!newCode.equalsIgnoreCase(user.getEmployeeCode())) {
+            userRepository.findByEmployeeCode(newCode).ifPresent(existing -> {
+                if (!existing.getUserId().equals(user.getUserId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee code already exists: " + newCode);
+                }
+            });
+            user.setEmployeeCode(newCode);
+        }
+
+        // Check email collision
+        String newEmail = request.email().trim();
+        if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+            userRepository.findByEmail(newEmail).ifPresent(existing -> {
+                if (!existing.getUserId().equals(user.getUserId())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Email address already exists: " + newEmail);
+                }
+            });
+            user.setEmail(newEmail);
+        }
+
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName() != null ? request.lastName().trim() : "");
+        user.setPhone(request.phone() != null ? request.phone().trim() : "");
+        user.setDesignation(request.designation() != null ? request.designation().trim() : "Software Engineer");
+
+        if (request.dateOfJoining() != null) {
+            user.setDateOfJoining(request.dateOfJoining());
+        }
+
+        if (request.accountStatus() != null && !request.accountStatus().isBlank()) {
+            user.setAccountStatus(request.accountStatus().trim().toUpperCase());
+        }
+
+        // Role update
+        Role targetRole = null;
+        if (request.roleId() != null) {
+            targetRole = roleRepository.findById(request.roleId()).orElse(null);
+        } else if (request.roleName() != null && !request.roleName().isBlank()) {
+            targetRole = roleRepository.findByRoleNameIgnoreCase(request.roleName().trim()).orElse(null);
+        }
+        if (targetRole != null) {
+            userRoleRepository.deleteByUser(user);
+            UserRole userRole = new UserRole();
+            userRole.setUser(user);
+            userRole.setRole(targetRole);
+            userRole.setAssignedAt(LocalDateTime.now());
+            userRoleRepository.save(userRole);
+        }
+
+        // Device assignment handling
+        String mode = null;
+        String targetSerial = null;
+        Long targetDeviceId = null;
+
+        if (request.deviceAssignment() != null) {
+            mode = request.deviceAssignment().mode() != null ? request.deviceAssignment().mode().toUpperCase() : null;
+            targetSerial = request.deviceAssignment().serialNumber();
+            targetDeviceId = request.deviceAssignment().deviceId();
+        } else if (request.serialNumber() != null && !request.serialNumber().isBlank()) {
+            mode = "SERIAL_NUMBER";
+            targetSerial = request.serialNumber();
+        } else if (request.deviceId() != null) {
+            mode = "DEVICE_ID";
+            targetDeviceId = request.deviceId();
+        }
+
+        if (mode != null) {
+            final String finalTargetSerial = targetSerial;
+            final Long finalTargetDeviceId = targetDeviceId;
+            final Long currentUserId = user.getUserId();
+
+            if ("NONE".equalsIgnoreCase(mode)) {
+                unassignDevice(employeeId);
+            } else if ("SERIAL_NUMBER".equalsIgnoreCase(mode) || "DEVICE_ID".equalsIgnoreCase(mode)) {
+                Device targetDevice = null;
+                if ("SERIAL_NUMBER".equalsIgnoreCase(mode) && finalTargetSerial != null && !finalTargetSerial.isBlank()) {
+                    targetDevice = deviceRepository.findBySerialNumberIgnoreCase(finalTargetSerial.trim())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Device not found with serial number: " + finalTargetSerial));
+                } else if (finalTargetDeviceId != null) {
+                    targetDevice = deviceRepository.findById(finalTargetDeviceId)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Device not found with ID: " + finalTargetDeviceId));
+                }
+
+                if (targetDevice != null) {
+                    boolean isAlreadyAssignedToThisUser = currentUserId.equals(targetDevice.getCurrentUserId());
+                    if (!isAlreadyAssignedToThisUser) {
+                        boolean isAssignedToOther = (targetDevice.getCurrentUserId() != null && !targetDevice.getCurrentUserId().equals(currentUserId)) ||
+                                deviceAssignmentRepository.findBySerialNumberIgnoreCaseAndStatus(targetDevice.getSerialNumber(), "ACTIVE")
+                                        .filter(da -> !da.getUser().getUserId().equals(currentUserId))
+                                        .isPresent();
+                        if (isAssignedToOther) {
+                            throw new ResponseStatusException(HttpStatus.CONFLICT, "Device " + targetDevice.getSerialNumber() + " is currently assigned to another user");
+                        }
+
+                        if ("REPAIR".equalsIgnoreCase(targetDevice.getDeviceStatus()) || "RETIRED".equalsIgnoreCase(targetDevice.getDeviceStatus())) {
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Device " + targetDevice.getSerialNumber() + " is not available for assignment (status: " + targetDevice.getDeviceStatus() + ")");
+                        }
+
+                        unassignDevice(employeeId);
+
+                        targetDevice.setCurrentUserId(user.getUserId());
+                        targetDevice.setDeviceStatus("ACTIVE");
+                        deviceRepository.save(targetDevice);
+
+                        DeviceAssignment da = new DeviceAssignment();
+                        da.setDevice(targetDevice);
+                        da.setUser(user);
+                        da.setSerialNumber(targetDevice.getSerialNumber());
+                        da.setAssignedAt(LocalDateTime.now());
+                        da.setStatus("ACTIVE");
+                        deviceAssignmentRepository.save(da);
+                    }
+                }
+            }
+        }
+
+        userRepository.save(user);
+        return getEmployeeProfile(employeeId);
+    }
+
+    // =========================================================
+    // 5.5. DELETE EMPLOYEE
+    // =========================================================
+    @Transactional
+    public void deleteEmployee(Long employeeId) {
+        authorizationService.validateAccess("EMPLOYEES_DEVICES", "WRITE");
+        User user = getUserOrThrow(employeeId);
+
+        // 1. Unassign and release active device
+        deviceRepository.findByCurrentUserId(employeeId).ifPresent(d -> {
+            d.setCurrentUserId(null);
+            deviceRepository.save(d);
+        });
+
+        // 2. Remove device assignments
+        List<DeviceAssignment> deviceAssignments = deviceAssignmentRepository.findByUser_UserId(employeeId);
+        if (!deviceAssignments.isEmpty()) {
+            deviceAssignmentRepository.deleteAll(deviceAssignments);
+        }
+
+        // 3. Return accessory stock and delete assignments
+        List<AccessoryAssignment> accessoryAssignments = accessoryAssignmentRepository.findByUser_UserId(employeeId);
+        if (!accessoryAssignments.isEmpty()) {
+            for (AccessoryAssignment aa : accessoryAssignments) {
+                if ("ACTIVE".equalsIgnoreCase(aa.getStatus()) && aa.getAccessory() != null) {
+                    Accessory acc = aa.getAccessory();
+                    int qty = aa.getQuantity() != null ? aa.getQuantity() : 1;
+                    acc.setAvailableQuantity((acc.getAvailableQuantity() != null ? acc.getAvailableQuantity() : 0) + qty);
+                }
+            }
+            accessoryAssignmentRepository.deleteAll(accessoryAssignments);
+        }
+
+        // 4. Return license seats and delete assignments
+        List<LicenseAssignment> licenseAssignments = licenseAssignmentRepository.findByUser_UserId(employeeId);
+        if (!licenseAssignments.isEmpty()) {
+            for (LicenseAssignment la : licenseAssignments) {
+                if ("ACTIVE".equalsIgnoreCase(la.getStatus()) && la.getLicense() != null) {
+                    License lic = la.getLicense();
+                    lic.setAvailableQuantity((lic.getAvailableQuantity() != null ? lic.getAvailableQuantity() : 0) + 1);
+                }
+            }
+            licenseAssignmentRepository.deleteAll(licenseAssignments);
+        }
+
+        // 5. Delete manager/employee access relationships
+        employeeAccessAssignmentRepository.deleteByManager_UserId(employeeId);
+        employeeAccessAssignmentRepository.deleteByEmployee_UserId(employeeId);
+
+        // 6. Nullify notifications user reference
+        List<Notification> notifications = notificationRepository.findByUser_UserIdOrderByCreatedAtDesc(employeeId);
+        if (!notifications.isEmpty()) {
+            for (Notification n : notifications) {
+                n.setUser(null);
+            }
+            notificationRepository.saveAll(notifications);
+        }
+
+        // 7. Nullify audit log user reference
+        List<AuditLog> auditLogs = auditLogRepository.findByUser_UserId(employeeId);
+        if (!auditLogs.isEmpty()) {
+            for (AuditLog a : auditLogs) {
+                a.setUser(null);
+            }
+            auditLogRepository.saveAll(auditLogs);
+        }
+
+        // 8. Delete user roles
+        userRoleRepository.deleteByUser(user);
+
+        // 9. Delete user
+        userRepository.delete(user);
+    }
+
+    // =========================================================
     // 6. EMPLOYEE PROFILE DETAILS
     // =========================================================
     @Transactional(readOnly = true)
@@ -708,8 +921,17 @@ public class EmployeeService {
         DeviceAgentDto agentDto = new DeviceAgentDto(
                 effectiveConn,
                 device.getAgentVersion(),
-                device.getLastSeenAt()
+                device.getLastSeenAt(),
+                device.getUptimeSeconds()
         );
+
+        DeviceBiosDto biosDto = (device.getBiosManufacturer() != null || device.getBiosVersion() != null || device.getBiosReleaseDate() != null)
+                ? new DeviceBiosDto(device.getBiosManufacturer(), device.getBiosVersion(), device.getBiosReleaseDate())
+                : null;
+
+        DeviceSystemStateDto sysStateDto = (device.getBootTime() != null || device.getUptimeSeconds() != null || device.getProcessCount() != null || device.getThreadCount() != null)
+                ? new DeviceSystemStateDto(device.getBootTime(), device.getUptimeSeconds(), device.getProcessCount(), device.getThreadCount())
+                : null;
 
         StructuredDeviceDto structured = new StructuredDeviceDto(
                 device.getDeviceId(),
@@ -731,7 +953,16 @@ public class EmployeeService {
                 batteryDto,
                 secDto,
                 netAdapters,
-                agentDto
+                agentDto,
+                biosDto,
+                sysStateDto,
+                device.getBiosManufacturer(),
+                device.getBiosVersion(),
+                device.getBiosReleaseDate(),
+                device.getBootTime(),
+                device.getUptimeSeconds(),
+                device.getProcessCount(),
+                device.getThreadCount()
         );
 
         return new EmployeeDeviceDetailsResponse(user.getUserId(), structured);
