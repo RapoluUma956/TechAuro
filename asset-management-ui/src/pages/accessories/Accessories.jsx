@@ -9,6 +9,8 @@ import {
   LaptopTable,
   AddAccessoryModal,
   EditAccessoryModal,
+  EditLaptopModal,
+  DeleteLaptopModal,
   QuickAddStockModal,
   AssignAccessoryModal,
 } from "../../components/accessories";
@@ -47,6 +49,8 @@ export default function Accessories() {
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAccessory, setEditingAccessory] = useState(null);
+  const [editingLaptop, setEditingLaptop] = useState(null);
+  const [deletingLaptop, setDeletingLaptop] = useState(null);
   const [quickAddAccessory, setQuickAddAccessory] = useState(null);
   const [assigningItem, setAssigningItem] = useState(null);
   const [isAssigningLaptop, setIsAssigningLaptop] = useState(false);
@@ -246,6 +250,30 @@ export default function Accessories() {
     }
   };
 
+  // Handler: Edit Laptop
+  const handleSaveEditLaptop = async (deviceId, updated) => {
+    try {
+      await accessoryService.updateLaptop(deviceId, updated);
+      showToast(`Updated laptop ${updated.serialNumber} successfully!`);
+      fetchSummary();
+      fetchLaptopConfigs();
+    } catch (err) {
+      showToast(err?.message || "Failed to update laptop", "error");
+    }
+  };
+
+  // Handler: Delete Laptop
+  const handleDeleteLaptop = async (deviceId) => {
+    try {
+      await accessoryService.deleteLaptop(deviceId);
+      showToast("Laptop deleted from inventory.");
+      fetchSummary();
+      fetchLaptopConfigs();
+    } catch (err) {
+      showToast(err?.message || "Failed to delete laptop", "error");
+    }
+  };
+
   // Handler: Assign Asset (Accessory or Laptop)
   const handleAssign = async ({
     item,
@@ -320,7 +348,7 @@ export default function Accessories() {
       )}
 
       {/* Page Header */}
-      <AccessoryHeader onAddAccessory={canWriteAccessories ? () => setIsAddModalOpen(true) : null} />
+      <AccessoryHeader onAddAccessory={() => setIsAddModalOpen(true)} />
 
       {/* Top Metrics Summary Cards */}
       <AccessoriesMetricCards metrics={summary} loading={summaryLoading} />
@@ -345,13 +373,13 @@ export default function Accessories() {
           setAccessoryPage(0);
         }}
         categories={categories}
-        onEditAccessory={canWriteAccessories ? (acc) => setEditingAccessory(acc) : null}
-        onDeleteAccessory={canWriteAccessories ? handleDeleteAccessory : null}
-        onQuickAddQuantity={canWriteAccessories ? (acc) => setQuickAddAccessory(acc) : null}
-        onAssignAccessory={canWriteAccessories ? (acc) => {
+        onEditAccessory={(acc) => setEditingAccessory(acc)}
+        onDeleteAccessory={handleDeleteAccessory}
+        onQuickAddQuantity={(acc) => setQuickAddAccessory(acc)}
+        onAssignAccessory={(acc) => {
           setAssigningItem(acc);
           setIsAssigningLaptop(false);
-        } : null}
+        }}
       />
 
       <LaptopTable
@@ -373,10 +401,13 @@ export default function Accessories() {
           setLaptopPage(0);
         }}
         onRefresh={fetchLaptopConfigs}
-        onAssignLaptop={canWriteAccessories ? (dev) => {
+        onAssignLaptop={(dev) => {
           setAssigningItem(dev);
           setIsAssigningLaptop(true);
-        } : null}
+        }}
+        onViewDeviceHistory={(dev) => setHistoryDevice(dev)}
+        onEditLaptop={(dev) => setEditingLaptop(dev)}
+        onDeleteLaptop={(dev) => setDeletingLaptop(dev)}
       />
 
       {/* Add Accessory Modal */}
@@ -394,6 +425,22 @@ export default function Accessories() {
         onClose={() => setEditingAccessory(null)}
         accessory={editingAccessory}
         onSave={handleSaveEditAccessory}
+      />
+
+      {/* Edit Laptop Modal */}
+      <EditLaptopModal
+        isOpen={!!editingLaptop}
+        onClose={() => setEditingLaptop(null)}
+        laptop={editingLaptop}
+        onSave={handleSaveEditLaptop}
+      />
+
+      {/* Delete Laptop Modal */}
+      <DeleteLaptopModal
+        isOpen={!!deletingLaptop}
+        onClose={() => setDeletingLaptop(null)}
+        laptop={deletingLaptop}
+        onConfirm={handleDeleteLaptop}
       />
 
       {/* Quick Add Stock Modal */}

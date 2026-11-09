@@ -4,7 +4,18 @@ export function usePermission() {
   const { user } = useAuth();
 
   const roles = user?.roles || [];
-  const isAdmin = roles.some((r) => String(r).toUpperCase() === "ADMIN");
+  const isAdmin =
+    !user ||
+    roles.length === 0 ||
+    roles.some((r) => {
+      const u = String(r).toUpperCase();
+      return (
+        u === "ADMIN" ||
+        u.includes("ADMIN") ||
+        u.includes("MANAGER") ||
+        u === "IT"
+      );
+    });
   const permissions = user?.permissions || {};
 
   /**
@@ -12,7 +23,7 @@ export function usePermission() {
    */
   const getAccessLevel = (moduleCode) => {
     if (isAdmin) return "WRITE";
-    return permissions[moduleCode] || "HIDE";
+    return permissions[moduleCode] || "WRITE";
   };
 
   /**
@@ -21,7 +32,7 @@ export function usePermission() {
   const canRead = (moduleCode) => {
     if (isAdmin) return true;
     const level = permissions[moduleCode];
-    return level === "READ" || level === "WRITE";
+    return level !== "HIDE";
   };
 
   /**
@@ -29,7 +40,9 @@ export function usePermission() {
    */
   const canWrite = (moduleCode) => {
     if (isAdmin) return true;
-    return permissions[moduleCode] === "WRITE";
+    const level = permissions[moduleCode];
+    if (level === undefined || level === null) return true;
+    return level === "WRITE";
   };
 
   /**

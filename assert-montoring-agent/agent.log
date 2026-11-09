@@ -1,0 +1,47 @@
+
+==============================================
+        ASSET MONITORING AGENT
+==============================================
+
+[StartupManager] ----------------------------------------------
+[StartupManager] Checking Windows Startup registration...
+[StartupManager] Development environment detected (no standalone launcher .exe found).
+[StartupManager] Automatic Windows startup shortcut will be created when packaged as .exe.
+[StartupManager] ----------------------------------------------
+
+Continuous monitoring started.
+Collection interval: 30 seconds
+
+==============================================
+        STARTING NEW MONITORING CYCLE
+==============================================
+
+Starting device data collection...
+
+======================================
+       DEVICE COLLECTION STARTED
+======================================
+
+======================================
+       DEVICE IDENTITY COLLECTION
+======================================
+
+Brand         : LENOVO
+Model         : 21MQCTO1WW
+Serial Number : PF5N8G2C
+Asset Tag     : AUTO-PF5N8G2C
+======================================
+
+Collecting CPU information...
+
+Collecting memory information...
+
+Collecting storage information...
+
+Collecting battery information...
+
+Collecting OS information...
+
+Collecting BIOS information...
+
+Collecting security information...

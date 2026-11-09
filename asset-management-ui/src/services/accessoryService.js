@@ -86,5 +86,15 @@ export const accessoryService = {
   assignLaptop: async (deviceId, payload) => {
     return await api.post(`/accessories/laptops/${deviceId}/assign`, payload);
   },
+
+  // 14) Update Laptop
+  updateLaptop: async (deviceId, payload) => {
+    return await api.put(`/devices/${deviceId}`, payload);
+  },
+
+  // 15) Delete Laptop
+  deleteLaptop: async (deviceId) => {
+    return await api.delete(`/devices/${deviceId}`);
+  },
 };
 

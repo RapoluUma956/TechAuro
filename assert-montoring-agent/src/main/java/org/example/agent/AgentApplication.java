@@ -22,7 +22,12 @@ public class AgentApplication {
 
     public static void main(String[] args) {
 
-        // When running in background without console window, write output to agent.log
+        // 1. Single-instance enforcement: prevent duplicate running processes
+        if (!StartupManager.acquireInstanceLock()) {
+            return;
+        }
+
+        // 2. When running in background without console window, write output to agent.log
         try {
             File logFile = new File("agent.log");
             if (logFile.exists() && logFile.length() > 5 * 1024 * 1024) {
@@ -42,6 +47,13 @@ public class AgentApplication {
         System.out.println("==============================================");
         System.out.println("        ASSET MONITORING AGENT");
         System.out.println("==============================================");
+
+        // 3. Automatic Windows Startup registration
+        try {
+            StartupManager.registerStartup();
+        } catch (Exception e) {
+            System.err.println("[AgentApplication] Startup registration check failed: " + e.getMessage());
+        }
 
         System.out.println();
         System.out.println("Continuous monitoring started.");

@@ -62,6 +62,21 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.getEmployeeProfile(id));
     }
 
+    // 5.1. Update Employee
+    @PutMapping("/{id}")
+    public ResponseEntity<EmployeeProfileResponse> updateEmployee(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateEmployeeRequest request) {
+        return ResponseEntity.ok(employeeService.updateEmployee(id, request));
+    }
+
+    // 5.2. Delete Employee
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
+        employeeService.deleteEmployee(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // 6. Device Details Tab
     @GetMapping("/{id}/device")
     public ResponseEntity<EmployeeDeviceDetailsResponse> getEmployeeDevice(@PathVariable Long id) {

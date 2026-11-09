@@ -105,6 +105,26 @@ public class EmployeeDtos {
             String roleName
     ) {}
 
+    public record UpdateEmployeeRequest(
+            @NotBlank(message = "Employee code is required")
+            String employeeCode,
+            @NotBlank(message = "First name is required")
+            String firstName,
+            String lastName,
+            @NotBlank(message = "Email is required")
+            @Email(message = "Please enter a valid email address")
+            String email,
+            String phone,
+            String designation,
+            LocalDate dateOfJoining,
+            String accountStatus,
+            DeviceAssignmentModeRequest deviceAssignment,
+            String serialNumber,
+            Long deviceId,
+            Long roleId,
+            String roleName
+    ) {}
+
     public record CreateEmployeeResponse(
             String message,
             EmployeeCreatedDto employee,
@@ -196,8 +216,46 @@ public class EmployeeDtos {
             DeviceBatteryDto battery,
             DeviceSecurityDto security,
             List<DeviceNetworkAdapterDto> networkAdapters,
-            DeviceAgentDto agent
-    ) {}
+            DeviceAgentDto agent,
+            DeviceBiosDto bios,
+            DeviceSystemStateDto systemState,
+            String biosManufacturer,
+            String biosVersion,
+            LocalDate biosReleaseDate,
+            LocalDateTime bootTime,
+            Long uptimeSeconds,
+            Integer processCount,
+            Integer threadCount
+    ) {
+        public StructuredDeviceDto(
+                Long deviceId,
+                String deviceName,
+                String assetTag,
+                String serialNumber,
+                String manufacturer,
+                String model,
+                String deviceStatus,
+                String connectionStatus,
+                LocalDateTime lastSeenAt,
+                LocalDate warrantyExpiryDate,
+                LocalDate purchaseDate,
+                String hostname,
+                DeviceOsDto operatingSystem,
+                DeviceCpuDto cpu,
+                DeviceMemoryDto memory,
+                DeviceStorageDto storage,
+                DeviceBatteryDto battery,
+                DeviceSecurityDto security,
+                List<DeviceNetworkAdapterDto> networkAdapters,
+                DeviceAgentDto agent
+        ) {
+            this(deviceId, deviceName, assetTag, serialNumber, manufacturer, model,
+                    deviceStatus, connectionStatus, lastSeenAt, warrantyExpiryDate,
+                    purchaseDate, hostname, operatingSystem, cpu, memory, storage,
+                    battery, security, networkAdapters, agent,
+                    null, null, null, null, null, null, null, null, null);
+        }
+    }
 
     public record DeviceOsDto(
             String name,
@@ -256,7 +314,25 @@ public class EmployeeDtos {
     public record DeviceAgentDto(
             String status,
             String version,
-            LocalDateTime lastTelemetryAt
+            LocalDateTime lastTelemetryAt,
+            Long uptimeSeconds
+    ) {
+        public DeviceAgentDto(String status, String version, LocalDateTime lastTelemetryAt) {
+            this(status, version, lastTelemetryAt, null);
+        }
+    }
+
+    public record DeviceBiosDto(
+            String manufacturer,
+            String version,
+            LocalDate releaseDate
+    ) {}
+
+    public record DeviceSystemStateDto(
+            LocalDateTime bootTime,
+            Long uptimeSeconds,
+            Integer processCount,
+            Integer threadCount
     ) {}
 
     public record DeviceHistoryResponse(
