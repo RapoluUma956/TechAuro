@@ -8,5 +8,4 @@ export { default as EditLaptopModal } from "./EditLaptopModal.jsx";
 export { default as DeleteLaptopModal } from "./DeleteLaptopModal.jsx";
 export { default as QuickAddStockModal } from "./QuickAddStockModal.jsx";
 export { default as AssignAccessoryModal } from "./AssignAccessoryModal.jsx";
-export * from "./AccessoryIcons.jsx";
 

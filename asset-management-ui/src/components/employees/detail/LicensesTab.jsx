@@ -70,7 +70,7 @@ export default function LicensesTab({ licenses = [] }) {
       key: "licenseType",
       header: "License Type",
       render: (item) => (
-        <span className="text-xs font-medium text-[#334155]">
+        <span className="text-sm font-medium text-[#334155]">
           {item.licenseType}
         </span>
       ),
@@ -79,7 +79,7 @@ export default function LicensesTab({ licenses = [] }) {
       key: "assignedDate",
       header: "Assigned Date",
       render: (item) => (
-        <span className="font-mono text-xs text-[#5C7370]">
+        <span className="font-mono text-sm text-[#5C7370]">
           {item.assignedDate}
         </span>
       ),
@@ -88,7 +88,7 @@ export default function LicensesTab({ licenses = [] }) {
       key: "expiryDate",
       header: "Expiry Date",
       render: (item) => (
-        <span className="font-mono text-xs font-bold text-emerald-700">
+        <span className="font-mono text-sm font-bold text-emerald-700">
           {item.expiryDate}
         </span>
       ),
@@ -138,7 +138,7 @@ export default function LicensesTab({ licenses = [] }) {
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={5}
         emptyMessage="No software licenses found"
         emptySubtitle="No enterprise software seats or subscriptions have been allocated to this employee."

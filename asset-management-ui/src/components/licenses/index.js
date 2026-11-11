@@ -6,4 +6,3 @@ export { default as AddEditLicenseModal } from "./AddEditLicenseModal";
 export { default as AssignLicenseModal } from "./AssignLicenseModal";
 export { default as LicenseDetailModal } from "./LicenseDetailModal";
 export { default as DeleteLicenseModal } from "./DeleteLicenseModal";
-export * from "./LicenseIcons";

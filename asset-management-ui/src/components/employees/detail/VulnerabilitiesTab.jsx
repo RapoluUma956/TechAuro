@@ -64,9 +64,9 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
       header: "Affected Software",
       render: (item) => (
         <div>
-          <p className="font-bold text-xs text-[#03312E]">{item.softwareName}</p>
+          <p className="font-bold text-sm text-[#03312E]">{item.softwareName}</p>
           {item.version && (
-            <p className="font-mono text-[11px] text-[#64748B]">Ver: {item.version}</p>
+            <p className="font-mono text-xs text-[#64748B]">Ver: {item.version}</p>
           )}
         </div>
       ),
@@ -75,7 +75,7 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
       key: "description",
       header: "Vulnerability Description",
       render: (item) => (
-        <p className="text-xs text-[#334155] leading-relaxed max-w-md">
+        <p className="text-sm font-medium text-[#334155] leading-relaxed max-w-md">
           {item.description}
         </p>
       ),
@@ -84,7 +84,7 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
       key: "detectedDate",
       header: "Detected Date",
       render: (item) => (
-        <span className="font-mono text-xs text-[#5C7370]">
+        <span className="font-mono text-sm text-[#5C7370]">
           {item.detectedDate}
         </span>
       ),
@@ -189,7 +189,7 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={5}
         emptyMessage="No vulnerabilities detected"
         emptySubtitle="This workstation has no active CVE security threats matching your filters."

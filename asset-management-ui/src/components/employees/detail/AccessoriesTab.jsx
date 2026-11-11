@@ -64,7 +64,7 @@ export default function AccessoriesTab({ accessories = [] }) {
       key: "givenDate",
       header: "Given Date",
       render: (item) => (
-        <div className="flex items-center gap-1.5 text-xs text-[#5C7370] font-mono">
+        <div className="flex items-center gap-1.5 text-sm text-[#5C7370] font-mono">
           <svg className="h-3.5 w-3.5 text-[#8C9E9B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="4" width="18" height="18" rx="2" />
             <line x1="16" y1="2" x2="16" y2="6" />
@@ -82,7 +82,7 @@ export default function AccessoriesTab({ accessories = [] }) {
         const isReturned = item.returnDate && !item.returnDate.includes("In Use") && item.returnDate !== "—";
         return (
           <span
-            className={`font-mono text-xs font-semibold ${
+            className={`font-mono text-sm font-semibold ${
               isReturned ? "text-slate-600" : "text-emerald-700"
             }`}
           >
@@ -155,7 +155,7 @@ export default function AccessoriesTab({ accessories = [] }) {
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={5}
         emptyMessage="No accessories found"
         emptySubtitle="No peripheral hardware assets match your selected filter."

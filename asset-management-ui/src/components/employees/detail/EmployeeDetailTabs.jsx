@@ -3,7 +3,7 @@ import React from "react";
 export const TABS = [
   {
     id: "device",
-    label: "Device details",
+    label: "Device Details",
     countKey: "device",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -15,7 +15,7 @@ export const TABS = [
   },
   {
     id: "accessories",
-    label: "accessories",
+    label: "Accessories",
     countKey: "accessories",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -27,7 +27,7 @@ export const TABS = [
   },
   {
     id: "software",
-    label: "software",
+    label: "Software",
     countKey: "softwares",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +38,7 @@ export const TABS = [
   },
   {
     id: "vulnerabilities",
-    label: "vulnerabilities",
+    label: "Vulnerabilities",
     countKey: "vulnerabilities",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,7 +50,7 @@ export const TABS = [
   },
   {
     id: "licences",
-    label: "licences",
+    label: "Licences",
     countKey: "licenses",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { StatIcon } from "./DashboardIcons";
+import { StatIcon } from "../common/Icons";
 
 export default function QuickActionsCard({ data, onOpenThresholds }) {
   const title = data?.title || "Quick Actions";

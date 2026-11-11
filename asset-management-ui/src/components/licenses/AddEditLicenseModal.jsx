@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
-import { EyeIcon, EyeSlashIcon } from "./LicenseIcons";
+import { EyeIcon, EyeSlashIcon } from "../common/Icons";
 
 export default function AddEditLicenseModal({
   isOpen,

@@ -44,6 +44,8 @@ export default function DataTable({
   loading = false,
   itemLabel = "records",
   className = "",
+  renderExpandedRow,
+  expandedRowKeys = {},
 }) {
   // Internal pagination state for client-side pagination
   const [internalPage, setInternalPage] = useState(1);
@@ -93,12 +95,12 @@ export default function DataTable({
         <table className="w-full border-collapse text-left">
           {/* Table Header */}
           <thead>
-            <tr className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-xs font-bold uppercase tracking-wider text-[#5C7370]">
+            <tr className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-xs font-bold uppercase tracking-wider text-[#64748B]">
               {/* Optional S.No column */}
               {showSerialNo && (
                 <th
                   scope="col"
-                  className="w-14 py-3.5 pl-6 pr-2 text-center text-xs font-bold uppercase tracking-wider"
+                  className="w-14 py-3.5 pl-6 pr-2 text-center text-xs font-bold uppercase tracking-wider text-[#64748B]"
                 >
                   {serialNoHeader}
                 </th>
@@ -188,62 +190,82 @@ export default function DataTable({
               displayData.map((row, index) => {
                 const serialNo = pageOffset + index + 1;
                 const rowKey = row[keyField] ?? row.id ?? row._id ?? index;
+                const isRowExpanded = Boolean(expandedRowKeys[rowKey]);
 
                 return (
-                  <tr
-                    key={rowKey}
-                    onClick={() => isClickable && onRowClick(row, index)}
-                    className={`group transition-colors duration-150 ${
-                      isClickable
-                        ? "cursor-pointer hover:bg-[#EBF7F2]/60"
-                        : "hover:bg-slate-50/60"
-                    }`}
-                  >
-                    {/* S.No */}
-                    {showSerialNo && (
-                      <td className="py-4 pl-6 pr-2 text-center text-xs font-semibold text-[#64748B]">
-                        {serialNo}
-                      </td>
-                    )}
-
-                    {/* Columns */}
-                    {columns.map((col, cIdx) => {
-                      const cellValue = row[col.key];
-                      const renderedContent = col.render
-                        ? col.render(row, index, serialNo)
-                        : cellValue;
-
-                      return (
-                        <td
-                          key={col.key || cIdx}
-                          className={`py-4 px-4 ${getAlignClass(col.align)} ${
-                            col.cellClassName || ""
-                          }`}
-                        >
-                          {renderedContent}
+                  <React.Fragment key={rowKey}>
+                    <tr
+                      onClick={() => isClickable && onRowClick(row, index)}
+                      className={`group transition-colors duration-150 ${
+                        isClickable
+                          ? "cursor-pointer hover:bg-[#F8FAF9]"
+                          : "hover:bg-[#F8FAF9]"
+                      }`}
+                    >
+                      {/* S.No */}
+                      {showSerialNo && (
+                        <td className="py-4 pl-6 pr-2 text-center text-xs font-semibold text-[#64748B]">
+                          <span className="inline-block rounded-md bg-[#F1F5F9] px-2.5 py-1 font-mono text-xs font-bold text-[#1E293B]">
+                            {serialNo}
+                          </span>
                         </td>
-                      );
-                    })}
+                      )}
 
-                    {/* Row Arrow */}
-                    {(showRowArrow || isClickable) && (
-                      <td className="py-4 pr-6 pl-2 text-right">
-                        <div className="inline-flex items-center justify-center text-[#94A3B8] transition-transform duration-150 group-hover:translate-x-1 group-hover:text-[#1976D2]">
-                          <svg
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
+                      {/* Columns */}
+                      {columns.map((col, cIdx) => {
+                        const cellValue = row[col.key];
+                        const renderedContent = col.render
+                          ? col.render(row, index, serialNo)
+                          : cellValue;
+
+                        return (
+                          <td
+                            key={col.key || cIdx}
+                            className={`py-4 px-4 ${getAlignClass(col.align)} ${
+                              col.cellClassName || ""
+                            }`}
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                      </td>
+                            {renderedContent}
+                          </td>
+                        );
+                      })}
+
+                      {/* Row Arrow */}
+                      {(showRowArrow || isClickable) && (
+                        <td className="py-4 pr-6 pl-2 text-right">
+                          <div className="inline-flex items-center justify-center text-[#94A3B8] transition-transform duration-150 group-hover:translate-x-1 group-hover:text-[#1976D2]">
+                            <svg
+                              className="h-4 w-4"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+
+                    {/* Expandable Row Content */}
+                    {renderExpandedRow && isRowExpanded && (
+                      <tr key={`${rowKey}-expanded`} className="bg-[#F8FAF9]">
+                        <td
+                          colSpan={
+                            columns.length +
+                            (showSerialNo ? 1 : 0) +
+                            (showRowArrow || isClickable ? 1 : 0)
+                          }
+                          className="p-4 pl-10 pr-6"
+                        >
+                          {renderExpandedRow(row, index)}
+                        </td>
+                      </tr>
                     )}
-                  </tr>
+                  </React.Fragment>
                 );
               })
             )}

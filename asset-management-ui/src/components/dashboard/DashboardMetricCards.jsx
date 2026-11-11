@@ -1,4 +1,4 @@
-import { StatIcon } from "./DashboardIcons";
+import { StatIcon } from "../common/Icons";
 
 export default function DashboardMetricCards({ statistics }) {
   return (

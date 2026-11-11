@@ -1,6 +1,6 @@
 import React from "react";
 import { SearchBar, Dropdown, Button } from "../common";
-import { RotateCcwIcon } from "./EmployeeIcons";
+import { RotateCcwIcon } from "../common/Icons";
 
 export default function EmployeeFilters({
   searchQuery,

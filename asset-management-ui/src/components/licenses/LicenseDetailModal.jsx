@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button } from "../common";
-import { StackIcon } from "./LicenseIcons";
+import { StackIcon } from "../common/Icons";
 import { licenseService } from "../../services/licenseService";
 
 export default function LicenseDetailModal({

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
-import { StackIcon } from "./LicenseIcons";
+import { StackIcon } from "../common/Icons";
 import { employeeService } from "../../services/employeeService";
 
 export default function AssignLicenseModal({

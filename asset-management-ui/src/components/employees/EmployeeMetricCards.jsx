@@ -5,7 +5,7 @@ import {
   LaptopCheckIcon,
   WrenchIcon,
   InactiveIcon,
-} from "./EmployeeIcons";
+} from "../common/Icons";
 
 export default function EmployeeMetricCards({
   totalEmployees = 0,

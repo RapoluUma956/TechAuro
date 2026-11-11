@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ResourceMeter, SortIndicator } from "./DashboardIcons";
+import { ResourceMeter, SortIndicator } from "../common/Icons";
 import { dashboardService } from "../../services/dashboardService";
 
 function formatRelativeTime(dateString) {
@@ -196,47 +196,48 @@ export default function AssetsAttentionTable({
       )}
 
       {/* Data Table */}
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-[#F1F5F9] text-[#64748B]">
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className={`pb-3 font-semibold ${col.sortable ? "cursor-pointer select-none hover:text-[#03312E]" : ""}`}
-                  onClick={() => col.sortable && handleSort(col.key)}
-                >
-                  <span className="inline-flex items-center">
-                    {col.label}
-                    {col.sortable && (
-                      <SortIndicator
-                        active={sortBy === col.key}
-                        direction={sortDir}
-                      />
-                    )}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className={`divide-y divide-[#F8FAFC] ${loading ? "opacity-60 transition-opacity" : ""}`}>
-            {assets.length > 0 ? (
-              assets.map((asset) => {
-                const healthUpper = (asset.healthStatus || "").toUpperCase();
-                const connUpper = (asset.connectionStatus || "").toUpperCase();
-                const isOnline = connUpper === "ONLINE";
+      <div className="mt-4 overflow-hidden rounded-xl border border-[#DCE5E1]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-[#03312E]">
+            <thead>
+              <tr className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-xs font-bold uppercase tracking-wider text-[#64748B]">
+                {columns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={`py-3.5 px-3 ${col.sortable ? "cursor-pointer select-none hover:text-[#03312E]" : ""}`}
+                    onClick={() => col.sortable && handleSort(col.key)}
+                  >
+                    <span className="inline-flex items-center">
+                      {col.label}
+                      {col.sortable && (
+                        <SortIndicator
+                          active={sortBy === col.key}
+                          direction={sortDir}
+                        />
+                      )}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={`divide-y divide-[#EBF0EE] bg-white ${loading ? "opacity-60 transition-opacity" : ""}`}>
+              {assets.length > 0 ? (
+                assets.map((asset) => {
+                  const healthUpper = (asset.healthStatus || "").toUpperCase();
+                  const connUpper = (asset.connectionStatus || "").toUpperCase();
+                  const isOnline = connUpper === "ONLINE";
 
-                return (
-                  <tr key={asset.deviceId || asset.assetTag} className="hover:bg-[#F8FAFC]">
-                    <td className="py-3 font-bold text-[#03312E]">
-                      {asset.assetTag}
-                    </td>
-                    <td className="py-3 text-[#334155]">
-                      {asset.employeeName || "Unassigned"}
-                    </td>
-                    <td className="py-3 text-[#64748B]">
-                      {asset.designation || "-"}
-                    </td>
+                  return (
+                    <tr key={asset.deviceId || asset.assetTag} className="hover:bg-[#F8FAF9] transition-colors">
+                      <td className="py-3.5 px-3 font-bold text-sm text-[#03312E]">
+                        {asset.assetTag}
+                      </td>
+                      <td className="py-3.5 px-3 text-sm font-medium text-[#334155]">
+                        {asset.employeeName || "Unassigned"}
+                      </td>
+                      <td className="py-3.5 px-3 text-xs font-medium text-[#64748B]">
+                        {asset.designation || "-"}
+                      </td>
                     <td className="py-3">
                       <span
                         className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-bold ${
@@ -305,6 +306,7 @@ export default function AssetsAttentionTable({
           </tbody>
         </table>
       </div>
+    </div>
 
       {/* Dynamic Pagination Footer */}
       <div className="mt-4 flex items-center justify-between border-t border-[#F1F5F9] pt-4 text-xs text-[#64748B]">

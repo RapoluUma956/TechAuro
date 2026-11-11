@@ -1,6 +1,6 @@
 import React from "react";
 import { PageHeader, Button } from "../common";
-import { PlusIcon } from "./EmployeeIcons";
+import { PlusIcon } from "../common/Icons";
 
 export default function EmployeeHeader({ onAddEmployee }) {
   return (
