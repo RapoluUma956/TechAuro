@@ -51,7 +51,9 @@ export default function DashboardHeader({
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 rounded-lg border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#64748B] shadow-sm transition-all hover:bg-[#F8FAFC] hover:text-[#03312E] disabled:opacity-50"
+            className={`flex items-center gap-1.5 rounded-lg border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#64748B] shadow-sm transition-all hover:bg-[#F8FAFC] hover:text-[#03312E] ${
+              refreshing ? "cursor-wait opacity-70" : "cursor-pointer"
+            }`}
             title="Refresh dashboard metrics"
           >
             <svg
@@ -63,7 +65,9 @@ export default function DashboardHeader({
             >
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </span>
           </button>
         )}
 

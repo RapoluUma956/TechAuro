@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
 import notificationService from "../../services/notificationService";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import { MetricCards, SearchBar, Button } from "../../components/common";
+import {
+  BellIcon,
+  CheckCircleIcon,
+  AlertTriangleIcon,
+  ClockAlertIcon,
+  RotateCcwIcon,
+  TrashIcon,
+} from "../../components/common/Icons";
 
 function getSeverityBadge(severity) {
   const s = (severity || "").toUpperCase();
@@ -96,9 +104,9 @@ function formatRelativeTime(dateString) {
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
     month: "short",
-    day: "numeric",
     year: "numeric",
   });
 }
@@ -117,8 +125,7 @@ export default function Notifications() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filters
-  const [activeTab, setActiveTab] = useState("ALL"); // ALL, UNREAD, CRITICAL, HIGH, SECURITY, HARDWARE, LICENSE
+  // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [feedbackToast, setFeedbackToast] = useState("");
@@ -138,23 +145,12 @@ export default function Notifications() {
     }
 
     try {
-      const severityFilter =
-        activeTab === "CRITICAL" || activeTab === "HIGH" ? activeTab : undefined;
-      const typeFilter =
-        activeTab === "SECURITY" || activeTab === "HARDWARE" || activeTab === "LICENSE"
-          ? activeTab
-          : undefined;
-      const unreadOnly = activeTab === "UNREAD" ? true : undefined;
-
       const [summaryRes, notifRes] = await Promise.all([
         notificationService.getSummary(),
         notificationService.getNotifications({
           page: 0,
           size: 50,
-          severity: severityFilter,
-          type: typeFilter,
-          unreadOnly,
-          search: searchQuery || undefined,
+          search: searchQuery.trim() || undefined,
         }),
       ]);
 
@@ -171,7 +167,7 @@ export default function Notifications() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [activeTab, searchQuery]);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadData(false);
@@ -256,6 +252,48 @@ export default function Notifications() {
     }
   };
 
+  // Standard metric cards matching LicenseMetricCards / AccessoriesMetricCards / DashboardMetricCards
+  const metricCards = useMemo(() => {
+    return [
+      {
+        id: "total",
+        title: "Total Alerts",
+        value: loading ? "—" : (summary?.total ?? 0),
+        caption: "Logged system events",
+        icon: BellIcon,
+        iconColor: "#1976D2",
+        iconBg: "#E3F2FD",
+      },
+      {
+        id: "unread",
+        title: "Unread Notices",
+        value: loading ? "—" : (summary?.unreadCount ?? 0),
+        caption: "Awaiting acknowledgement",
+        icon: CheckCircleIcon,
+        iconColor: "#00C896",
+        iconBg: "#E8F8F2",
+      },
+      {
+        id: "critical",
+        title: "Critical Risks",
+        value: loading ? "—" : (summary?.criticalCount ?? 0),
+        caption: "Immediate action required",
+        icon: AlertTriangleIcon,
+        iconColor: "#EF4444",
+        iconBg: "#FEE2E2",
+      },
+      {
+        id: "high",
+        title: "High Priority",
+        value: loading ? "—" : (summary?.highCount ?? 0),
+        caption: "Hardware & expiry alerts",
+        icon: ClockAlertIcon,
+        iconColor: "#F59E0B",
+        iconBg: "#FEF3C7",
+      },
+    ];
+  }, [summary, loading]);
+
   return (
     <div className="space-y-6 text-[#03312E] pb-10">
       {/* Toast Notification */}
@@ -268,208 +306,86 @@ export default function Notifications() {
         </div>
       )}
 
-      {/* Page Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Page Header matching other pages */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#03312E] tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-[#03312E] sm:text-3xl">
               Notifications & Security
             </h1>
             {refreshing && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
+                <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
                 Syncing...
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs sm:text-sm text-[#64748B]">
+          <p className="mt-1 text-xs font-medium text-[#64748B] sm:text-sm">
             Automated security detection, hardware metrics alerts, and license compliance monitoring.
           </p>
         </div>
 
         {/* Global Action Buttons */}
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="md"
             onClick={handleSync}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#DCE5E1] bg-white px-3.5 py-2 text-xs font-semibold text-[#03312E] shadow-sm hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all cursor-pointer disabled:opacity-50"
-            title="Scan telemetry and update notifications"
+            icon={<RotateCcwIcon className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />}
           >
-            <svg
-              className={`h-4 w-4 text-[#1976D2] ${refreshing ? "animate-spin" : ""}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
             Sync Alerts
-          </button>
+          </Button>
 
           {summary.unreadCount > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="md"
               onClick={handleMarkAllAsRead}
               disabled={refreshing}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#03312E] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#022422] transition-all cursor-pointer disabled:opacity-50"
+              icon={
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              }
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
               Mark All as Read
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Metric Summary Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#64748B]">Total Alerts</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-[#03312E]">{summary.total}</p>
-          <span className="text-[11px] text-[#94A3B8]">Logged system events</span>
-        </div>
-
-        <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#64748B]">Unread Notices</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#1976D2]">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#1976D2]"></span>
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-[#1976D2]">{summary.unreadCount}</p>
-          <span className="text-[11px] text-[#94A3B8]">Awaiting acknowledgement</span>
-        </div>
-
-        <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#64748B]">Critical Risks</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-600">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-red-600">{summary.criticalCount}</p>
-          <span className="text-[11px] text-[#94A3B8]">Immediate action required</span>
-        </div>
-
-        <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#64748B]">High Priority</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-amber-700">{summary.highCount}</p>
-          <span className="text-[11px] text-[#94A3B8]">Hardware & expiry alerts</span>
-        </div>
-      </section>
-
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#DCE5E1] shadow-xs">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          {[
-            { id: "ALL", label: "All Alerts" },
-            { id: "UNREAD", label: "Unread", count: summary.unreadCount },
-            { id: "CRITICAL", label: "Critical", count: summary.criticalCount },
-            { id: "HIGH", label: "High", count: summary.highCount },
-            { id: "SECURITY", label: "Security" },
-            { id: "HARDWARE", label: "Hardware" },
-            { id: "LICENSE", label: "Licenses" },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-[#03312E] text-white shadow-xs"
-                    : "text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#03312E]"
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span
-                    className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                      isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-800"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search input */}
-        <div className="relative w-full md:w-72 shrink-0">
-          <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search notifications..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-[#DCE5E1] bg-[#F8FAFC] py-1.5 pl-8 pr-8 text-xs text-[#03312E] placeholder:text-[#94A3B8] focus:border-[#1976D2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 transition-all"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#03312E]"
-            >
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
+      {/* Reusable MetricCards component matching other pages */}
+      <MetricCards items={metricCards} columns={4} />
+
+      {/* Standard Search Bar Card matching AccessoryTable / EmployeeFilters / LicenseFilters */}
+      <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full sm:max-w-xl">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search notifications by title, asset tag, employee, or message..."
+              variant="long"
+            />
+          </div>
+
+          <div className="text-xs font-semibold text-[#64748B]">
+            Total: <span className="font-bold text-[#03312E]">{notifications.length}</span> notices
+          </div>
+        </div>
+      </div>
+
       {/* Notifications List Card */}
-      <div className="rounded-2xl border border-[#DCE5E1] bg-white shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-[#DCE5E1] bg-white shadow-sm">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <svg className="h-8 w-8 animate-spin text-[#1976D2] mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
+          <div className="flex flex-col items-center justify-center p-16 text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent mb-3" />
             <p className="text-xs font-semibold text-[#64748B]">Loading notifications and system events...</p>
           </div>
         ) : error ? (
-          <div className="p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+          <div className="p-12 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
               <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
@@ -477,31 +393,29 @@ export default function Notifications() {
               </svg>
             </div>
             <h3 className="text-sm font-bold text-[#03312E]">{error}</h3>
-            <button
-              type="button"
-              onClick={() => loadData(false)}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-[#DCE5E1] bg-white px-4 py-2 text-xs font-semibold text-[#03312E] hover:bg-[#F8FAFC]"
-            >
-              Try Again
-            </button>
+            <div className="mt-4">
+              <Button variant="outline" size="sm" onClick={() => loadData(false)}>
+                Try Again
+              </Button>
+            </div>
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EBF5FF] text-[#1976D2] mb-3">
-              <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+          <div className="flex flex-col items-center justify-center p-16 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EBF7F2] text-[#03312E] mb-3">
+              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
             </div>
-            <h3 className="text-sm font-bold text-[#03312E]">No Notifications Found</h3>
-            <p className="text-xs text-[#64748B] mt-1 max-w-sm">
-              {activeTab !== "ALL"
-                ? `No notifications currently match the "${activeTab}" filter.`
+            <h3 className="text-base font-bold text-[#03312E]">No Notifications Found</h3>
+            <p className="text-sm text-[#64748B] mt-1 max-w-sm">
+              {searchQuery
+                ? `No notifications matched "${searchQuery}". Try a different keyword.`
                 : "All systems are operating normally within configured threshold limits."}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#F1F5F9]">
+          <div className="divide-y divide-[#EBF0EE]">
             {notifications.map((item) => {
               const badge = getSeverityBadge(item.severity);
               const isUnread = !item.isRead;
@@ -510,48 +424,48 @@ export default function Notifications() {
               return (
                 <div
                   key={item.notificationId}
-                  className={`flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-4 sm:p-5 transition-colors ${
+                  className={`flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5 transition-colors ${
                     isUnread
                       ? "bg-[#F8FAFC] border-l-4 border-l-[#1976D2]"
-                      : "bg-white hover:bg-[#FAFCFB]"
+                      : "bg-white hover:bg-[#F8FAF9]"
                   }`}
                 >
                   {/* Left: Icon, Details, Badges */}
                   <div className="flex items-start gap-3.5 min-w-0 flex-1">
                     {/* Category Type Icon Box */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-[#E2E8F0] shadow-xs">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white border border-[#DCE5E1] shadow-2xs">
                       {getTypeIcon(item.notificationType)}
                     </div>
 
                     <div className="min-w-0 flex-1">
                       {/* Top Bar: Title & Badges */}
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold border ${badge.bg}`}
+                          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-[10px] font-bold border ${badge.bg}`}
                         >
                           <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`}></span>
                           {badge.label}
                         </span>
 
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
+                        <span className="rounded-md bg-[#F1F5F9] px-2.5 py-0.5 text-[10px] font-bold text-[#1E293B]">
                           {item.notificationType || "SYSTEM"}
                         </span>
 
                         {item.deviceAssetTag && (
-                          <span className="rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
+                          <span className="rounded-md bg-[#E3F2FD] text-[#1976D2] border border-[#BBDEFB] px-2.5 py-0.5 font-mono text-[10px] font-bold">
                             {item.deviceAssetTag}
                           </span>
                         )}
 
-                        <span className="text-[11px] text-[#94A3B8] ml-auto">
+                        <span className="text-xs font-medium text-[#64748B] ml-auto">
                           {formatRelativeTime(item.createdAt)}
                         </span>
                       </div>
 
                       {/* Notification Title */}
                       <h4
-                        className={`text-xs sm:text-sm leading-snug ${
-                          isUnread ? "font-bold text-[#03312E]" : "font-medium text-[#334155]"
+                        className={`text-sm leading-snug ${
+                          isUnread ? "font-bold text-[#03312E]" : "font-semibold text-[#334155]"
                         }`}
                       >
                         {item.title}
@@ -564,15 +478,15 @@ export default function Notifications() {
 
                       {/* Metadata footer */}
                       {(item.deviceName || item.userName) && (
-                        <div className="mt-2 flex items-center gap-3 text-[11px] text-[#94A3B8]">
+                        <div className="mt-2.5 flex items-center gap-3 text-xs text-[#64748B]">
                           {item.deviceName && (
                             <span className="truncate">
-                              Asset: <strong className="text-[#475569]">{item.deviceName}</strong>
+                              Asset: <strong className="font-semibold text-[#03312E]">{item.deviceName}</strong>
                             </span>
                           )}
                           {item.userName && (
                             <span className="truncate">
-                              Assigned to: <strong className="text-[#475569]">{item.userName}</strong>
+                              Assigned to: <strong className="font-semibold text-[#03312E]">{item.userName}</strong>
                             </span>
                           )}
                         </div>
@@ -581,13 +495,13 @@ export default function Notifications() {
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                     {isUnread && (
                       <button
                         type="button"
                         onClick={(e) => handleMarkAsRead(item.notificationId, e)}
                         disabled={isOperating}
-                        className="inline-flex items-center gap-1 rounded-lg border border-[#DCE5E1] bg-white px-2.5 py-1 text-xs font-semibold text-[#1976D2] hover:bg-[#F0F7FF] transition-colors cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE5E1] bg-white px-3 py-1.5 text-xs font-bold text-[#1976D2] hover:bg-[#E3F2FD] hover:border-[#BBDEFB] transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
                         title="Mark as read"
                       >
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -601,13 +515,10 @@ export default function Notifications() {
                       type="button"
                       onClick={(e) => handleDeleteNotification(item.notificationId, e)}
                       disabled={isOperating}
-                      className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[#94A3B8] hover:text-[#DC2626] hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[#64748B] hover:text-[#DC2626] hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                       title="Dismiss notification"
                     >
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -619,4 +530,3 @@ export default function Notifications() {
     </div>
   );
 }
-

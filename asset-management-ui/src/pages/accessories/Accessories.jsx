@@ -27,7 +27,6 @@ export default function Accessories() {
   const [accessories, setAccessories] = useState([]);
   const [accessoriesLoading, setAccessoriesLoading] = useState(true);
   const [accessorySearch, setAccessorySearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [accessoryPage, setAccessoryPage] = useState(0);
   const [accessoryTotalElements, setAccessoryTotalElements] = useState(0);
   const [accessoryTotalPages, setAccessoryTotalPages] = useState(1);
@@ -37,7 +36,6 @@ export default function Accessories() {
   const [laptopConfigs, setLaptopConfigs] = useState([]);
   const [laptopsLoading, setLaptopsLoading] = useState(true);
   const [laptopSearch, setLaptopSearch] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("All");
   const [laptopPage, setLaptopPage] = useState(0);
   const [laptopTotalElements, setLaptopTotalElements] = useState(0);
   const [laptopTotalPages, setLaptopTotalPages] = useState(1);
@@ -100,7 +98,6 @@ export default function Accessories() {
         page: accessoryPage,
         size: ACCESSORY_PAGE_SIZE,
         search: accessorySearch,
-        category: selectedCategory,
       });
 
       if (res && res.content) {
@@ -120,7 +117,7 @@ export default function Accessories() {
     } finally {
       setAccessoriesLoading(false);
     }
-  }, [accessoryPage, accessorySearch, selectedCategory]);
+  }, [accessoryPage, accessorySearch]);
 
   // 3. Fetch Laptop Configurations Table
   const fetchLaptopConfigs = useCallback(async () => {
@@ -130,7 +127,6 @@ export default function Accessories() {
         page: laptopPage,
         size: LAPTOP_PAGE_SIZE,
         search: laptopSearch,
-        brand: selectedBrand,
       });
 
       if (res && res.content) {
@@ -150,7 +146,7 @@ export default function Accessories() {
     } finally {
       setLaptopsLoading(false);
     }
-  }, [laptopPage, laptopSearch, selectedBrand]);
+  }, [laptopPage, laptopSearch]);
 
   // 4. Fetch Categories
   const fetchCategories = useCallback(async () => {
@@ -367,12 +363,6 @@ export default function Accessories() {
           setAccessorySearch(q);
           setAccessoryPage(0);
         }}
-        selectedCategory={selectedCategory}
-        onCategoryChange={(cat) => {
-          setSelectedCategory(cat);
-          setAccessoryPage(0);
-        }}
-        categories={categories}
         onEditAccessory={(acc) => setEditingAccessory(acc)}
         onDeleteAccessory={handleDeleteAccessory}
         onQuickAddQuantity={(acc) => setQuickAddAccessory(acc)}
@@ -393,11 +383,6 @@ export default function Accessories() {
         searchQuery={laptopSearch}
         onSearchChange={(q) => {
           setLaptopSearch(q);
-          setLaptopPage(0);
-        }}
-        selectedBrand={selectedBrand}
-        onBrandChange={(b) => {
-          setSelectedBrand(b);
           setLaptopPage(0);
         }}
         onRefresh={fetchLaptopConfigs}

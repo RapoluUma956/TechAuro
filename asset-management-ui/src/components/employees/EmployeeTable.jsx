@@ -36,6 +36,9 @@ export default function EmployeeTable({
   onPageChange,
   onRowClick,
   onClearFilters,
+  sortBy,
+  sortDir,
+  onSortChange,
   onEdit,
   onDelete,
 }) {
@@ -184,8 +187,11 @@ export default function EmployeeTable({
       onPageChange={onPageChange}
       onRowClick={onRowClick}
       showRowArrow={true}
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSortChange={onSortChange}
       emptyMessage="No matching employees or devices found"
-      emptySubtitle="Try adjusting your search criteria, clearing selected filters, or adding a new employee."
+      emptySubtitle="Try adjusting your search criteria or adding a new employee."
       emptyAction={
         onClearFilters ? (
           <Button variant="primary" size="sm" onClick={onClearFilters}>

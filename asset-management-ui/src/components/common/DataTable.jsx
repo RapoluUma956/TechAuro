@@ -1,11 +1,28 @@
 import React, { useState, useMemo } from "react";
 import Pagination from "./Pagination";
+import { SortIndicator } from "./Icons";
+
+/**
+ * Helper to extract sortable value from row.
+ * Can be a primitive property, or custom value from row[col.key].
+ */
+function getSortValue(row, col) {
+  if (typeof col.sortValue === "function") {
+    return col.sortValue(row);
+  }
+  const val = row[col.key];
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val.toLowerCase();
+  return val;
+}
 
 /**
  * Common Reusable DataTable Component
  * 
  * Features:
- * - Columns configuration with custom renderers, widths, and alignments
+ * - Columns configuration with custom renderers, widths, alignments, and sorting
+ * - Integrated client-side multi-column sorting (ascending, descending, neutral)
+ * - Controlled external sorting via `sortBy`, `sortDir`, `onSortChange`
  * - Integrated Pagination with configurable `pageSize` (default: 10)
  * - Automatic client-side pagination or controlled external pagination (for API requests)
  * - Clickable rows with hover styling and optional chevron arrow
@@ -19,7 +36,9 @@ import Pagination from "./Pagination";
  *   header: 'Column Title',
  *   render: (row, index, serialNo) => <JSX />,
  *   align: 'left' | 'center' | 'right',
- *   width: 'w-24', // or percentage / class
+ *   width: 'w-24',
+ *   sortable: true | false (default: true if key exists and not 'actions'),
+ *   sortValue: (row) => comparableValue,
  *   headerClassName: '',
  *   cellClassName: ''
  * }
@@ -33,13 +52,20 @@ export default function DataTable({
   totalPages: controlledTotalPages,
   totalItems: controlledTotalItems,
   onPageChange: controlledOnPageChange,
+  // Sorting props
+  sortBy: controlledSortBy,
+  sortDir: controlledSortDir,
+  onSortChange: controlledOnSortChange,
+  defaultSortBy = null,
+  defaultSortDir = "asc",
+  // Other props
   pagination = true,
   showSerialNo = false,
-  serialNoHeader = "S.No",
+  serialNoHeader = "#",
   onRowClick,
   showRowArrow = false,
   emptyMessage = "No matching records found",
-  emptySubtitle = "Try adjusting your search criteria or clearing selected filters.",
+  emptySubtitle = "Try adjusting your search criteria.",
   emptyAction,
   loading = false,
   itemLabel = "records",
@@ -50,18 +76,77 @@ export default function DataTable({
   // Internal pagination state for client-side pagination
   const [internalPage, setInternalPage] = useState(1);
 
-  // Determine whether pagination is controlled externally (e.g. server API)
-  const isControlled = controlledPage !== undefined && controlledOnPageChange !== undefined;
-  const currentPage = isControlled ? controlledPage : internalPage;
+  // Internal sort state for client-side sorting
+  const [internalSortBy, setInternalSortBy] = useState(defaultSortBy);
+  const [internalSortDir, setInternalSortDir] = useState(defaultSortDir);
 
-  const totalItems = controlledTotalItems !== undefined ? controlledTotalItems : data.length;
+  const isControlledSort = controlledSortBy !== undefined && controlledOnSortChange !== undefined;
+  const currentSortBy = isControlledSort ? controlledSortBy : internalSortBy;
+  const currentSortDir = isControlledSort ? controlledSortDir : internalSortDir;
+
+  const handleHeaderClick = (col) => {
+    // Check if column is sortable: default true unless col.sortable === false or key is 'actions'
+    const isSortable = col.sortable !== false && col.key !== "actions";
+    if (!isSortable) return;
+
+    let nextDir = "asc";
+    if (currentSortBy === col.key) {
+      if (currentSortDir === "asc") {
+        nextDir = "desc";
+      } else if (currentSortDir === "desc") {
+        nextDir = "asc";
+      }
+    }
+
+    if (isControlledSort) {
+      controlledOnSortChange(col.key, nextDir);
+    } else {
+      setInternalSortBy(col.key);
+      setInternalSortDir(nextDir);
+      // Reset to page 1 on client sort
+      setInternalPage(1);
+    }
+  };
+
+  // Determine whether pagination is controlled externally (e.g. server API)
+  const isControlledPage = controlledPage !== undefined && controlledOnPageChange !== undefined;
+  const currentPage = isControlledPage ? controlledPage : internalPage;
+
+  // Client-side sort data if sorting internally
+  const sortedData = useMemo(() => {
+    if (isControlledSort || !currentSortBy) {
+      return data;
+    }
+    const col = columns.find((c) => c.key === currentSortBy);
+    if (!col) return data;
+
+    const copy = [...data];
+    copy.sort((a, b) => {
+      const valA = getSortValue(a, col);
+      const valB = getSortValue(b, col);
+
+      if (valA === valB) return 0;
+      if (valA === "" || valA === null || valA === undefined) return 1;
+      if (valB === "" || valB === null || valB === undefined) return -1;
+
+      if (typeof valA === "number" && typeof valB === "number") {
+        return currentSortDir === "asc" ? valA - valB : valB - valA;
+      }
+      return currentSortDir === "asc"
+        ? String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: "base" })
+        : String(valB).localeCompare(String(valA), undefined, { numeric: true, sensitivity: "base" });
+    });
+    return copy;
+  }, [data, currentSortBy, currentSortDir, columns, isControlledSort]);
+
+  const totalItems = controlledTotalItems !== undefined ? controlledTotalItems : sortedData.length;
   const totalPages =
     controlledTotalPages !== undefined
       ? controlledTotalPages
       : Math.ceil(totalItems / pageSize) || 1;
 
   const handlePageChange = (newPage) => {
-    if (isControlled) {
+    if (isControlledPage) {
       controlledOnPageChange(newPage);
     } else {
       setInternalPage(newPage);
@@ -70,12 +155,12 @@ export default function DataTable({
 
   // Slice data if uncontrolled client-side pagination
   const displayData = useMemo(() => {
-    if (isControlled) {
-      return data;
+    if (isControlledPage) {
+      return sortedData;
     }
     const start = (currentPage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [isControlled, data, currentPage, pageSize]);
+    return sortedData.slice(start, start + pageSize);
+  }, [isControlledPage, sortedData, currentPage, pageSize]);
 
   const pageOffset = (currentPage - 1) * pageSize;
   const isClickable = Boolean(onRowClick);
@@ -107,17 +192,35 @@ export default function DataTable({
               )}
 
               {/* Data Columns */}
-              {columns.map((col, idx) => (
-                <th
-                  key={col.key || idx}
-                  scope="col"
-                  className={`py-3.5 px-4 ${getAlignClass(col.align)} ${
-                    col.width || ""
-                  } ${col.headerClassName || ""}`}
-                >
-                  {col.header}
-                </th>
-              ))}
+              {columns.map((col, idx) => {
+                const isSortable = col.sortable !== false && col.key !== "actions";
+                const isCurrentSort = currentSortBy === col.key;
+
+                return (
+                  <th
+                    key={col.key || idx}
+                    scope="col"
+                    onClick={() => isSortable && handleHeaderClick(col)}
+                    className={`py-3.5 px-4 ${getAlignClass(col.align)} ${
+                      col.width || ""
+                    } ${col.headerClassName || ""} ${
+                      isSortable ? "cursor-pointer select-none hover:text-[#03312E] transition-colors" : ""
+                    }`}
+                  >
+                    <span className={`inline-flex items-center gap-1.5 ${
+                      col.align === "center" ? "justify-center" : col.align === "right" ? "justify-end" : "justify-start"
+                    }`}>
+                      <span>{col.header}</span>
+                      {isSortable && (
+                        <SortIndicator
+                          active={isCurrentSort}
+                          direction={isCurrentSort ? currentSortDir : "asc"}
+                        />
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
 
               {/* Optional Arrow indicator column */}
               {(showRowArrow || isClickable) && (

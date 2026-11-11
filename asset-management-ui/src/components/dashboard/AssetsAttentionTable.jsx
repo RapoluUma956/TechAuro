@@ -107,23 +107,24 @@ export default function AssetsAttentionTable({
   };
 
   const filterTabs = [
-    { key: "ALL", label: "All", count: filterCounts.all ?? pagination.totalElements },
+    { key: "ALL",      label: "All",      count: filterCounts.all      ?? pagination.totalElements },
     { key: "CRITICAL", label: "Critical", count: filterCounts.critical ?? 0 },
-    { key: "WARNING", label: "Warning", count: filterCounts.warning ?? 0 },
-    { key: "OFFLINE", label: "Offline", count: filterCounts.offline ?? 0 },
+    { key: "WARNING",  label: "Warning",  count: filterCounts.warning  ?? 0 },
+    { key: "OFFLINE",  label: "Offline",  count: filterCounts.offline  ?? 0 },
   ];
 
+  // Each column has a fixed minimum width so columns never collapse
   const columns = [
-    { key: "assetTag", label: "Device / Asset Tag", sortable: true },
-    { key: "employeeName", label: "Employee", sortable: true },
-    { key: "designation", label: "Organization", sortable: true },
-    { key: "healthStatus", label: "Health", sortable: true },
-    { key: "connectionStatus", label: "Connection", sortable: true },
-    { key: "cpuUsage", label: "CPU", sortable: true },
-    { key: "ramUsage", label: "RAM", sortable: true },
-    { key: "diskUsage", label: "Disk", sortable: true },
-    { key: "lastSeenAt", label: "Last Seen", sortable: true },
-    { key: "action", label: "Action", sortable: false },
+    { key: "assetTag",         label: "Device / Asset Tag", sortable: true,  minWidth: "min-w-[160px]" },
+    { key: "employeeName",     label: "Employee",           sortable: true,  minWidth: "min-w-[140px]" },
+    { key: "designation",      label: "Organization",       sortable: true,  minWidth: "min-w-[140px]" },
+    { key: "healthStatus",     label: "Health",             sortable: true,  minWidth: "min-w-[100px]" },
+    { key: "connectionStatus", label: "Connection",         sortable: true,  minWidth: "min-w-[110px]" },
+    { key: "cpuUsage",         label: "CPU",                sortable: true,  minWidth: "min-w-[110px]" },
+    { key: "ramUsage",         label: "RAM",                sortable: true,  minWidth: "min-w-[110px]" },
+    { key: "diskUsage",        label: "Disk",               sortable: true,  minWidth: "min-w-[110px]" },
+    { key: "lastSeenAt",       label: "Last Seen",          sortable: true,  minWidth: "min-w-[110px]" },
+    { key: "action",           label: "Action",             sortable: false, minWidth: "min-w-[80px]"  },
   ];
 
   const totalPages = Math.max(1, pagination.totalPages || 1);
@@ -195,25 +196,24 @@ export default function AssetsAttentionTable({
         </div>
       )}
 
-      {/* Data Table */}
+      {/* Data Table — min-w-[1140px] forces horizontal scroll instead of squishing columns */}
       <div className="mt-4 overflow-hidden rounded-xl border border-[#DCE5E1]">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#03312E]">
+          <table className="w-full min-w-[1140px] border-collapse text-left text-xs text-[#03312E]">
             <thead>
               <tr className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-xs font-bold uppercase tracking-wider text-[#64748B]">
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className={`py-3.5 px-3 ${col.sortable ? "cursor-pointer select-none hover:text-[#03312E]" : ""}`}
+                    className={`whitespace-nowrap py-3.5 px-4 ${col.minWidth} ${
+                      col.sortable ? "cursor-pointer select-none hover:text-[#03312E]" : ""
+                    }`}
                     onClick={() => col.sortable && handleSort(col.key)}
                   >
-                    <span className="inline-flex items-center">
+                    <span className="inline-flex items-center gap-1">
                       {col.label}
                       {col.sortable && (
-                        <SortIndicator
-                          active={sortBy === col.key}
-                          direction={sortDir}
-                        />
+                        <SortIndicator active={sortBy === col.key} direction={sortDir} />
                       )}
                     </span>
                   </th>
@@ -228,85 +228,107 @@ export default function AssetsAttentionTable({
                   const isOnline = connUpper === "ONLINE";
 
                   return (
-                    <tr key={asset.deviceId || asset.assetTag} className="hover:bg-[#F8FAF9] transition-colors">
-                      <td className="py-3.5 px-3 font-bold text-sm text-[#03312E]">
+                    <tr
+                      key={asset.deviceId || asset.assetTag}
+                      className="hover:bg-[#F8FAF9] transition-colors"
+                    >
+                      {/* Device / Asset Tag */}
+                      <td className="whitespace-nowrap py-3.5 px-4 font-bold text-sm text-[#03312E]">
                         {asset.assetTag}
                       </td>
-                      <td className="py-3.5 px-3 text-sm font-medium text-[#334155]">
+
+                      {/* Employee */}
+                      <td className="whitespace-nowrap py-3.5 px-4 text-sm font-medium text-[#334155]">
                         {asset.employeeName || "Unassigned"}
                       </td>
-                      <td className="py-3.5 px-3 text-xs font-medium text-[#64748B]">
+
+                      {/* Organization / Designation */}
+                      <td className="whitespace-nowrap py-3.5 px-4 text-xs font-medium text-[#64748B]">
                         {asset.designation || "-"}
                       </td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-bold ${
-                          healthUpper === "CRITICAL"
-                            ? "bg-[#FEE2E2] text-[#DC2626]"
-                            : healthUpper === "WARNING"
-                            ? "bg-[#FEF3C7] text-[#D97706]"
-                            : healthUpper === "HEALTHY"
-                            ? "bg-[#D1FAE5] text-[#059669]"
-                            : "bg-[#F1F5F9] text-[#64748B]"
-                        }`}
-                      >
-                        {healthUpper === "CRITICAL"
-                          ? "Critical"
-                          : healthUpper === "WARNING"
-                          ? "Warning"
-                          : healthUpper === "HEALTHY"
-                          ? "Healthy"
-                          : "Unknown"}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-1.5">
+
+                      {/* Health Badge */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
                         <span
-                          className={`h-2 w-2 rounded-full ${
-                            isOnline ? "bg-[#00C896]" : "bg-[#EF4444]"
+                          className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-bold ${
+                            healthUpper === "CRITICAL"
+                              ? "bg-[#FEE2E2] text-[#DC2626]"
+                              : healthUpper === "WARNING"
+                              ? "bg-[#FEF3C7] text-[#D97706]"
+                              : healthUpper === "HEALTHY"
+                              ? "bg-[#D1FAE5] text-[#059669]"
+                              : "bg-[#F1F5F9] text-[#64748B]"
                           }`}
-                        />
-                        <span className="font-medium text-[#334155]">
-                          {isOnline ? "Online" : "Offline"}
+                        >
+                          {healthUpper === "CRITICAL"
+                            ? "Critical"
+                            : healthUpper === "WARNING"
+                            ? "Warning"
+                            : healthUpper === "HEALTHY"
+                            ? "Healthy"
+                            : "Unknown"}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      <ResourceMeter value={asset.cpuUsage ?? 0} />
-                    </td>
-                    <td className="py-3">
-                      <ResourceMeter value={asset.ramUsage ?? 0} />
-                    </td>
-                    <td className="py-3">
-                      <ResourceMeter value={asset.diskUsage ?? 0} />
-                    </td>
-                    <td className="py-3 text-[#64748B]">
-                      {formatRelativeTime(asset.lastSeenAt)}
-                    </td>
-                    <td className="py-3">
-                      <Link
-                        to="/employees"
-                        className="font-bold text-[#1976D2] hover:underline"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={10} className="py-8 text-center text-xs text-[#94A3B8]">
-                  {loading
-                    ? "Loading assets requiring attention..."
-                    : "No assets found matching the criteria."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                      </td>
+
+                      {/* Connection Status */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              isOnline ? "bg-[#00C896]" : "bg-[#EF4444]"
+                            }`}
+                          />
+                          <span className="font-medium text-[#334155]">
+                            {isOnline ? "Online" : "Offline"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* CPU Usage Meter */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
+                        <ResourceMeter value={asset.cpuUsage ?? 0} />
+                      </td>
+
+                      {/* RAM Usage Meter */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
+                        <ResourceMeter value={asset.ramUsage ?? 0} />
+                      </td>
+
+                      {/* Disk Usage Meter */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
+                        <ResourceMeter value={asset.diskUsage ?? 0} />
+                      </td>
+
+                      {/* Last Seen */}
+                      <td className="whitespace-nowrap py-3.5 px-4 text-xs font-medium text-[#64748B]">
+                        {formatRelativeTime(asset.lastSeenAt)}
+                      </td>
+
+                      {/* View Action */}
+                      <td className="whitespace-nowrap py-3.5 px-4">
+                        <Link
+                          to="/employees"
+                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold text-[#1976D2] transition-colors hover:bg-[#E3F2FD] hover:text-[#1565C0]"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={10} className="py-8 text-center text-xs text-[#94A3B8]">
+                    {loading
+                      ? "Loading assets requiring attention..."
+                      : "No assets found matching the criteria."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
       {/* Dynamic Pagination Footer */}
       <div className="mt-4 flex items-center justify-between border-t border-[#F1F5F9] pt-4 text-xs text-[#64748B]">

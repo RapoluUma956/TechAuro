@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { DataTable, SearchBar, Button } from "../common";
 import {
   RotateCcwIcon,
@@ -19,8 +19,6 @@ export default function LaptopTable({
   onPageChange,
   searchQuery = "",
   onSearchChange,
-  selectedBrand = "All",
-  onBrandChange,
   onRefresh,
   onAssignLaptop,
   onViewDeviceHistory,
@@ -36,21 +34,37 @@ export default function LaptopTable({
     }));
   };
 
-  const brands = ["All", "Lenovo", "Dell", "HP", "Apple", "Asus"];
-
-  const isFiltered = Boolean(
-    searchQuery.trim() || (selectedBrand && selectedBrand !== "All")
-  );
-
-  const handleClearFilters = () => {
-    onSearchChange && onSearchChange("");
-    onBrandChange && onBrandChange("All");
+  // Normalize storage/RAM size values to nearest 5 GB to handle
+  // minor backend reporting differences (e.g. 474 GB vs 475 GB → both become 475).
+  const normalizeSize = (val) => {
+    const num = parseFloat(String(val || "").replace(/[^0-9.]/g, ""));
+    if (isNaN(num)) return String(val || "");
+    return String(Math.round(num / 5) * 5);
   };
 
-  const preparedData = (laptopConfigurations || []).map((item, idx) => ({
-    ...item,
-    configKey: `${item.brand}-${item.model}-${item.ram}-${item.ssd}` || idx,
-  }));
+  // Deduplicate: merge rows with the same brand+model+ram+ssd into one,
+  // summing all numeric metrics and concatenating all device arrays.
+  const deduplicatedData = useMemo(() => {
+    const map = new Map();
+    for (const item of laptopConfigurations || []) {
+      const key = `${item.brand}-${item.model}-${normalizeSize(item.ram)}-${normalizeSize(item.ssd)}`;
+      if (map.has(key)) {
+        const ex = map.get(key);
+        ex.total = (ex.total || 0) + (item.total || 0);
+        ex.assigned = (ex.assigned || 0) + (item.assigned || 0);
+        ex.remaining = (ex.remaining || 0) + (item.remaining || 0);
+        ex.repair = (ex.repair || 0) + (item.repair || 0);
+        ex.devices = [...(ex.devices || []), ...(item.devices || [])];
+      } else {
+        map.set(key, {
+          ...item,
+          configKey: key,
+          devices: [...(item.devices || [])],
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [laptopConfigurations]);
 
   const renderExpandedUnits = (item) => {
     return (
@@ -291,29 +305,6 @@ export default function LaptopTable({
           >
             <button
               type="button"
-              onClick={() => {
-                const targetDev = item.devices?.[0];
-                if (targetDev && onViewDeviceHistory) {
-                  onViewDeviceHistory({
-                    ...targetDev,
-                    brand: item.brand,
-                    model: item.model,
-                    ram: item.ram,
-                    ssd: item.ssd,
-                  });
-                } else {
-                  toggleExpand(rowKey);
-                }
-              }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#BBDEFB] bg-[#E3F2FD] px-2.5 py-1.5 text-xs font-bold text-[#1976D2] transition-colors hover:bg-[#1976D2] hover:text-white shadow-2xs"
-              title="View assignment history for this laptop model"
-            >
-              <HistoryIcon className="h-3.5 w-3.5" />
-              <span>Device History</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => toggleExpand(rowKey)}
               className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
                 isExpanded
@@ -336,7 +327,7 @@ export default function LaptopTable({
 
   return (
     <div className="space-y-4">
-      {/* Top Filter Card matching AccessoryTable */}
+      {/* Top Search Card */}
       <div className="rounded-2xl border border-[#DCE5E1] bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -349,17 +340,6 @@ export default function LaptopTable({
           </div>
 
           <div className="flex items-center gap-2">
-            {isFiltered && (
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<RotateCcwIcon className="h-3.5 w-3.5" />}
-                onClick={handleClearFilters}
-                className="self-start text-[#5C7370] hover:border-[#EF4444] hover:bg-[#FEECEB] hover:text-[#EF4444] sm:self-auto"
-              >
-                Reset Filters
-              </Button>
-            )}
             {onRefresh && (
               <Button
                 variant="outline"
@@ -373,9 +353,9 @@ export default function LaptopTable({
           </div>
         </div>
 
-        {/* Search Bar & Brand Filter Pills */}
-        <div className="mt-4 space-y-3">
-          <div className="w-full">
+        {/* Search Bar */}
+        <div className="mt-4">
+          <div className="w-full sm:max-w-xl">
             <SearchBar
               value={searchQuery}
               onChange={onSearchChange}
@@ -383,74 +363,25 @@ export default function LaptopTable({
               variant="long"
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="mr-1 text-xs font-semibold text-[#64748B]">
-              Brand:
-            </span>
-            {brands.map((b) => {
-              const isSelected =
-                selectedBrand === b ||
-                (!selectedBrand && b === "All") ||
-                selectedBrand?.toLowerCase() === b.toLowerCase();
-
-              return (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => onBrandChange && onBrandChange(b)}
-                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition-all select-none ${
-                    isSelected
-                      ? "bg-[#1976D2] text-white shadow-xs ring-1 ring-[#1976D2]"
-                      : "border border-[#DCE5E1] bg-white text-[#5C7370] hover:border-[#1976D2] hover:bg-[#F8FAF9] hover:text-[#03312E]"
-                  }`}
-                >
-                  {b}
-                </button>
-              );
-            })}
-          </div>
-
-          {isFiltered && (
-            <div className="flex items-center justify-between border-t border-[#EBF0EE] pt-2.5 text-xs text-[#64748B]">
-              <span>
-                Showing <strong className="text-[#03312E]">{laptopConfigurations.length}</strong> matching configurations
-              </span>
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="cursor-pointer font-semibold text-[#1976D2] hover:underline"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Reusable DataTable matching AccessoryTable & LicenseTable styling */}
+      {/* Reusable DataTable with sorting on every column */}
       <DataTable
-        data={preparedData}
+        data={deduplicatedData}
         columns={columns}
         keyField="configKey"
         showSerialNo={true}
         serialNoHeader="#"
         currentPage={currentPage + 1}
         totalPages={totalPages}
-        totalItems={totalElements}
+        totalItems={deduplicatedData.length}
         pageSize={pageSize}
         itemLabel="configurations"
         onPageChange={(newPage) => onPageChange && onPageChange(newPage - 1)}
         loading={loading}
         emptyMessage="No laptop configurations found"
-        emptySubtitle="Try adjusting your search query or selecting another brand filter."
-        emptyAction={
-          isFiltered ? (
-            <Button variant="primary" size="sm" onClick={handleClearFilters}>
-              Clear All Filters
-            </Button>
-          ) : null
-        }
+        emptySubtitle="Try adjusting your search query."
         renderExpandedRow={renderExpandedUnits}
         expandedRowKeys={expandedKeys}
       />

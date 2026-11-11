@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { DataTable, SearchBar, Button } from "../common";
 import {
   PlusIcon,
@@ -18,38 +18,34 @@ export default function AccessoryTable({
   onPageChange,
   searchQuery = "",
   onSearchChange,
-  selectedCategory = "All",
-  onCategoryChange,
-  categories = [],
   onEditAccessory,
   onDeleteAccessory,
   onQuickAddQuantity,
   onAssignAccessory,
 }) {
-  const defaultCategories = [
-    "All",
-    "Mouse",
-    "Keyboard",
-    "Headset",
-    "Monitor",
-    "Docking Station",
-    "Charger / Adapter",
-    "Other",
-  ];
-
-  const categoryList =
-    categories && categories.length > 0
-      ? ["All", ...categories.map((c) => (typeof c === "string" ? c : c.category))]
-      : defaultCategories;
-
-  const isFiltered = Boolean(
-    searchQuery.trim() || (selectedCategory && selectedCategory !== "All")
-  );
-
-  const handleClearFilters = () => {
-    onSearchChange && onSearchChange("");
-    onCategoryChange && onCategoryChange("All");
-  };
+  // Deduplicate: merge rows with the same accessoryName+category+brand+model into one,
+  // summing all quantity metrics. The backend may return separate records for the same
+  // product if it was added in multiple batches.
+  const deduplicatedAccessories = useMemo(() => {
+    const map = new Map();
+    for (const item of accessories || []) {
+      const key = `${item.accessoryName || item.productName}__${item.category}__${item.brand}__${item.model}`;
+      if (map.has(key)) {
+        const ex = map.get(key);
+        ex.totalQuantity = (ex.totalQuantity || 0) + (item.totalQuantity || 0);
+        ex.assignedQuantity = (ex.assignedQuantity || 0) + (item.assignedQuantity || 0);
+        ex.availableQuantity = (ex.availableQuantity || 0) + (item.availableQuantity || 0);
+        ex.repairQuantity = (ex.repairQuantity || 0) + (item.repairQuantity || item.damagedQuantity || 0);
+        ex.damagedQuantity = ex.repairQuantity;
+      } else {
+        map.set(key, {
+          ...item,
+          repairQuantity: item.repairQuantity ?? item.damagedQuantity ?? 0,
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [accessories]);
 
   const columns = [
     {
@@ -191,7 +187,7 @@ export default function AccessoryTable({
 
   return (
     <div className="space-y-4">
-      {/* Top Filter Card */}
+      {/* Top Search Card */}
       <div className="rounded-2xl border border-[#DCE5E1] bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -202,23 +198,11 @@ export default function AccessoryTable({
               Quantity-based peripheral inventory per product and model combination
             </p>
           </div>
-
-          {isFiltered && (
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<RotateCcwIcon className="h-3.5 w-3.5" />}
-              onClick={handleClearFilters}
-              className="self-start text-[#5C7370] hover:border-[#EF4444] hover:bg-[#FEECEB] hover:text-[#EF4444] sm:self-auto"
-            >
-              Reset Filters
-            </Button>
-          )}
         </div>
 
-        {/* Search Bar & Category Filter Pills */}
-        <div className="mt-4 space-y-3">
-          <div className="w-full">
+        {/* Search Bar */}
+        <div className="mt-4">
+          <div className="w-full sm:max-w-xl">
             <SearchBar
               value={searchQuery}
               onChange={onSearchChange}
@@ -226,74 +210,25 @@ export default function AccessoryTable({
               variant="long"
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="mr-1 text-xs font-semibold text-[#64748B]">
-              Category:
-            </span>
-            {categoryList.map((cat) => {
-              const isSelected =
-                selectedCategory === cat ||
-                (!selectedCategory && cat === "All") ||
-                selectedCategory?.toLowerCase() === cat.toLowerCase();
-
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => onCategoryChange && onCategoryChange(cat)}
-                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition-all select-none ${
-                    isSelected
-                      ? "bg-[#1976D2] text-white shadow-xs ring-1 ring-[#1976D2]"
-                      : "border border-[#DCE5E1] bg-white text-[#5C7370] hover:border-[#1976D2] hover:bg-[#F8FAF9] hover:text-[#03312E]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-
-          {isFiltered && (
-            <div className="flex items-center justify-between border-t border-[#EBF0EE] pt-2.5 text-xs text-[#64748B]">
-              <span>
-                Showing <strong className="text-[#03312E]">{accessories.length}</strong> matching accessories
-              </span>
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="cursor-pointer font-semibold text-[#1976D2] hover:underline"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Reusable DataTable matching LicenseTable styling */}
+      {/* Reusable DataTable with automatic sorting on all columns */}
       <DataTable
-        data={accessories}
+        data={deduplicatedAccessories}
         columns={columns}
         keyField="accessoryId"
         showSerialNo={true}
         serialNoHeader="#"
         currentPage={currentPage + 1}
         totalPages={totalPages}
-        totalItems={totalElements}
+        totalItems={deduplicatedAccessories.length}
         pageSize={pageSize}
         itemLabel="accessories"
         onPageChange={(newPage) => onPageChange && onPageChange(newPage - 1)}
         loading={loading}
         emptyMessage="No accessories found"
-        emptySubtitle="Try adjusting your search query or selecting another category filter."
-        emptyAction={
-          isFiltered ? (
-            <Button variant="primary" size="sm" onClick={handleClearFilters}>
-              Clear All Filters
-            </Button>
-          ) : null
-        }
+        emptySubtitle="Try adjusting your search query."
       />
     </div>
   );

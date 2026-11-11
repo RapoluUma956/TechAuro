@@ -7,7 +7,7 @@ export default function DeviceConnectivityCard({ data }) {
 
       <div className="mt-5">
         {/* Segmented Progress Bar */}
-        <div className="flex h-4 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
+        <div className="flex h-4 w-full overflow-hidden rounded-full bg-[#E2E8F0] mt-8">
           <div
             className="h-full transition-all duration-500"
             style={{
@@ -26,13 +26,13 @@ export default function DeviceConnectivityCard({ data }) {
 
         {/* Legend */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-5">
             <span className="h-2.5 w-2.5 rounded-full bg-[#00C896]" />
             <span className="text-[#03312E]">
               Online: {data.online.count} ({data.online.percentage}%)
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-5">
             <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
             <span className="text-[#03312E]">
               Offline: {data.offline.count} ({data.offline.percentage}%)

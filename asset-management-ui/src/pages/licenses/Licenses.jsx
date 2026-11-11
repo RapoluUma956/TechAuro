@@ -20,7 +20,7 @@ export default function Licenses() {
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
-  // 2. Table & Filter State
+  // 2. Table & Search State
   const [licenses, setLicenses] = useState([]);
   const [licensesLoading, setLicensesLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -29,13 +29,6 @@ export default function Licenses() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSoftware, setSelectedSoftware] = useState("All");
-  const [selectedPublisher, setSelectedPublisher] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedExpiry, setSelectedExpiry] = useState("All");
-
-  const [softwareOptions, setSoftwareOptions] = useState([]);
-  const [publisherOptions, setPublisherOptions] = useState([]);
 
   // 3. Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -107,10 +100,6 @@ export default function Licenses() {
         page,
         size: pageSize,
         search: searchQuery,
-        software: selectedSoftware,
-        publisher: selectedPublisher,
-        status: selectedStatus,
-        expiry: selectedExpiry,
       });
 
       if (res && Array.isArray(res.content)) {
@@ -134,31 +123,16 @@ export default function Licenses() {
     page,
     pageSize,
     searchQuery,
-    selectedSoftware,
-    selectedPublisher,
-    selectedStatus,
-    selectedExpiry,
   ]);
 
   // Initial mount
   useEffect(() => {
     fetchSummary();
-    fetchFilterOptions();
-  }, [fetchSummary, fetchFilterOptions]);
+  }, [fetchSummary]);
 
   useEffect(() => {
     fetchLicenses();
   }, [fetchLicenses]);
-
-  // Reset Filters
-  const handleResetFilters = () => {
-    setSearchQuery("");
-    setSelectedSoftware("All");
-    setSelectedPublisher("All");
-    setSelectedStatus("All");
-    setSelectedExpiry("All");
-    setPage(0);
-  };
 
   // Create / Update License
   const handleSaveLicense = async (payload, licenseId) => {
@@ -252,36 +226,14 @@ export default function Licenses() {
       {/* 5 Summary Metric Cards */}
       <LicenseMetricCards metrics={summary} loading={summaryLoading} />
 
-      {/* Filters Bar */}
+      {/* Search Bar */}
       <LicenseFilters
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
           setPage(0);
         }}
-        selectedSoftware={selectedSoftware}
-        onSoftwareChange={(s) => {
-          setSelectedSoftware(s);
-          setPage(0);
-        }}
-        selectedPublisher={selectedPublisher}
-        onPublisherChange={(p) => {
-          setSelectedPublisher(p);
-          setPage(0);
-        }}
-        selectedStatus={selectedStatus}
-        onStatusChange={(st) => {
-          setSelectedStatus(st);
-          setPage(0);
-        }}
-        selectedExpiry={selectedExpiry}
-        onExpiryChange={(exp) => {
-          setSelectedExpiry(exp);
-          setPage(0);
-        }}
-        softwareOptions={softwareOptions}
-        publisherOptions={publisherOptions}
-        onReset={handleResetFilters}
+        totalCount={totalElements}
       />
 
       {/* License Inventory Table */}

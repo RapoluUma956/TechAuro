@@ -208,18 +208,6 @@ export default function LicenseTable({
             className="flex items-center justify-center gap-1"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* View Action */}
-            {onViewLicense && (
-              <button
-                type="button"
-                onClick={() => onViewLicense(lic)}
-                title="View Details & Assignments"
-                aria-label={`View details for ${lic.licenseName}`}
-                className="rounded-lg p-1.5 text-[#64748B] transition-colors hover:bg-sky-50 hover:text-[#1976D2] cursor-pointer"
-              >
-                <EyeIcon className="h-4 w-4" />
-              </button>
-            )}
 
             {/* Edit Action */}
             {onEditLicense && (
