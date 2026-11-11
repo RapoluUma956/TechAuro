@@ -27,7 +27,7 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
   const columns = [
     {
       key: "softwareName",
-      header: "softwareName",
+      header: "Software Name",
       render: (item) => (
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E3F2FD] text-[#1976D2]">
@@ -47,7 +47,7 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
     },
     {
       key: "version",
-      header: "version",
+      header: "Version",
       render: (item) => (
         <span className="font-mono text-xs font-bold text-[#1E293B] bg-[#F1F5F9] px-2 py-0.5 rounded">
           {item.version}
@@ -58,14 +58,14 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
       key: "publisher",
       header: "Publisher",
       render: (item) => (
-        <span className="text-xs font-medium text-[#334155]">
+        <span className="text-sm font-medium text-[#334155]">
           {item.publisher || "—"}
         </span>
       ),
     },
     {
       key: "installDate",
-      header: "installDate",
+      header: "Install Date",
       render: (item) => (
         <div className="flex items-center gap-1.5 text-xs text-[#5C7370] font-mono">
           <svg className="h-3.5 w-3.5 text-[#8C9E9B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -80,7 +80,7 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
     },
     {
       key: "installPath",
-      header: "installPath",
+      header: "Install Path",
       render: (item) => (
         <span
           className="font-mono text-xs text-[#64748B] truncate max-w-xs block"
@@ -163,7 +163,7 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={effectivePageSize}
         itemLabel="softwares"
         emptyMessage="No software applications found"

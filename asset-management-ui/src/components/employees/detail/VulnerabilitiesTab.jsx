@@ -3,27 +3,21 @@ import { DataTable, StatusBadge, SearchBar } from "../../common";
 
 export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState("ALL");
 
   const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return vulnerabilities;
+    const query = searchQuery.toLowerCase().trim();
+    const fields = [
+      "cveId",
+      "softwareName",
+      "description",
+      "severity",
+      "remediationStatus",
+    ];
     return vulnerabilities.filter((vuln) => {
-      if (severityFilter !== "ALL" && (vuln.severity || "").toUpperCase() !== severityFilter) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const fields = [
-          vuln.cveId,
-          vuln.softwareName,
-          vuln.description,
-          vuln.severity,
-          vuln.remediationStatus,
-        ];
-        return fields.some((f) => (f || "").toLowerCase().includes(query));
-      }
-      return true;
+      return fields.some((f) => (vuln[f] || "").toLowerCase().includes(query));
     });
-  }, [vulnerabilities, searchQuery, severityFilter]);
+  }, [vulnerabilities, searchQuery]);
 
   const severityCounts = useMemo(() => {
     return {
@@ -48,151 +42,125 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
       key: "severity",
       header: "Severity",
       render: (item) => {
-        const sev = (item.severity || "Low").toLowerCase();
-        const badgeColors =
-          sev === "critical" || sev === "high"
-            ? { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500", pulse: true }
-            : sev === "medium"
-            ? { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500", pulse: false }
-            : { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200", dot: "bg-slate-400", pulse: false };
-
-        return <StatusBadge status={item.severity} customColors={badgeColors} />;
+        const sev = (item.severity || "").toLowerCase();
+        const colors = {
+          critical: "bg-purple-100 text-purple-700 border border-purple-200",
+          high: "bg-rose-100 text-rose-700 border border-rose-200",
+          medium: "bg-amber-100 text-amber-700 border border-amber-200",
+          low: "bg-blue-100 text-blue-700 border border-blue-200",
+        };
+        return (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+              colors[sev] || "bg-slate-100 text-slate-700"
+            }`}
+          >
+            {item.severity}
+          </span>
+        );
       },
     },
     {
       key: "softwareName",
-      header: "Affected Software",
+      header: "Vulnerable Software",
       render: (item) => (
         <div>
-          <p className="font-bold text-xs text-[#03312E]">{item.softwareName}</p>
-          {item.version && (
-            <p className="font-mono text-[11px] text-[#64748B]">Ver: {item.version}</p>
+          <p className="font-bold text-sm text-[#03312E]">{item.softwareName}</p>
+          {item.detectedVersion && (
+            <p className="font-mono text-xs text-[#64748B]">v{item.detectedVersion}</p>
           )}
         </div>
       ),
     },
     {
       key: "description",
-      header: "Vulnerability Description",
+      header: "Threat Description",
       render: (item) => (
-        <p className="text-xs text-[#334155] leading-relaxed max-w-md">
-          {item.description}
+        <p className="max-w-md text-xs text-[#5C7370] line-clamp-2" title={item.description}>
+          {item.description || "No threat intelligence summary available."}
         </p>
       ),
     },
     {
-      key: "detectedDate",
-      header: "Detected Date",
-      render: (item) => (
-        <span className="font-mono text-xs text-[#5C7370]">
-          {item.detectedDate}
-        </span>
-      ),
+      key: "cvssScore",
+      header: "CVSS Score",
+      align: "center",
+      render: (item) => {
+        const score = Number(item.cvssScore || 0);
+        const scoreColor =
+          score >= 9.0 ? "text-purple-700" : score >= 7.0 ? "text-rose-700" : score >= 4.0 ? "text-amber-700" : "text-[#1976D2]";
+        return <span className={`font-mono text-sm font-black ${scoreColor}`}>{score.toFixed(1)}</span>;
+      },
     },
     {
       key: "remediationStatus",
-      header: "Remediation",
+      header: "Status",
+      align: "center",
       render: (item) => (
-        <div className="space-y-1">
-          <StatusBadge status={item.remediationStatus || "Pending"} />
-          {item.remediationAdvice && (
-            <p className="text-[11px] text-[#64748B] italic max-w-xs">
-              {item.remediationAdvice}
-            </p>
-          )}
-        </div>
+        <StatusBadge
+          status={item.remediationStatus || "Unpatched"}
+          variant="pill"
+        />
       ),
     },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Header and Summary Cards */}
+      {/* Header matching wireframe */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
-            Device Vulnerabilities &amp; Security Risks
+          <h2 className="text-xl font-black uppercase tracking-wider text-[#03312E]">
+            CVE VULNERABILITY AUDIT
           </h2>
           <p className="text-xs text-[#5C7370]">
-            Endpoint CVE findings, CVSS threat scores, and recommended patch mitigations for this device.
+            Common Vulnerabilities and Exposures identified on this workstation by scheduled security audits.
           </p>
         </div>
 
         {/* Search */}
-        <div className="w-full sm:w-72">
+        <div className="w-64">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search CVEs or software..."
+            placeholder="Search CVE ID, software..."
           />
         </div>
       </div>
 
-      {/* Severity Metrics Strip */}
+      {/* Severity Counters Stat Badges (read-only metric view) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <button
-          type="button"
-          onClick={() => setSeverityFilter("ALL")}
-          className={`cursor-pointer rounded-xl p-3 text-left border transition-all ${
-            severityFilter === "ALL"
-              ? "border-[#1976D2] bg-[#E3F2FD] ring-2 ring-[#1976D2]/20"
-              : "border-[#DCE5E1] bg-white hover:bg-[#F8FAF9]"
-          }`}
-        >
+        <div className="rounded-xl p-3 text-left border border-[#DCE5E1] bg-white">
           <p className="text-[11px] font-bold uppercase text-[#64748B]">All CVEs</p>
           <p className="mt-0.5 text-lg font-black text-[#03312E]">{severityCounts.total}</p>
-        </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setSeverityFilter("HIGH")}
-          className={`cursor-pointer rounded-xl p-3 text-left border transition-all ${
-            severityFilter === "HIGH"
-              ? "border-rose-400 bg-rose-50 ring-2 ring-rose-300"
-              : "border-[#DCE5E1] bg-white hover:bg-[#F8FAF9]"
-          }`}
-        >
+        <div className="rounded-xl p-3 text-left border border-rose-200 bg-rose-50/50">
           <p className="text-[11px] font-bold uppercase text-rose-700">High / Critical</p>
           <p className="mt-0.5 text-lg font-black text-rose-700">{severityCounts.high}</p>
-        </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setSeverityFilter("MEDIUM")}
-          className={`cursor-pointer rounded-xl p-3 text-left border transition-all ${
-            severityFilter === "MEDIUM"
-              ? "border-amber-400 bg-amber-50 ring-2 ring-amber-300"
-              : "border-[#DCE5E1] bg-white hover:bg-[#F8FAF9]"
-          }`}
-        >
+        <div className="rounded-xl p-3 text-left border border-amber-200 bg-amber-50/50">
           <p className="text-[11px] font-bold uppercase text-amber-700">Medium</p>
           <p className="mt-0.5 text-lg font-black text-amber-700">{severityCounts.medium}</p>
-        </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setSeverityFilter("LOW")}
-          className={`cursor-pointer rounded-xl p-3 text-left border transition-all ${
-            severityFilter === "LOW"
-              ? "border-slate-400 bg-slate-50 ring-2 ring-slate-300"
-              : "border-[#DCE5E1] bg-white hover:bg-[#F8FAF9]"
-          }`}
-        >
+        <div className="rounded-xl p-3 text-left border border-slate-200 bg-slate-50/50">
           <p className="text-[11px] font-bold uppercase text-[#64748B]">Low</p>
           <p className="mt-0.5 text-lg font-black text-[#334155]">{severityCounts.low}</p>
-        </button>
+        </div>
       </div>
 
-      {/* Vulnerabilities Table */}
+      {/* Vulnerabilities Table with full sorting */}
       <DataTable
         data={filteredData}
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={5}
         emptyMessage="No vulnerabilities detected"
-        emptySubtitle="This workstation has no active CVE security threats matching your filters."
+        emptySubtitle="This workstation has no active CVE security threats matching your search."
       />
     </div>
   );

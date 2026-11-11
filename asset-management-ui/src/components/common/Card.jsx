@@ -1,10 +1,5 @@
 import React from "react";
 
-/**
- * Common Reusable Card Component
- * 
- * Consistent card container used across pages for dashboards, summaries, and widgets.
- */
 export default function Card({
   children,
   title,

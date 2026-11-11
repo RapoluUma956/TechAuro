@@ -59,14 +59,6 @@ export default function EmployeeDetailHeader({
             </svg>
             Employees
           </button>
-          {/* <span className="text-[#A9D4C0]">/</span>
-          <span className="font-mono text-xs font-bold text-[#03312E] bg-[#E3F2FD] px-2 py-0.5 rounded-md text-[#1976D2]">
-            {employee.employeeId}
-          </span>
-          <span className="text-[#A9D4C0]">/</span>
-          <span className="font-semibold text-[#03312E] truncate max-w-[200px] sm:max-w-none">
-            {employee.employeeName}
-          </span> */}
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -76,6 +68,8 @@ export default function EmployeeDetailHeader({
               size="sm"
               onClick={onEdit}
               className="flex items-center gap-1.5 text-xs text-[#03312E] hover:border-[#1976D2] hover:text-[#1976D2]"
+              aria-label={`Edit Employee ${employee.employeeName}`}
+              title="Edit Employee"
             >
               <svg
                 className="h-3.5 w-3.5"
@@ -89,7 +83,6 @@ export default function EmployeeDetailHeader({
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              Edit Details
             </Button>
           )}
 
@@ -99,6 +92,8 @@ export default function EmployeeDetailHeader({
               size="sm"
               onClick={onDelete}
               className="flex items-center gap-1.5 text-xs text-red-600 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+              aria-label={`Delete Employee ${employee.employeeName}`}
+              title="Delete Employee"
             >
               <svg
                 className="h-3.5 w-3.5"
@@ -114,18 +109,8 @@ export default function EmployeeDetailHeader({
                 <line x1="10" y1="11" x2="10" y2="17" />
                 <line x1="14" y1="11" x2="14" y2="17" />
               </svg>
-              Delete
             </Button>
           )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/employees")}
-            className="flex items-center gap-2"
-          >
-            ← Back to List
-          </Button>
 
           {onExport && (
             <Button
@@ -133,6 +118,8 @@ export default function EmployeeDetailHeader({
               size="sm"
               onClick={onExport}
               className="flex items-center gap-2 text-xs"
+              aria-label={`Export Employee ${employee.employeeName}`}
+              title="Export Employee"
             >
               <svg
                 className="h-4 w-4"

@@ -43,11 +43,9 @@ export default function Employees() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Search & Filter states
+  // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [roleFilter, setRoleFilter] = useState("ALL");
 
   // Pagination state (10 rows per page)
   const PAGE_SIZE = 10;
@@ -56,8 +54,14 @@ export default function Employees() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Sorting
-  const [sortBy] = useState("createdAt");
-  const [sortDir] = useState("desc");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const handleSortChange = (field, dir) => {
+    setSortBy(field);
+    setSortDir(dir);
+    setCurrentPage(1);
+  };
 
   // Modal & Notification state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -102,8 +106,6 @@ export default function Employees() {
         page: currentPage - 1,
         size: PAGE_SIZE,
         search: debouncedSearchQuery.trim(),
-        status: statusFilter,
-        role: roleFilter,
         sortBy,
         sortDir,
       };
@@ -153,8 +155,6 @@ export default function Employees() {
     currentPage,
     PAGE_SIZE,
     debouncedSearchQuery,
-    statusFilter,
-    roleFilter,
     sortBy,
     sortDir,
   ]);
@@ -288,18 +288,11 @@ export default function Employees() {
         inactiveCount={metrics.inactiveDevices}
       />
 
-      {/* Filter and Search Bar */}
+      {/* Search Bar */}
       <EmployeeFilters
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
-        statusFilter={statusFilter}
-        onStatusChange={handleStatusChange}
-        roleFilter={roleFilter}
-        onRoleChange={handleRoleChange}
-        roles={roles}
-        onClearFilters={handleClearFilters}
         totalCount={totalCount}
-        filteredCount={employees.length}
       />
 
       {/* Loading state */}
@@ -327,7 +320,7 @@ export default function Employees() {
         </div>
       )}
 
-      {/* Employee Table with server-side pagination */}
+      {/* Employee Table with server-side pagination and sorting */}
       {!loading && !error && (
         <EmployeeTable
           employees={employees}
@@ -337,7 +330,9 @@ export default function Employees() {
           totalPages={totalPages}
           onPageChange={setCurrentPage}
           onRowClick={handleRowClick}
-          onClearFilters={handleClearFilters}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           onEdit={(emp) => setEditingEmployee(emp)}
           onDelete={(emp) => setDeletingEmployee(emp)}
         />

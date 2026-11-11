@@ -139,14 +139,14 @@ export default function DeviceHistoryModal({
         {!loading && !error && historyList.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-[#DCE5E1]">
             <table className="w-full text-left text-xs text-[#03312E]">
-              <thead className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-[11px] font-bold uppercase tracking-wider text-[#5C7370]">
+              <thead className="border-b border-[#DCE5E1] bg-[#F8FAF9] text-xs font-bold uppercase tracking-wider text-[#64748B]">
                 <tr>
-                  <th className="py-3 px-3 text-center w-14">S.No</th>
-                  <th className="py-3 px-4">Employee Name</th>
-                  <th className="py-3 px-4">Employee Code</th>
-                  <th className="py-3 px-4">Assigned Date</th>
-                  <th className="py-3 px-4">Unassigned Date</th>
-                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-3 text-center w-14 text-xs font-bold uppercase tracking-wider text-[#64748B]">#</th>
+                  <th className="py-3.5 px-4">Employee Name</th>
+                  <th className="py-3.5 px-4">Employee Code</th>
+                  <th className="py-3.5 px-4">Assigned Date</th>
+                  <th className="py-3.5 px-4">Unassigned Date</th>
+                  <th className="py-3.5 px-4 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EBF0EE] bg-white">

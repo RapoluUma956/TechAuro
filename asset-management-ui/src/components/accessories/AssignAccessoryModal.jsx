@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "../common";
 import { employeeService } from "../../services/employeeService";
-import { AccessoryPackageIcon, LaptopIcon } from "./AccessoryIcons";
+import { AccessoryPackageIcon, LaptopIcon } from "../common/Icons";
 
 export default function AssignAccessoryModal({
   isOpen,

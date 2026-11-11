@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(new Date());
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
 
   // Fetch summary and recent alerts from Spring Boot backend
@@ -35,10 +36,13 @@ export default function Dashboard() {
       const [summaryRes, alertsRes] = await Promise.all([
         dashboardService.getSummary(),
         dashboardService.getRecentAlerts(5),
+        // Add a 500ms delay during manual refresh so the spinning feedback is visible
+        isManualRefresh ? new Promise((r) => setTimeout(r, 500)) : Promise.resolve(),
       ]);
 
       setSummary(summaryRes);
       setAlerts(alertsRes);
+      setLastRefreshedAt(new Date());
       if (isManualRefresh) {
         setRefreshKey((k) => k + 1);
       }
@@ -269,7 +273,7 @@ export default function Dashboard() {
           title: "Dashboard",
           subtitle: "Overview of your IT infrastructure and security posture",
         }}
-        lastUpdatedAt={summary?.lastUpdatedAt}
+        lastUpdatedAt={lastRefreshedAt}
         onRefresh={handleManualRefresh}
         onOpenThresholds={() => setIsThresholdModalOpen(true)}
         refreshing={refreshing}

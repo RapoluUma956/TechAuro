@@ -5,7 +5,7 @@ import {
   UserCheckIcon,
   WarehouseBoxIcon,
   WrenchIcon,
-} from "./AccessoryIcons";
+} from "../common/Icons";
 
 export default function AccessoriesMetricCards({
   metrics,

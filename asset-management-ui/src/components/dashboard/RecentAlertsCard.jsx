@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { StatIcon } from "./DashboardIcons";
+import { StatIcon } from "../common/Icons";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "Now";

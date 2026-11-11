@@ -1,5 +1,5 @@
 import React from "react";
-import { AccessoryPackageIcon, LaptopIcon, LayersIcon } from "./AccessoryIcons";
+import { AccessoryPackageIcon, LaptopIcon, LayersIcon } from "../common/Icons";
 
 export default function AccessoryTabs({
   activeTab = "accessories",

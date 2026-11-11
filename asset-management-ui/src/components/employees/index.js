@@ -6,4 +6,3 @@ export { default as Pagination } from "./Pagination";
 export { default as AddEmployeeModal } from "./AddEmployeeModal";
 export { default as EditEmployeeModal } from "./EditEmployeeModal";
 export { default as DeleteEmployeeModal } from "./DeleteEmployeeModal";
-export * from "./EmployeeIcons";

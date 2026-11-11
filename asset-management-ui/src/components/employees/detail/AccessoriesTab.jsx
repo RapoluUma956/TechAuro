@@ -3,31 +3,21 @@ import { DataTable, StatusBadge, SearchBar } from "../../common";
 
 export default function AccessoriesTab({ accessories = [] }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
-
-  const categories = useMemo(() => {
-    return ["ALL", ...Array.from(new Set(accessories.map((a) => a.accessoryType).filter(Boolean)))];
-  }, [accessories]);
 
   const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return accessories;
+    const query = searchQuery.toLowerCase().trim();
     return accessories.filter((item) => {
-      if (categoryFilter !== "ALL" && item.accessoryType !== categoryFilter) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const searchable = [
-          item.accessoryName,
-          item.accessoryType,
-          item.assetTag,
-          item.serialNumber,
-          item.status,
-        ];
-        return searchable.some((val) => (val || "").toLowerCase().includes(query));
-      }
-      return true;
+      const searchable = [
+        item.accessoryName,
+        item.accessoryType,
+        item.assetTag,
+        item.serialNumber,
+        item.status,
+      ];
+      return searchable.some((val) => (val || "").toLowerCase().includes(query));
     });
-  }, [accessories, searchQuery, categoryFilter]);
+  }, [accessories, searchQuery]);
 
   const columns = [
     {
@@ -53,50 +43,45 @@ export default function AccessoriesTab({ accessories = [] }) {
     },
     {
       key: "accessoryType",
-      header: "Accessory Type",
+      header: "Type",
       render: (item) => (
-        <span className="inline-block rounded-md bg-[#F1F5F9] px-2.5 py-1 text-xs font-semibold text-[#334155]">
-          {item.accessoryType}
+        <span className="inline-block rounded-md bg-[#F1F5F9] px-2.5 py-1 text-xs font-semibold text-[#1E293B]">
+          {item.accessoryType || "Accessory"}
         </span>
       ),
     },
     {
-      key: "givenDate",
-      header: "Given Date",
+      key: "assignedDate",
+      header: "Assigned Date",
       render: (item) => (
-        <div className="flex items-center gap-1.5 text-xs text-[#5C7370] font-mono">
-          <svg className="h-3.5 w-3.5 text-[#8C9E9B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span>{item.givenDate}</span>
-        </div>
+        <span className="text-xs font-medium text-[#5C7370]">
+          {item.assignedDate
+            ? new Date(item.assignedDate).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "—"}
+        </span>
       ),
     },
     {
-      key: "returnDate",
-      header: "Return Date",
-      render: (item) => {
-        const isReturned = item.returnDate && !item.returnDate.includes("In Use") && item.returnDate !== "—";
-        return (
-          <span
-            className={`font-mono text-xs font-semibold ${
-              isReturned ? "text-slate-600" : "text-emerald-700"
-            }`}
-          >
-            {item.returnDate || "— (Active in use)"}
-          </span>
-        );
-      },
+      key: "status",
+      header: "Status",
+      align: "center",
+      render: (item) => (
+        <StatusBadge
+          status={item.status || "Assigned"}
+          variant="pill"
+        />
+      ),
     },
     {
-      key: "etc",
-      header: "Status & Condition",
+      key: "returnStatus",
+      header: "Condition",
       render: (item) => (
-        <div className="flex items-center gap-2">
-          <StatusBadge status={item.status || "Assigned"} />
+        <div className="flex items-center gap-1.5 text-xs text-[#5C7370]">
+          <span>{item.isReturned ? "Returned" : "In Possession"}</span>
           {item.condition && (
             <span className="text-[11px] text-[#64748B] font-medium">
               ({item.condition})
@@ -120,45 +105,26 @@ export default function AccessoriesTab({ accessories = [] }) {
           </p>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="w-64">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search accessories..."
-            />
-          </div>
-
-          <div className="flex items-center gap-1 rounded-xl bg-white p-1 border border-[#DCE5E1]">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategoryFilter(cat)}
-                className={`cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                  categoryFilter === cat
-                    ? "bg-[#1976D2] text-white shadow-2xs"
-                    : "text-[#5C7370] hover:text-[#03312E]"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        {/* Search */}
+        <div className="w-64">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search accessories..."
+          />
         </div>
       </div>
 
-      {/* Accessories Table */}
+      {/* Accessories Table with sorting on all columns */}
       <DataTable
         data={filteredData}
         columns={columns}
         keyField="id"
         showSerialNo={true}
-        serialNoHeader="s.no"
+        serialNoHeader="#"
         pageSize={5}
         emptyMessage="No accessories found"
-        emptySubtitle="No peripheral hardware assets match your selected filter."
+        emptySubtitle="No peripheral hardware assets match your search."
       />
     </div>
   );
