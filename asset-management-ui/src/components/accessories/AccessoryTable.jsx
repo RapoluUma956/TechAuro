@@ -202,7 +202,7 @@ export default function AccessoryTable({
 
         {/* Search Bar */}
         <div className="mt-4">
-          <div className="w-full sm:max-w-xl">
+          <div className="w-full">
             <SearchBar
               value={searchQuery}
               onChange={onSearchChange}

@@ -108,7 +108,7 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
   return (
     <div className="space-y-4">
       {/* Header matching wireframe */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <div>
           <h2 className="text-xl font-black uppercase tracking-wider text-[#03312E]">
             CVE VULNERABILITY AUDIT
@@ -118,12 +118,13 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="w-64">
+        {/* Full Length Search */}
+        <div className="w-full">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search CVE ID, software..."
+            placeholder="Search CVE ID, software name, description, or remediation status..."
+            variant="long"
           />
         </div>
       </div>

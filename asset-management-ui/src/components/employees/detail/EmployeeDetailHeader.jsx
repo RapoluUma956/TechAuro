@@ -277,17 +277,6 @@ export default function EmployeeDetailHeader({
                     <span>•</span>
                     <span className="truncate">{device.os}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById("device-history-section");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="cursor-pointer font-sans text-xs font-bold text-[#1976D2] hover:underline"
-                    title="View complete assignment history"
-                  >
-                    View History →
-                  </button>
                 </div>
               </div>
             </div>

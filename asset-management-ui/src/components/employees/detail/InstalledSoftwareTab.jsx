@@ -114,29 +114,20 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
   return (
     <div className="space-y-4">
       {/* Header matching wireframe */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
-              Installed Softwares
-            </h2>
-            <span className="rounded-full bg-[#E3F2FD] px-2.5 py-0.5 text-xs font-bold text-[#1976D2]">
-              {filteredData.length} items
-            </span>
-          </div>
-          <p className="text-xs text-[#5C7370]">
-            Binaries, system dependencies, IDEs, and business applications discovered on this host.
-          </p>
-        </div>
-
-        {/* Controls: Search and Page Size */}
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-72">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter installed apps..."
-            />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
+                Installed Softwares
+              </h2>
+              <span className="rounded-full bg-[#E3F2FD] px-2.5 py-0.5 text-xs font-bold text-[#1976D2]">
+                {filteredData.length} items
+              </span>
+            </div>
+            <p className="text-xs text-[#5C7370] mt-0.5">
+              Binaries, system dependencies, IDEs, and business applications discovered on this host.
+            </p>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -154,6 +145,16 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
               <option value="all">All</option>
             </select>
           </div>
+        </div>
+
+        {/* Full Length Search Bar */}
+        <div className="w-full">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Filter installed apps by name, publisher, category, or version..."
+            variant="long"
+          />
         </div>
       </div>
 

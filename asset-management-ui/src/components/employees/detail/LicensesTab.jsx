@@ -112,7 +112,8 @@ export default function LicensesTab({ licenses = [] }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header and Search */}
+      <div className="flex flex-col gap-3">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
             Assigned Software Licences
@@ -122,12 +123,13 @@ export default function LicensesTab({ licenses = [] }) {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="w-full sm:w-72">
+        {/* Full Length Search */}
+        <div className="w-full">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search license or vendor..."
+            variant="long"
           />
         </div>
       </div>

@@ -238,11 +238,21 @@ body {
 }
 
 .MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root,
-.MuiDrawer-root .MuiListItemButton-root.Mui-selected svg,
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected svg:not([fill="currentColor"]):not([data-filled="true"]),
 .MuiDrawer-paper .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root,
-.MuiDrawer-paper .MuiListItemButton-root.Mui-selected svg {
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected svg:not([fill="currentColor"]):not([data-filled="true"]) {
   color: #FFFFFF !important;
   stroke: #FFFFFF !important;
+}
+
+/* Filled icons in sidebar should NOT have stroke added when selected */
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected svg[fill="currentColor"],
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected svg[data-filled="true"],
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected svg[fill="currentColor"],
+.MuiDrawer-paper .MuiListItemButton-root.Mui-selected svg[data-filled="true"] {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+  stroke: none !important;
 }
 
 /* Hover State for Sidebar Items */
