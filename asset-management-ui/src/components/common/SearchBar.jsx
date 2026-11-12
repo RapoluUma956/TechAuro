@@ -5,7 +5,7 @@ export default function SearchBar({
   onChange,
   onClear,
   placeholder = "Search...",
-  variant = "responsive", // "responsive" | "long" | "short"
+  variant = "long", // default to full-width "long" ("w-full")
   size = "md", // "sm" | "md" | "lg"
   className = "",
   autoFocus = false,
@@ -45,8 +45,8 @@ export default function SearchBar({
 
   return (
     <div
-      className={`relative inline-flex items-center ${
-        variantWidthStyles[variant] || variantWidthStyles.responsive
+      className={`relative flex w-full items-center ${
+        variantWidthStyles[variant] || "w-full"
       } ${className}`}
     >
       {/* Search Magnifying Glass Icon */}

@@ -95,7 +95,7 @@ export default function AccessoriesTab({ accessories = [] }) {
   return (
     <div className="space-y-4">
       {/* Header matching wireframe */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <div>
           <h2 className="text-xl font-black uppercase tracking-wider text-[#03312E]">
             ACCESSORIES
@@ -105,12 +105,13 @@ export default function AccessoriesTab({ accessories = [] }) {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="w-64">
+        {/* Full Length Search */}
+        <div className="w-full">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search accessories..."
+            placeholder="Search accessories by name, type, serial number, or tag..."
+            variant="long"
           />
         </div>
       </div>
