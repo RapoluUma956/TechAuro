@@ -8,9 +8,9 @@ export default function LicenseFilters({
 }) {
   return (
     <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search Bar */}
-        <div className="w-full sm:max-w-xl">
+      <div className="flex flex-col gap-3">
+        {/* Full Length Search Bar */}
+        <div className="w-full">
           <SearchBar
             value={searchQuery}
             onChange={onSearchChange}
@@ -18,12 +18,6 @@ export default function LicenseFilters({
             variant="long"
           />
         </div>
-
-        {totalCount > 0 && (
-          <div className="text-xs font-semibold text-[#64748B]">
-            Total: <span className="font-bold text-[#03312E]">{totalCount}</span> licenses
-          </div>
-        )}
       </div>
     </div>
   );

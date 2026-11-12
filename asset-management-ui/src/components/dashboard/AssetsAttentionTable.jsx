@@ -137,7 +137,7 @@ export default function AssetsAttentionTable({
 
   return (
     <article className="rounded-2xl border border-[#DCE5E1] bg-white p-6 shadow-sm">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-bold text-[#03312E]">
             Assets Requiring Attention
@@ -147,8 +147,8 @@ export default function AssetsAttentionTable({
           )}
         </div>
 
-        {/* Search Bar inside table */}
-        <div className="relative w-full sm:w-64">
+        {/* Full-width Search Bar inside table card */}
+        <div className="relative w-full">
           <svg
             className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]"
             viewBox="0 0 24 24"
@@ -164,7 +164,7 @@ export default function AssetsAttentionTable({
             placeholder="Search assets, employees, tags..."
             value={assetSearchQuery}
             onChange={handleSearchChange}
-            className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] py-1.5 pl-9 pr-3 text-xs focus:border-[#1976D2] focus:bg-white focus:outline-none"
+            className="w-full rounded-xl border border-[#DCE5E1] bg-[#F8FAF9] py-2 pl-9 pr-3 text-xs text-[#03312E] placeholder-[#8C9E9B] focus:border-[#1976D2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20 transition-all"
           />
         </div>
       </div>

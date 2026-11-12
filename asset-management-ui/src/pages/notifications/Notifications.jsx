@@ -360,18 +360,14 @@ export default function Notifications() {
 
       {/* Standard Search Bar Card matching AccessoryTable / EmployeeFilters / LicenseFilters */}
       <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="w-full sm:max-w-xl">
+        <div className="flex flex-col gap-3">
+          <div className="w-full">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search notifications by title, asset tag, employee, or message..."
               variant="long"
             />
-          </div>
-
-          <div className="text-xs font-semibold text-[#64748B]">
-            Total: <span className="font-bold text-[#03312E]">{notifications.length}</span> notices
           </div>
         </div>
       </div>
