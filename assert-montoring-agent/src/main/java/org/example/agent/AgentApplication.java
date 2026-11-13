@@ -1,6 +1,7 @@
 package org.example.agent;
 
 import org.example.agent.collector.DeviceCollector;
+import org.example.agent.config.AgentConfig;
 import org.example.agent.model.AssetReport;
 import org.example.agent.model.BatteryInfo;
 import org.example.agent.model.MemoryInfo;
@@ -57,7 +58,10 @@ public class AgentApplication {
 
         System.out.println();
         System.out.println("Continuous monitoring started.");
-        System.out.println("Collection interval: 30 seconds");
+        System.out.println("Collection interval : " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds");
+        System.out.println("Target Backend URL  : " + AgentConfig.getReportUrl());
+        System.out.println("WebSocket Base URL  : " + AgentConfig.getWebSocketBaseUrl());
+        System.out.println("HTTP Timeout        : " + AgentConfig.REQUEST_TIMEOUT_SECONDS + " seconds");
 
         DeviceCollector collector = new DeviceCollector();
         AgentSender sender = new AgentSender();
@@ -595,10 +599,10 @@ public class AgentApplication {
 
                 System.out.println();
                 System.out.println(
-                        "Next collection will start in 30 seconds..."
+                        "Next collection will start in " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds..."
                 );
 
-                Thread.sleep(MONITORING_INTERVAL);
+                Thread.sleep(AgentConfig.MONITORING_INTERVAL_MS);
 
             } catch (InterruptedException e) {
 
@@ -630,12 +634,12 @@ public class AgentApplication {
                 );
 
                 System.out.println(
-                        "Waiting 30 seconds before next attempt..."
+                        "Waiting " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds before next attempt..."
                 );
 
                 try {
 
-                    Thread.sleep(MONITORING_INTERVAL);
+                    Thread.sleep(AgentConfig.MONITORING_INTERVAL_MS);
 
                 } catch (InterruptedException interruptedException) {
 
