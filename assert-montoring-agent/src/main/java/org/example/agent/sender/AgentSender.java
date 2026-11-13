@@ -3,137 +3,79 @@ package org.example.agent.sender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.example.agent.config.AgentConfig;
 import org.example.agent.model.AssetReport;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.*;
+import java.net.ConnectException;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
+/**
+ * Handles serializing and transmitting device telemetry reports to the central backend.
+ * Uses centralized AgentConfig for cloud Render URLs, custom endpoints, and resilient timeout handling.
+ */
 public class AgentSender {
-
-    private static final String DEFAULT_PRIMARY_URL = "http://localhost:8080/api/agent/report";
-    private static final String DEFAULT_CURRENT_IP_URL = "http://192.168.140.127:8080/api/agent/report";
-    private static final String DEFAULT_WIFI_IP_URL = "http://172.16.39.244:8080/api/agent/report";
-    private static final String DEFAULT_FALLBACK_URL = "http://192.168.254.135:8080/api/agent/report";
-    private static final String DEFAULT_OLD_FALLBACK_URL = "http://192.168.140.128:8080/api/agent/report";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final List<String> serverUrls;
 
     public AgentSender() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
+                .connectTimeout(AgentConfig.getConnectTimeout())
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
 
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        this.serverUrls = new ArrayList<>();
-
-        // 1. Check environment variable or system property
-        String configuredUrl = System.getenv("AGENT_SERVER_URL");
-        if (configuredUrl == null || configuredUrl.isBlank()) {
-            configuredUrl = System.getProperty("agent.server.url");
-        }
-
-        // 2. Check local server_url.txt file (beside the executable)
-        if (configuredUrl == null || configuredUrl.isBlank()) {
-            File configFile = new File("server_url.txt");
-            if (configFile.exists() && configFile.canRead()) {
-                try {
-                    String fileUrl = Files.readString(configFile.toPath()).trim();
-                    if (!fileUrl.isBlank()) {
-                        configuredUrl = fileUrl;
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-
-        if (configuredUrl != null && !configuredUrl.isBlank()) {
-            serverUrls.add(configuredUrl.trim());
-        }
-
-        // Add localhost as default primary
-        if (!serverUrls.contains(DEFAULT_PRIMARY_URL)) {
-            serverUrls.add(DEFAULT_PRIMARY_URL);
-        }
-
-        // Add current configured WiFi network IPs
-        if (!serverUrls.contains(DEFAULT_CURRENT_IP_URL)) {
-            serverUrls.add(DEFAULT_CURRENT_IP_URL);
-        }
-        if (!serverUrls.contains(DEFAULT_WIFI_IP_URL)) {
-            serverUrls.add(DEFAULT_WIFI_IP_URL);
-        }
-        if (!serverUrls.contains(DEFAULT_FALLBACK_URL)) {
-            serverUrls.add(DEFAULT_FALLBACK_URL);
-        }
-        if (!serverUrls.contains(DEFAULT_OLD_FALLBACK_URL)) {
-            serverUrls.add(DEFAULT_OLD_FALLBACK_URL);
-        }
-
-        // Add detected machine IPs
-        try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            if (interfaces != null) {
-                while (interfaces.hasMoreElements()) {
-                    NetworkInterface ni = interfaces.nextElement();
-                    if (ni.isLoopback() || !ni.isUp()) continue;
-                    Enumeration<InetAddress> addresses = ni.getInetAddresses();
-                    while (addresses.hasMoreElements()) {
-                        InetAddress addr = addresses.nextElement();
-                        if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-                            String localIpUrl = "http://" + addr.getHostAddress() + ":8080/api/agent/report";
-                            if (!serverUrls.contains(localIpUrl)) {
-                                serverUrls.add(localIpUrl);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        // Add fallback
-        if (!serverUrls.contains(DEFAULT_FALLBACK_URL)) {
-            serverUrls.add(DEFAULT_FALLBACK_URL);
-        }
     }
 
+    /**
+     * Submits an AssetReport payload to the configured cloud backend.
+     * Retries target URLs and logs diagnostic information for IT administrators.
+     *
+     * @param report Collected telemetry report for this employee machine
+     */
     public void sendReport(AssetReport report) {
+        if (report == null) {
+            System.err.println("[AgentSender] Cannot send report: report object is null");
+            return;
+        }
+
         try {
             String json = objectMapper.writeValueAsString(report);
 
-            System.out.println("\n========== REPORT SUBMISSION ==========");
-            System.out.println("HTTP Method: POST");
-            System.out.println("Content-Type: application/json");
-            System.out.println("JSON size: " + json.length() + " characters");
-            System.out.println("Asset Tag: " + report.getAssetTag());
+            System.out.println();
+            System.out.println("========== REPORT SUBMISSION ==========");
+            System.out.println("HTTP Method  : POST");
+            System.out.println("Content-Type : application/json");
+            System.out.println("JSON size    : " + json.length() + " characters");
+            System.out.println("Asset Tag    : " + report.getAssetTag());
             System.out.println("Serial Number: " + report.getSerialNumber());
-            System.out.println("Hostname: " +
+            System.out.println("Hostname     : " +
                     (report.getOs() == null ? "N/A" : report.getOs().getHostname()));
 
+            List<String> targetUrls = AgentConfig.getReportTargetUrls();
             boolean delivered = false;
 
-            for (String targetUrl : serverUrls) {
+            for (String targetUrl : targetUrls) {
                 System.out.println("Attempting connection to: " + targetUrl);
                 long startTime = System.currentTimeMillis();
 
                 try {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(targetUrl))
-                            .timeout(Duration.ofSeconds(15))
+                            .timeout(AgentConfig.getRequestTimeout())
                             .header("Content-Type", "application/json")
+                            .header("Accept", "application/json")
+                            .header("User-Agent", "AssetMonitoringAgent/" + AgentConfig.AGENT_VERSION + " (Windows)")
                             .POST(HttpRequest.BodyPublishers.ofString(json))
                             .build();
 
@@ -143,35 +85,47 @@ public class AgentSender {
                     );
 
                     long elapsed = System.currentTimeMillis() - startTime;
-                    System.out.println("Target: " + targetUrl);
-                    System.out.println("HTTP Status: " + response.statusCode());
-                    System.out.println("Time taken: " + elapsed + " ms");
+                    int statusCode = response.statusCode();
+
+                    System.out.println("Target       : " + targetUrl);
+                    System.out.println("HTTP Status  : " + statusCode);
+                    System.out.println("Time taken   : " + elapsed + " ms");
                     System.out.println("Response body: " + response.body());
 
-                    if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                        System.out.println("RESULT: REPORT ACCEPTED");
+                    if (statusCode >= 200 && statusCode < 300) {
+                        System.out.println("RESULT: REPORT ACCEPTED (Status " + statusCode + ")");
                         delivered = true;
                         break;
+                    } else if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
+                        System.err.println("RESULT: BACKEND WARMING UP (HTTP " + statusCode + ")");
+                        System.err.println("Notice: Render free-tier instance is cold-starting. Next cycle will retry automatically.");
                     } else {
-                        System.err.println("RESULT: REPORT REJECTED (HTTP " + response.statusCode() + ")");
+                        System.err.println("RESULT: REPORT REJECTED (HTTP " + statusCode + ")");
                         System.err.println("Response details: " + response.body());
                     }
 
                 } catch (ConnectException e) {
                     System.err.println("Connection failed to " + targetUrl + ": " + e.getMessage());
-                    System.err.println("Trying next target URL if available...");
+                } catch (HttpConnectTimeoutException e) {
+                    System.err.println("Connection timed out to " + targetUrl + ": " + e.getMessage());
+                } catch (HttpTimeoutException e) {
+                    System.err.println("Request timed out waiting for response from " + targetUrl + " ("
+                            + AgentConfig.REQUEST_TIMEOUT_SECONDS + "s limit): " + e.getMessage());
+                    System.err.println("Notice: Cloud backend may still be spinning up from sleep. The agent will retry on next cycle.");
                 } catch (IOException e) {
                     System.err.println("I/O error communicating with " + targetUrl + ": " + e.getMessage());
-                    System.err.println("Trying next target URL if available...");
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     System.err.println("Request interrupted during submission to " + targetUrl);
                     return;
+                } catch (Exception e) {
+                    System.err.println("Unexpected transmission error for " + targetUrl + ": " + e.getMessage());
                 }
             }
 
             if (!delivered) {
-                System.err.println("WARNING: Could not deliver report to any configured server URL: " + serverUrls);
+                System.err.println("WARNING: Could not deliver report in this cycle to: " + targetUrls);
+                System.err.println("The agent will automatically retry in " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds.");
             }
 
             System.out.println("=======================================");

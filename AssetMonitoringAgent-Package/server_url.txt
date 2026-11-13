@@ -1,2 +1,1 @@
-http://192.168.140.127:8080/api/agent/report
-
+https://asset-management-backend-o8dh.onrender.com/api/agent/report
