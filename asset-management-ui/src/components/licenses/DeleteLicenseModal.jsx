@@ -73,7 +73,7 @@ export default function DeleteLicenseModal({
         )}
 
         <p className="text-xs text-[#64748B]">
-          This action will remove the license and its historical audit log from the database.
+          This action will permanently delete this license and its assignment history.
         </p>
       </div>
     </Modal>

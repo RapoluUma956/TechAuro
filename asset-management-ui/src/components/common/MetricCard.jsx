@@ -10,7 +10,23 @@ export function MetricCard({
   trend,
   onClick,
   className = "",
+  loading = false,
 }) {
+  if (loading) {
+    return (
+      <article
+        className={`flex items-center gap-4 rounded-2xl border border-[#DCE5E1] bg-white p-5 shadow-sm animate-pulse ${className}`}
+      >
+        <div className="h-14 w-14 shrink-0 rounded-2xl bg-slate-100" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-3 w-20 rounded bg-slate-100" />
+          <div className="h-7 w-14 rounded bg-slate-100" />
+          <div className="h-3 w-28 rounded bg-slate-100" />
+        </div>
+      </article>
+    );
+  }
+
   const isClickable = Boolean(onClick);
 
   return (
@@ -68,6 +84,7 @@ export default function MetricCards({
   children,
   columns = 4,
   className = "",
+  loading = false,
 }) {
   const colStyles = {
     2: "sm:grid-cols-2",
@@ -75,6 +92,32 @@ export default function MetricCards({
     4: "sm:grid-cols-2 lg:grid-cols-4",
     5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
   };
+
+  const count = items.length || columns || 4;
+
+  if (loading) {
+    return (
+      <section
+        className={`grid grid-cols-1 gap-5 ${
+          colStyles[columns] || colStyles[4]
+        } ${className}`}
+      >
+        {Array.from({ length: count }).map((_, index) => (
+          <article
+            key={`metric-skeleton-${index}`}
+            className="flex items-center gap-4 rounded-2xl border border-[#DCE5E1] bg-white p-5 shadow-sm animate-pulse"
+          >
+            <div className="h-14 w-14 shrink-0 rounded-2xl bg-slate-100" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="h-3 w-20 rounded bg-slate-100" />
+              <div className="h-7 w-14 rounded bg-slate-100" />
+              <div className="h-3 w-28 rounded bg-slate-100" />
+            </div>
+          </article>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <section

@@ -154,7 +154,7 @@ export default function ThresholdSettingsModal({ isOpen, onClose, onThresholdsUp
                 Configurable Health Thresholds
               </h2>
               <p className="text-xs text-[#64748B]">
-                Configure rules used by the backend to calculate device health and alerts
+                Configure thresholds to automatically detect device health warnings and alerts
               </p>
             </div>
           </div>
@@ -187,9 +187,27 @@ export default function ThresholdSettingsModal({ isOpen, onClose, onThresholdsUp
           )}
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[#64748B]">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent" />
-              <p className="mt-3 text-xs font-medium">Loading current threshold configuration...</p>
+            <div className="space-y-4 py-4 animate-pulse">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="h-3 w-1/3 rounded bg-slate-100" />
+                  <div className="h-8 rounded-lg bg-slate-100" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-1/3 rounded bg-slate-100" />
+                  <div className="h-8 rounded-lg bg-slate-100" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="h-3 w-1/3 rounded bg-slate-100" />
+                  <div className="h-8 rounded-lg bg-slate-100" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-1/3 rounded bg-slate-100" />
+                  <div className="h-8 rounded-lg bg-slate-100" />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">

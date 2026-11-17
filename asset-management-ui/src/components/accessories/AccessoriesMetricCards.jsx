@@ -50,5 +50,5 @@ export default function AccessoriesMetricCards({
     },
   ];
 
-  return <MetricCards items={cards} columns={4} />;
+  return <MetricCards items={cards} columns={4} loading={loading} />;
 }

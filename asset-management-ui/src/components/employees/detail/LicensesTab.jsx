@@ -114,15 +114,7 @@ export default function LicensesTab({ licenses = [] }) {
       {/* Header */}
       {/* Header and Search */}
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
-            Assigned Software Licences
-          </h2>
-          <p className="text-xs text-[#5C7370]">
-            SaaS subscriptions, developer tooling keys, and enterprise commercial seats provisioned to this employee.
-          </p>
-        </div>
-
+        
         {/* Full Length Search */}
         <div className="w-full">
           <SearchBar

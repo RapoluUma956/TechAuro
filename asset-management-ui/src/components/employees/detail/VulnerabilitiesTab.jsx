@@ -109,15 +109,6 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
     <div className="space-y-4">
       {/* Header matching wireframe */}
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-wider text-[#03312E]">
-            CVE VULNERABILITY AUDIT
-          </h2>
-          <p className="text-xs text-[#5C7370]">
-            Common Vulnerabilities and Exposures identified on this workstation by scheduled security audits.
-          </p>
-        </div>
-
         {/* Full Length Search */}
         <div className="w-full">
           <SearchBar
@@ -126,29 +117,6 @@ export default function VulnerabilitiesTab({ vulnerabilities = [] }) {
             placeholder="Search CVE ID, software name, description, or remediation status..."
             variant="long"
           />
-        </div>
-      </div>
-
-      {/* Severity Counters Stat Badges (read-only metric view) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl p-3 text-left border border-[#DCE5E1] bg-white">
-          <p className="text-[11px] font-bold uppercase text-[#64748B]">All CVEs</p>
-          <p className="mt-0.5 text-lg font-black text-[#03312E]">{severityCounts.total}</p>
-        </div>
-
-        <div className="rounded-xl p-3 text-left border border-rose-200 bg-rose-50/50">
-          <p className="text-[11px] font-bold uppercase text-rose-700">High / Critical</p>
-          <p className="mt-0.5 text-lg font-black text-rose-700">{severityCounts.high}</p>
-        </div>
-
-        <div className="rounded-xl p-3 text-left border border-amber-200 bg-amber-50/50">
-          <p className="text-[11px] font-bold uppercase text-amber-700">Medium</p>
-          <p className="mt-0.5 text-lg font-black text-amber-700">{severityCounts.medium}</p>
-        </div>
-
-        <div className="rounded-xl p-3 text-left border border-slate-200 bg-slate-50/50">
-          <p className="text-[11px] font-bold uppercase text-[#64748B]">Low</p>
-          <p className="mt-0.5 text-lg font-black text-[#334155]">{severityCounts.low}</p>
         </div>
       </div>
 

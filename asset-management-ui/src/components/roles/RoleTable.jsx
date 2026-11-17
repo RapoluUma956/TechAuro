@@ -171,8 +171,8 @@ export default function RoleTable({
       emptyMessage="No roles found"
       emptySubtitle={
         searchQuery
-          ? `No role records matched "${searchQuery}". Try a different keyword.`
-          : "No roles registered in the database."
+          ? `No roles matched "${searchQuery}". Try a different keyword.`
+          : "No roles have been created yet."
       }
     />
   );

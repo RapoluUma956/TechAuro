@@ -41,6 +41,7 @@ export default function EmployeeTable({
   onSortChange,
   onEdit,
   onDelete,
+  loading = false,
 }) {
   const columns = [
     {
@@ -190,8 +191,9 @@ export default function EmployeeTable({
       sortBy={sortBy}
       sortDir={sortDir}
       onSortChange={onSortChange}
-      emptyMessage="No matching employees or devices found"
-      emptySubtitle="Try adjusting your search criteria or adding a new employee."
+      loading={loading}
+      emptyMessage="No employees found"
+      emptySubtitle="We couldn't find anyone matching your search. Check the spelling or add a new employee."
       emptyAction={
         onClearFilters ? (
           <Button variant="primary" size="sm" onClick={onClearFilters}>

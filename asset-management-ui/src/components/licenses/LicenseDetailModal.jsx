@@ -116,15 +116,25 @@ export default function LicenseDetailModal({
       }
     >
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent" />
-          <p className="mt-2 text-xs font-semibold text-[#64748B]">
-            Loading license details & assignments...
-          </p>
+        <div className="space-y-4 py-4 animate-pulse">
+          <div className="rounded-2xl border border-[#DCE5E1] bg-[#F8FAF9] p-5">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-3 w-16 rounded bg-slate-200" />
+                  <div className="h-4 w-24 rounded bg-slate-200" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="h-4 w-32 rounded bg-slate-200" />
+            <div className="h-28 rounded-xl bg-slate-100" />
+          </div>
         </div>
       ) : !license ? (
-        <div className="py-8 text-center text-sm text-red-600">
-          {releaseError || "Failed to load license details."}
+        <div className="py-8 text-center text-sm text-rose-600">
+          {releaseError || "We couldn't load this license right now. Please try again."}
         </div>
       ) : (
         <div className="space-y-6">

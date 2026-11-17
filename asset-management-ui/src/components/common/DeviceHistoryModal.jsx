@@ -95,17 +95,24 @@ export default function DeviceHistoryModal({
       <div className="space-y-4">
         {/* Loading State */}
         {loading && (
-          <div className="py-12 text-center text-sm text-[#64748B] space-y-3">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent" />
-            <p>Loading assignment history...</p>
+          <div className="space-y-3 py-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-[#DCE5E1] p-3.5">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-slate-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-1/3 rounded bg-slate-100" />
+                  <div className="h-3 w-1/2 rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         {/* Error State */}
         {!loading && error && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
-            <p className="font-bold">Error loading history</p>
-            <p className="mt-1">{error}</p>
+            <p className="font-bold">Unable to load history</p>
+            <p className="mt-1">We couldn't retrieve the assignment history right now. Please try again.</p>
           </div>
         )}
 
@@ -127,10 +134,10 @@ export default function DeviceHistoryModal({
               </svg>
             </div>
             <h3 className="text-base font-bold text-[#03312E]">
-              No Assignment History Found
+              No Assignment History Yet
             </h3>
             <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-              This device has never been assigned to any employee in the system.
+              This device hasn't been assigned to any previous employees.
             </p>
           </div>
         )}

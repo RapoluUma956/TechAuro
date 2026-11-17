@@ -142,9 +142,6 @@ export default function AssetsAttentionTable({
           <h2 className="text-base font-bold text-[#03312E]">
             Assets Requiring Attention
           </h2>
-          {loading && (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent" />
-          )}
         </div>
 
         {/* Full-width Search Bar inside table card */}
@@ -220,8 +217,23 @@ export default function AssetsAttentionTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={`divide-y divide-[#EBF0EE] bg-white ${loading ? "opacity-60 transition-opacity" : ""}`}>
-              {assets.length > 0 ? (
+            <tbody className="divide-y divide-[#EBF0EE] bg-white">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`attn-skeleton-${idx}`} className="animate-pulse">
+                    <td className="py-3.5 px-4"><div className="h-4 w-20 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-4 w-28 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-3 w-20 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-5 w-16 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-4 w-14 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-2 w-16 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-2 w-16 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-2 w-16 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-3 w-16 rounded bg-slate-100" /></td>
+                    <td className="py-3.5 px-4"><div className="h-6 w-12 rounded bg-slate-100" /></td>
+                  </tr>
+                ))
+              ) : assets.length > 0 ? (
                 assets.map((asset) => {
                   const healthUpper = (asset.healthStatus || "").toUpperCase();
                   const connUpper = (asset.connectionStatus || "").toUpperCase();
@@ -318,10 +330,20 @@ export default function AssetsAttentionTable({
                 })
               ) : (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-xs text-[#94A3B8]">
-                    {loading
-                      ? "Loading assets requiring attention..."
-                      : "No assets found matching the criteria."}
+                  <td colSpan={10} className="py-12 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#EBF7F2] text-[#03312E] mb-2">
+                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-bold text-[#03312E]">
+                      {assetSearchQuery ? "No matching devices found" : "All devices look healthy!"}
+                    </p>
+                    <p className="mt-1 text-xs text-[#64748B]">
+                      {assetSearchQuery
+                        ? "Try checking the asset tag or employee name."
+                        : "No devices currently need attention."}
+                    </p>
                   </td>
                 </tr>
               )}

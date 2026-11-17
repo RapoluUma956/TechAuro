@@ -12,6 +12,7 @@ import {
   EditEmployeeModal,
   DeleteEmployeeModal,
 } from "../../components/employees";
+import { ErrorState } from "../../components/common";
 
 const DEFAULT_ROLES = [
   "Software Engineer",
@@ -142,7 +143,7 @@ export default function Employees() {
       console.error("Failed to fetch employees:", err);
       if (!isBackground) {
         setError(
-          err.message || "Failed to load employees from the backend server."
+          "We couldn't load the employee list right now. Please check your connection and try again."
         );
       }
       setEmployees([]);
@@ -280,12 +281,13 @@ export default function Employees() {
 
       <EmployeeHeader onAddEmployee={() => setIsAddModalOpen(true)} />
 
-      {/* Metric Cards connected to GET /api/v1/employees/metrics */}
+      {/* Metric Cards */}
       <EmployeeMetricCards
         totalEmployees={metrics.totalEmployees}
         activeCount={metrics.activeDevices}
         repairCount={metrics.inRepair}
         inactiveCount={metrics.inactiveDevices}
+        loading={loading}
       />
 
       {/* Search Bar */}
@@ -295,33 +297,21 @@ export default function Employees() {
         totalCount={totalCount}
       />
 
-      {/* Loading state */}
-      {loading && (
-        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-600 space-y-3">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-          <p>Loading employees from the server...</p>
-        </div>
-      )}
-
       {/* Error state */}
       {!loading && error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700 space-y-2">
-          <p className="font-semibold">{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              fetchMetrics();
-              fetchEmployees();
-            }}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer shadow-xs"
-          >
-            Retry Request
-          </button>
-        </div>
+        <ErrorState
+          variant="banner"
+          title="Unable to load employees"
+          message={error}
+          onRetry={() => {
+            fetchMetrics();
+            fetchEmployees();
+          }}
+        />
       )}
 
-      {/* Employee Table with server-side pagination and sorting */}
-      {!loading && !error && (
+      {/* Employee Table with skeletal loading */}
+      {(!error || loading) && (
         <EmployeeTable
           employees={employees}
           totalEmployeesCount={totalCount}
@@ -335,6 +325,7 @@ export default function Employees() {
           onSortChange={handleSortChange}
           onEdit={(emp) => setEditingEmployee(emp)}
           onDelete={(emp) => setDeletingEmployee(emp)}
+          loading={loading}
         />
       )}
 

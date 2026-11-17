@@ -74,7 +74,7 @@ export default function LaptopTable({
             Registered Units: {item.brand} {item.model} ({item.ram} / {item.ssd})
           </span>
           <span className="font-medium text-[#64748B]">
-            {item.devices?.length || 0} physical assets in database
+            {item.devices?.length || 0} units in inventory
           </span>
         </div>
 
@@ -230,7 +230,7 @@ export default function LaptopTable({
             {item.brand} {item.model}
           </div>
           <div className="mt-0.5 text-xs font-medium text-[#64748B]">
-            Hardware records tracked in devices database
+            Hardware configurations in inventory
           </div>
         </div>
       ),

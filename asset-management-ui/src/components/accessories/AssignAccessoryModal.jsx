@@ -193,7 +193,7 @@ export default function AssignAccessoryModal({
               className="w-full appearance-none rounded-xl border border-[#DCE5E1] bg-white py-2.5 pl-3.5 pr-10 text-sm text-[#03312E] transition-colors focus:border-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1976D2]/20"
             >
               <option value="">
-                {loadingEmployees ? "Loading employee directory..." : "Select employee"}
+                {loadingEmployees ? "Getting employee list..." : "Select employee"}
               </option>
               {employees.map((emp) => (
                 <option key={emp.userId} value={emp.userId}>

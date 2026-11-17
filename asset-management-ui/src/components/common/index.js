@@ -10,4 +10,6 @@ export { default as StatusBadge } from "./StatusBadge";
 export { default as Modal } from "./Modal";
 export { default as Card } from "./Card";
 export { default as DeviceHistoryModal } from "./DeviceHistoryModal";
+export { default as ErrorState } from "./ErrorState";
+export { default as ErrorBoundary } from "./ErrorBoundary";
 export * from "./Icons";
