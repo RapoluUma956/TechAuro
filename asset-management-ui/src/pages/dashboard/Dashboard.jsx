@@ -36,7 +36,7 @@ export default function Dashboard() {
     try {
       const [summaryRes, alertsRes] = await Promise.all([
         dashboardService.getSummary(),
-        dashboardService.getRecentAlerts(5),
+        dashboardService.getRecentAlerts(6),
         // Add a 500ms delay during manual refresh so the spinning feedback is visible
         isManualRefresh ? new Promise((r) => setTimeout(r, 500)) : Promise.resolve(),
       ]);
@@ -335,24 +335,25 @@ export default function Dashboard() {
               segments={licenseExpiryOverviewData.segments}
             />
           </div>
-
-          {/* 7) Assets Requiring Attention Table */}
-          <AssetsAttentionTable
-            filterCounts={filterCounts}
-            refreshKey={refreshKey}
-          />
         </div>
 
         {/* Right Sidebar: 6) Recent Alerts & Quick Actions */}
         <div className="space-y-6 lg:col-span-4">
+          {/* <QuickActionsCard
+            onOpenThresholds={() => setIsThresholdModalOpen(true)}
+          /> */}
           <RecentAlertsCard
             data={recentAlertsData}
             loading={loading}
           />
-          <QuickActionsCard
-            onOpenThresholds={() => setIsThresholdModalOpen(true)}
-          />
         </div>
+      </div>
+      <div>
+        {/* 7) Assets Requiring Attention Table */}
+          <AssetsAttentionTable
+            filterCounts={filterCounts}
+            refreshKey={refreshKey}
+          />
       </div>
 
       {/* 9) Threshold Configuration Modal */}
