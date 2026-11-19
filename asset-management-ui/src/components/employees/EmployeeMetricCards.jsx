@@ -12,6 +12,7 @@ export default function EmployeeMetricCards({
   activeCount = 0,
   repairCount = 0,
   inactiveCount = 0,
+  loading = false,
 }) {
   const metrics = [
     {
@@ -52,5 +53,5 @@ export default function EmployeeMetricCards({
     },
   ];
 
-  return <MetricCards items={metrics} columns={4} />;
+  return <MetricCards items={metrics} columns={4} loading={loading} />;
 }

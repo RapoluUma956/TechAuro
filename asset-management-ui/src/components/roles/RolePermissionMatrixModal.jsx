@@ -127,9 +127,17 @@ export default function RolePermissionMatrixModal({
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#1976D2] border-t-transparent" />
-            <p className="text-xs text-[#64748B]">Loading permission matrix...</p>
+          <div className="overflow-hidden rounded-xl border border-[#DCE5E1] bg-white animate-pulse">
+            <div className="h-10 bg-[#F8FAF9] border-b border-[#DCE5E1]" />
+            <div className="divide-y divide-[#EBF0EE]">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4 gap-4">
+                  <div className="h-4 w-32 rounded bg-slate-100" />
+                  <div className="h-3 w-48 rounded bg-slate-100" />
+                  <div className="h-7 w-36 rounded bg-slate-100" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-[#DCE5E1]">

@@ -85,7 +85,7 @@ export default function DeleteLaptopModal({
               Are you sure you want to permanently delete this laptop?
             </h4>
             <p className="mt-1 text-xs text-red-700 leading-relaxed">
-              This will remove the device record, historical assignments, and telemetry link from the system.
+              This will remove the device record and its past assignments from the system.
             </p>
           </div>
         </div>

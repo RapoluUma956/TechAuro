@@ -48,6 +48,9 @@ export default function AppRouter() {
             <Route element={<ProtectedRoute moduleCode="ROLE_PERMISSIONS" moduleName="Role Permissions" />}>
               <Route path="/roles" element={<RolePermissions />} />
             </Route>
+
+            {/* In-app 404 for unknown routes within the application */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
 

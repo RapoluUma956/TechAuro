@@ -12,6 +12,7 @@ import {
   RecentAlertsCard,
   ThresholdSettingsModal,
 } from "../../components/dashboard";
+import { ErrorState } from "../../components/common";
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
@@ -35,7 +36,7 @@ export default function Dashboard() {
     try {
       const [summaryRes, alertsRes] = await Promise.all([
         dashboardService.getSummary(),
-        dashboardService.getRecentAlerts(5),
+        dashboardService.getRecentAlerts(6),
         // Add a 500ms delay during manual refresh so the spinning feedback is visible
         isManualRefresh ? new Promise((r) => setTimeout(r, 500)) : Promise.resolve(),
       ]);
@@ -47,7 +48,7 @@ export default function Dashboard() {
         setRefreshKey((k) => k + 1);
       }
     } catch (err) {
-      setError(err.message || "Failed to load dashboard data. Please check your connection.");
+      setError("We couldn't load the dashboard metrics. Please check your connection and try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -281,23 +282,12 @@ export default function Dashboard() {
 
       {/* Error Banner */}
       {error && (
-        <div className="flex items-center justify-between rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] p-4 text-xs font-medium text-[#DC2626]">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>{error}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleManualRefresh}
-            className="rounded-lg bg-[#DC2626] px-3 py-1 font-semibold text-white shadow-sm hover:bg-[#B91C1C]"
-          >
-            Retry
-          </button>
-        </div>
+        <ErrorState
+          variant="banner"
+          title="Dashboard metrics unavailable"
+          message={error}
+          onRetry={handleManualRefresh}
+        />
       )}
 
       {/* 1) Top 4 Metric Summary Cards */}
@@ -345,24 +335,25 @@ export default function Dashboard() {
               segments={licenseExpiryOverviewData.segments}
             />
           </div>
-
-          {/* 7) Assets Requiring Attention Table */}
-          <AssetsAttentionTable
-            filterCounts={filterCounts}
-            refreshKey={refreshKey}
-          />
         </div>
 
         {/* Right Sidebar: 6) Recent Alerts & Quick Actions */}
         <div className="space-y-6 lg:col-span-4">
+          {/* <QuickActionsCard
+            onOpenThresholds={() => setIsThresholdModalOpen(true)}
+          /> */}
           <RecentAlertsCard
             data={recentAlertsData}
             loading={loading}
           />
-          <QuickActionsCard
-            onOpenThresholds={() => setIsThresholdModalOpen(true)}
-          />
         </div>
+      </div>
+      <div>
+        {/* 7) Assets Requiring Attention Table */}
+          <AssetsAttentionTable
+            filterCounts={filterCounts}
+            refreshKey={refreshKey}
+          />
       </div>
 
       {/* 9) Threshold Configuration Modal */}

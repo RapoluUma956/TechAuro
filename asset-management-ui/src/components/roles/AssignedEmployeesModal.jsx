@@ -101,9 +101,16 @@ export default function AssignedEmployeesModal({ isOpen, onClose, role }) {
         {/* Content Body */}
         <div>
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#1976D2] border-t-transparent" />
-              <p className="text-xs text-[#64748B]">Loading assigned employees...</p>
+            <div className="space-y-3 py-4 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#DCE5E1]">
+                  <div className="h-9 w-9 shrink-0 rounded-full bg-slate-100" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-1/3 rounded bg-slate-100" />
+                    <div className="h-2.5 w-1/4 rounded bg-slate-100" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 flex items-center gap-2">
@@ -115,11 +122,13 @@ export default function AssignedEmployeesModal({ isOpen, onClose, role }) {
               <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
                 <UsersIcon className="h-6 w-6" />
               </div>
-              <p className="text-sm font-bold text-[#03312E]">No employees found</p>
+              <p className="text-sm font-bold text-[#03312E]">
+                {searchQuery ? "No matching employees" : "No employees assigned"}
+              </p>
               <p className="text-xs text-[#64748B] mt-0.5">
                 {searchQuery
-                  ? "No matching employees found for your search query."
-                  : "No employees are currently assigned to this role."}
+                  ? "We couldn't find anyone matching your search."
+                  : "No team members currently have this role."}
               </p>
             </div>
           ) : (

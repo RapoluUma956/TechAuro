@@ -96,14 +96,6 @@ export default function AccessoriesTab({ accessories = [] }) {
     <div className="space-y-4">
       {/* Header matching wireframe */}
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-wider text-[#03312E]">
-            ACCESSORIES
-          </h2>
-          <p className="text-xs text-[#5C7370]">
-            Peripheral hardware items, monitors, docking hubs, and audio devices issued to this employee.
-          </p>
-        </div>
 
         {/* Full Length Search */}
         <div className="w-full">

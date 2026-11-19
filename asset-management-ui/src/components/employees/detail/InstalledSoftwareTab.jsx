@@ -115,37 +115,6 @@ export default function InstalledSoftwareTab({ installedSoftwares = [] }) {
     <div className="space-y-4">
       {/* Header matching wireframe */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold tracking-tight text-[#03312E]">
-                Installed Softwares
-              </h2>
-              <span className="rounded-full bg-[#E3F2FD] px-2.5 py-0.5 text-xs font-bold text-[#1976D2]">
-                {filteredData.length} items
-              </span>
-            </div>
-            <p className="text-xs text-[#5C7370] mt-0.5">
-              Binaries, system dependencies, IDEs, and business applications discovered on this host.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-xs text-[#5C7370] font-medium hidden sm:inline">Show:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="rounded-lg border border-[#DCE5E1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#03312E] shadow-2xs hover:bg-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#1976D2] cursor-pointer"
-              title="Rows per page"
-            >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value="all">All</option>
-            </select>
-          </div>
-        </div>
 
         {/* Full Length Search Bar */}
         <div className="w-full">

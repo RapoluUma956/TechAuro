@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import notificationService from "../../services/notificationService";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
-import { MetricCards, SearchBar, Button } from "../../components/common";
+import { MetricCards, SearchBar, Button, ErrorState } from "../../components/common";
 import {
   BellIcon,
   CheckCircleIcon,
@@ -161,7 +161,7 @@ export default function Notifications() {
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
       if (!isBackground) {
-        setError(err.message || "Unable to load security notifications. Please try again.");
+        setError("We couldn't load your notifications right now.");
       }
     } finally {
       setLoading(false);
@@ -245,9 +245,9 @@ export default function Notifications() {
     try {
       await notificationService.syncNotifications();
       await loadData(false);
-      showToast("System alerts synchronized with latest telemetry.");
+      showToast("Alerts updated successfully.");
     } catch (err) {
-      showToast(err.message || "Synchronization failed.");
+      showToast("Unable to refresh alerts. Please try again.");
       setRefreshing(false);
     }
   };
@@ -356,7 +356,7 @@ export default function Notifications() {
       </div>
 
       {/* Reusable MetricCards component matching other pages */}
-      <MetricCards items={metricCards} columns={4} />
+      <MetricCards items={metricCards} columns={4} loading={loading} />
 
       {/* Standard Search Bar Card matching AccessoryTable / EmployeeFilters / LicenseFilters */}
       <div className="rounded-2xl border border-[#DCE5E1] bg-white p-4 shadow-sm">
@@ -375,25 +375,33 @@ export default function Notifications() {
       {/* Notifications List Card */}
       <div className="overflow-hidden rounded-2xl border border-[#DCE5E1] bg-white shadow-sm">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-16 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1976D2] border-t-transparent mb-3" />
-            <p className="text-xs font-semibold text-[#64748B]">Loading notifications and system events...</p>
+          <div className="divide-y divide-[#EBF0EE]">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={`notif-skeleton-${i}`}
+                className="flex items-start gap-4 p-5 animate-pulse bg-white"
+              >
+                <div className="h-11 w-11 shrink-0 rounded-2xl bg-slate-100" />
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-16 rounded bg-slate-100" />
+                    <div className="h-4 w-20 rounded bg-slate-100" />
+                    <div className="h-4 w-24 rounded bg-slate-100" />
+                  </div>
+                  <div className="h-4 w-2/3 rounded bg-slate-100" />
+                  <div className="h-3 w-5/6 rounded bg-slate-100" />
+                </div>
+                <div className="h-8 w-24 shrink-0 rounded-lg bg-slate-100" />
+              </div>
+            ))}
           </div>
         ) : error ? (
-          <div className="p-12 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
-            <h3 className="text-sm font-bold text-[#03312E]">{error}</h3>
-            <div className="mt-4">
-              <Button variant="outline" size="sm" onClick={() => loadData(false)}>
-                Try Again
-              </Button>
-            </div>
+          <div className="p-8">
+            <ErrorState
+              title="Unable to load notifications"
+              message={error}
+              onRetry={() => loadData(false)}
+            />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-16 text-center">
@@ -403,11 +411,13 @@ export default function Notifications() {
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-[#03312E]">No Notifications Found</h3>
+            <h3 className="text-base font-bold text-[#03312E]">
+              {searchQuery ? "No matching notifications" : "You're all caught up!"}
+            </h3>
             <p className="text-sm text-[#64748B] mt-1 max-w-sm">
               {searchQuery
-                ? `No notifications matched "${searchQuery}". Try a different keyword.`
-                : "All systems are operating normally within configured threshold limits."}
+                ? `We couldn't find any notifications matching "${searchQuery}".`
+                : "There are no new alerts right now. Everything is running smoothly."}
             </p>
           </div>
         ) : (

@@ -57,5 +57,5 @@ export default function LicenseMetricCards({ metrics, loading = false }) {
     },
   ];
 
-  return <MetricCards items={cards} columns={5} />;
+  return <MetricCards items={cards} columns={5} loading={loading} />;
 }
