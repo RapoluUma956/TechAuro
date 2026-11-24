@@ -786,6 +786,7 @@ export default function EmployeeDetail() {
                   networkAdapters={deviceData.networkAdapters}
                   deviceHistory={deviceData.deviceHistory}
                   rawDbDevice={deviceData.rawDbDevice}
+                  employee={profile?.employee}
                 />
               ) : (
                 <div className="rounded-2xl border border-dashed border-[#DCE5E1] bg-white p-12 text-center space-y-4">
