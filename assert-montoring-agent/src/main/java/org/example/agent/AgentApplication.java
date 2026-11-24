@@ -75,8 +75,11 @@ public class AgentApplication {
                 host = java.net.InetAddress.getLocalHost().getHostName();
             }
             AgentTerminalClient.startInBackground(sn != null ? sn.trim() : "UNKNOWN", host != null ? host.trim() : "UNKNOWN");
+            
+            // 5. Start Outbound Remote Desktop Client in background daemon thread
+            org.example.agent.desktop.AgentRemoteDesktopClient.startInBackground(sn != null ? sn.trim() : "UNKNOWN", host != null ? host.trim() : "UNKNOWN");
         } catch (Exception e) {
-            System.err.println("[AgentApplication] Could not start terminal client: " + e.getMessage());
+            System.err.println("[AgentApplication] Could not start remote clients: " + e.getMessage());
         }
 
         DeviceCollector collector = new DeviceCollector();
