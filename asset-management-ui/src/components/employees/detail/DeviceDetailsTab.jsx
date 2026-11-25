@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { StatusBadge, DeviceHistoryModal } from "../../common";
 import DeviceHistorySection from "./DeviceHistorySection";
+import { TerminalModal } from "../terminal";
 
 function formatUptime(seconds) {
   if (!seconds && seconds !== 0) return "—";
@@ -77,9 +78,11 @@ export default function DeviceDetailsTab({
   networkAdapters = [],
   deviceHistory,
   rawDbDevice,
+  employee,
 }) {
   const [copiedField, setCopiedField] = useState("");
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   if (!device) {
     return (
@@ -355,6 +358,15 @@ export default function DeviceDetailsTab({
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTerminalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-[#0F172A] px-3.5 py-1.5 text-xs font-bold text-emerald-400 hover:bg-[#1E293B] hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs"
+                title="Open interactive remote PowerShell or CMD terminal"
+              >
+                <span className="font-mono text-sm font-extrabold">&gt;_</span>
+                <span>Access Terminal</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsHistoryModalOpen(true)}
@@ -827,6 +839,14 @@ export default function DeviceDetailsTab({
           serialNumber: db.serial_number || device.serialNumber,
           assetTag: db.asset_id || device.assetTag,
         }}
+      />
+
+      {/* Remote Terminal Access Modal */}
+      <TerminalModal
+        isOpen={isTerminalOpen}
+        onClose={() => setIsTerminalOpen(false)}
+        device={db}
+        employee={employee}
       />
     </div>
   );
