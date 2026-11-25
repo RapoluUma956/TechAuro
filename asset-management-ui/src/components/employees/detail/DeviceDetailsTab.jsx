@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { StatusBadge, DeviceHistoryModal } from "../../common";
 import DeviceHistorySection from "./DeviceHistorySection";
+import { TerminalModal } from "../terminal";
+import { RemoteDesktopModal } from "../remote-desktop";
 
 function formatUptime(seconds) {
   if (!seconds && seconds !== 0) return "—";
@@ -77,9 +79,12 @@ export default function DeviceDetailsTab({
   networkAdapters = [],
   deviceHistory,
   rawDbDevice,
+  employee,
 }) {
   const [copiedField, setCopiedField] = useState("");
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [isRemoteDesktopOpen, setIsRemoteDesktopOpen] = useState(false);
 
   if (!device) {
     return (
@@ -355,6 +360,34 @@ export default function DeviceDetailsTab({
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRemoteDesktopOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-blue-600 bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors cursor-pointer shadow-2xs"
+                title="Open AnyDesk-like Remote Desktop session with live screen and control"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+                <span>Remote Desktop</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsTerminalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-[#0F172A] px-3.5 py-1.5 text-xs font-bold text-emerald-400 hover:bg-[#1E293B] hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs"
+                title="Open interactive remote PowerShell or CMD terminal"
+              >
+                <span className="font-mono text-sm font-extrabold">&gt;_</span>
+                <span>Access Terminal</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsHistoryModalOpen(true)}
@@ -827,6 +860,22 @@ export default function DeviceDetailsTab({
           serialNumber: db.serial_number || device.serialNumber,
           assetTag: db.asset_id || device.assetTag,
         }}
+      />
+
+      {/* Remote Terminal Access Modal */}
+      <TerminalModal
+        isOpen={isTerminalOpen}
+        onClose={() => setIsTerminalOpen(false)}
+        device={db}
+        employee={employee}
+      />
+
+      {/* AnyDesk-like Remote Desktop Access Modal */}
+      <RemoteDesktopModal
+        isOpen={isRemoteDesktopOpen}
+        onClose={() => setIsRemoteDesktopOpen(false)}
+        device={db}
+        employee={employee}
       />
     </div>
   );

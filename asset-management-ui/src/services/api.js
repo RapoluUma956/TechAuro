@@ -1,6 +1,46 @@
-const API_BASE_URL =
-  // import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
-    import.meta.env.VITE_API_BASE_URL || "https://asset-management-backend-o8dh.onrender.com/api/v1";
+/**
+ * Centralized API & Backend URL Configuration
+ * Supports both LOCAL DEVELOPMENT (http://localhost:8080)
+ * and PRODUCTION (Render Cloud Deployment).
+ */
+
+export function normalizeApiBaseUrl(raw) {
+  if (!raw || typeof raw !== "string") {
+    return import.meta.env.DEV
+      ? "http://localhost:8080/api/v1"
+      : "https://asset-management-backend-o8dh.onrender.com/api/v1";
+  }
+  let url = raw.trim().replace(/\/+$/, "");
+  if (!url.endsWith("/api/v1") && !url.endsWith("/api")) {
+    url += "/api/v1";
+  }
+  return url;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+/**
+ * Returns the WebSocket base URL matching the current API configuration.
+ * Local:   http://localhost:8080   -> ws://localhost:8080
+ * Render:  https://...onrender.com -> wss://...onrender.com
+ */
+export function getWsBaseUrl() {
+  let base = API_BASE_URL;
+
+  // Strip /api/v1 or /api
+  base = base.replace(/\/api(\/v1)?\/?$/, "");
+
+  // Convert HTTP -> WS, HTTPS -> WSS
+  if (base.startsWith("https://")) {
+    return "wss://" + base.substring("https://".length());
+  } else if (base.startsWith("http://")) {
+    return "ws://" + base.substring("http://".length());
+  }
+
+  // Fallback to current host
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}`;
+}
 
 let currentAccessToken = null;
 let currentCsrfToken = null;

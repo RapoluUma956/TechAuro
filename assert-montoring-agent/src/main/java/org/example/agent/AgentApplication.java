@@ -1,7 +1,8 @@
 package org.example.agent;
-
 import org.example.agent.collector.DeviceCollector;
+import org.example.agent.config.AgentConfig;
 import org.example.agent.model.AssetReport;
+import org.example.agent.terminal.AgentTerminalClient;
 import org.example.agent.model.BatteryInfo;
 import org.example.agent.model.MemoryInfo;
 import org.example.agent.model.NetworkInfo;
@@ -57,7 +58,29 @@ public class AgentApplication {
 
         System.out.println();
         System.out.println("Continuous monitoring started.");
-        System.out.println("Collection interval: 30 seconds");
+        System.out.println("Collection interval : " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds");
+        System.out.println("Target Backend URL  : " + AgentConfig.getReportUrl());
+        System.out.println("WebSocket Base URL  : " + AgentConfig.getWebSocketBaseUrl());
+        System.out.println("HTTP Timeout        : " + AgentConfig.REQUEST_TIMEOUT_SECONDS + " seconds");
+
+        // 4. Start Outbound Remote Terminal Client in background daemon thread
+        try {
+            oshi.SystemInfo sysInfo = new oshi.SystemInfo();
+            String sn = sysInfo.getHardware().getComputerSystem().getSerialNumber();
+            String host = sysInfo.getOperatingSystem().getNetworkParams().getHostName();
+            if (sn == null || sn.isBlank() || "unknown".equalsIgnoreCase(sn)) {
+                sn = System.getenv("COMPUTERNAME");
+            }
+            if (host == null || host.isBlank()) {
+                host = java.net.InetAddress.getLocalHost().getHostName();
+            }
+            AgentTerminalClient.startInBackground(sn != null ? sn.trim() : "UNKNOWN", host != null ? host.trim() : "UNKNOWN");
+            
+            // 5. Start Outbound Remote Desktop Client in background daemon thread
+            org.example.agent.desktop.AgentRemoteDesktopClient.startInBackground(sn != null ? sn.trim() : "UNKNOWN", host != null ? host.trim() : "UNKNOWN");
+        } catch (Exception e) {
+            System.err.println("[AgentApplication] Could not start remote clients: " + e.getMessage());
+        }
 
         DeviceCollector collector = new DeviceCollector();
         AgentSender sender = new AgentSender();
@@ -595,10 +618,10 @@ public class AgentApplication {
 
                 System.out.println();
                 System.out.println(
-                        "Next collection will start in 30 seconds..."
+                        "Next collection will start in " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds..."
                 );
 
-                Thread.sleep(MONITORING_INTERVAL);
+                Thread.sleep(AgentConfig.MONITORING_INTERVAL_MS);
 
             } catch (InterruptedException e) {
 
@@ -630,12 +653,12 @@ public class AgentApplication {
                 );
 
                 System.out.println(
-                        "Waiting 30 seconds before next attempt..."
+                        "Waiting " + (AgentConfig.MONITORING_INTERVAL_MS / 1000) + " seconds before next attempt..."
                 );
 
                 try {
 
-                    Thread.sleep(MONITORING_INTERVAL);
+                    Thread.sleep(AgentConfig.MONITORING_INTERVAL_MS);
 
                 } catch (InterruptedException interruptedException) {
 

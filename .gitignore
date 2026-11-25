@@ -7,6 +7,11 @@
 build/
 **/dependency-reduced-pom.xml
 
+# Local Environment Overrides with secrets
+*.local
+.env.local
+.env.*.local
+
 # IDE & Tooling
 .idea/
 *.iml

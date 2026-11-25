@@ -27,7 +27,7 @@ While running, background execution logs are written to `agent.log` in this same
 
 ## Changing Server IP / URL:
 Edit `server_url.txt` in this folder to point to your backend server URL, e.g.:
-http://192.168.140.127:8080/api/agent/report
+https://asset-management-backend-o8dh.onrender.com/api/agent/report
 
 ## Folder Structure:
 - `AssetMonitoringAgent.exe`: Silent background application launcher

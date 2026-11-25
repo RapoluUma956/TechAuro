@@ -121,7 +121,8 @@ public class SecurityInterceptor implements HandlerInterceptor {
         if (path.startsWith("/api/managers")) {
             return "ROLE_PERMISSIONS";
         }
-        if (path.startsWith("/api/employees") || path.startsWith("/api/devices") || path.startsWith("/api/users")) {
+        if (path.startsWith("/api/employees") || path.startsWith("/api/devices") || path.startsWith("/api/users") ||
+            path.startsWith("/api/terminal") || path.startsWith("/api/remote-access")) {
             if (path.contains("/roles")) {
                 return "ROLE_PERMISSIONS";
             }
