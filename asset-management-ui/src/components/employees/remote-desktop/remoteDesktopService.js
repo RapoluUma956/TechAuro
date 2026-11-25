@@ -1,25 +1,6 @@
-import { getAccessToken } from "../../../services/api";
+import { getAccessToken, getWsBaseUrl } from "../../../services/api";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://asset-management-backend-o8dh.onrender.com/api/v1";
-
-export function getWsBaseUrl() {
-  let base = API_BASE_URL;
-
-  // Strip /api/v1 or /api
-  base = base.replace(/\/api(\/v1)?\/?$/, "");
-
-  // Convert HTTP -> WS, HTTPS -> WSS
-  if (base.startsWith("https://")) {
-    return "wss://" + base.substring("https://".length());
-  } else if (base.startsWith("http://")) {
-    return "ws://" + base.substring("http://".length());
-  }
-
-  // Fallback to current host
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}`;
-}
+export { getWsBaseUrl };
 
 export function buildRemoteDesktopWsUrl({ deviceId, serialNumber }) {
   const wsBase = getWsBaseUrl();
